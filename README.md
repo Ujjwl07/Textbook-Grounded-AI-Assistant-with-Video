@@ -54,7 +54,7 @@ Textbook-Grounded-AI-Assistant-with-Video/
 
 | Role | Owner | Folder(s) |
 |---|---|---|
-| RAG & Pipeline |  | `backend/scripts/`, `backend/app/rag/`, `backend/app/database/` |
+| RAG & Pipeline | Ujjwal | `backend/scripts/`, `backend/app/rag/`, `backend/app/database/` |
 | LLM Integration | — | `backend/app/llm/` |
 | TTS & Video | — | `backend/app/tts/`, `backend/app/video/` |
 | API / Backend | — | `backend/app/api/routes/` |
