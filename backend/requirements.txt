@@ -8,4 +8,10 @@ python-dotenv>=1.0.1
 paddlepaddle>=2.6.0
 paddleocr>=2.8.0
 
-fastapi
+fastapi>=0.111.0
+uvicorn[standard]>=0.30.0
+pydantic-settings>=2.3.0
+motor>=3.5.0
+cloudinary>=1.40.0
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
