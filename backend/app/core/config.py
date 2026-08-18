@@ -31,8 +31,27 @@ class Settings(BaseSettings):
     cloudinary_folder: str = "textbook-assistant/videos"
 
     video_output_dir: Path = BACKEND_DIR / "outputs" / "videos"
+    audio_output_dir: Path = BACKEND_DIR / "outputs" / "audio"
+    slide_output_dir: Path = BACKEND_DIR / "outputs" / "slides"
     cache_ttl_seconds: int = 60 * 60 * 24 * 30
     generation_mock_delay_seconds: float = 0.15
+
+    # --- Video assembly (Purnika) ---
+    video_fps: int = 24
+    video_width: int = 1280
+    video_height: int = 720
+    # x264 speed/compression trade-off. Slide-based content compresses well even
+    # at fast presets, and encoding dominates total generation time.
+    video_preset: str = "veryfast"
+    # 0 = use every available core.
+    video_threads: int = 0
+    vmake_api_key: str = ""
+    vmake_enabled: bool = False
+
+    # --- TTS / audio post-processing (Pallika) ---
+    audio_target_lufs: float = -16.0
+    audio_silence_threshold_db: float = -45.0
+    audio_postprocess_enabled: bool = True
 
     qdrant_url: str = ""
     qdrant_api_key: str = ""
@@ -48,6 +67,15 @@ class Settings(BaseSettings):
     @property
     def cloudinary_enabled(self) -> bool:
         return bool(self.cloudinary_cloud_name and self.cloudinary_api_key and self.cloudinary_api_secret)
+
+    @property
+    def vmake_active(self) -> bool:
+        """VMake backgrounds run only when a key is present AND the flag is on."""
+        return bool(self.vmake_enabled and self.vmake_api_key)
+
+    @property
+    def video_size(self) -> tuple:
+        return (self.video_width, self.video_height)
 
 
 @lru_cache

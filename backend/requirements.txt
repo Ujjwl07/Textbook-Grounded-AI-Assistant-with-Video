@@ -15,3 +15,18 @@ motor>=3.5.0
 cloudinary>=1.40.0
 python-jose[cryptography]>=3.3.0
 passlib[bcrypt]>=1.7.4
+
+# --- Video & media engineering (Purnika) ---
+moviepy==1.0.3            # pinned: 2.x renamed moviepy.editor and the clip API
+pillow>=10.0.0
+matplotlib>=3.8.0         # LaTeX formula rendering via mathtext
+numpy>=1.26.0
+imageio-ffmpeg>=0.5.0     # bundles the ffmpeg binary used by moviepy and pydub
+requests>=2.31.0          # VMake.ai API client
+
+# --- TTS & audio (Pallika) ---
+edge-tts>=7.0.0
+pydub>=0.25.1             # audio trimming / loudness normalisation
+gTTS>=2.5.0               # engine comparison baseline (multi_voice_test.py)
+# pyloudnorm>=0.1.1       # optional: enables true ITU-R BS.1770 LUFS metering
+# TTS>=0.22.0             # optional: offline Coqui engine for the comparison

@@ -1,9 +1,38 @@
 import os
 import textwrap
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 from app.video.formula_renderer import render_latex_to_image
+from app.video.fonts import load_font
+
+
+def hex_to_rgb(value: str):
+    """Convert a '#RRGGBB' string to an (r, g, b) tuple. Returns None if unparseable."""
+    if not value or not isinstance(value, str):
+        return None
+    value = value.strip().lstrip('#')
+    if len(value) == 3:
+        value = ''.join(ch * 2 for ch in value)
+    if len(value) != 6:
+        return None
+    try:
+        return tuple(int(value[i:i + 2], 16) for i in (0, 2, 4))
+    except ValueError:
+        return None
 
 SLIDE_W, SLIDE_H = 1280, 720  # HD 16:9
+
+# Title-safe area. Ken Burns / zoom animations centre-crop the frame, so any
+# element drawn outside this margin is clipped once the zoom reaches its peak.
+# Must stay larger than the crop implied by animation_engine.MAX_ZOOM
+# (1.06 removes ~36 px horizontally and ~20 px vertically).
+SAFE_MARGIN_X = 80
+SAFE_MARGIN_Y = 50
+
+# Right-hand visual panel, expressed inside the safe area.
+VISUAL_X0 = 730
+VISUAL_X1 = SLIDE_W - SAFE_MARGIN_X   # 1200
+VISUAL_Y0 = 170
+VISUAL_Y1 = 560
 
 SCENE_THEMES = {
     'HOOK': {
@@ -39,48 +68,32 @@ SCENE_THEMES = {
 }
 
 class SlideRenderer:
-    def __init__(self):
-        # Cache fonts
-        self.fonts = {}
-        self._load_fonts()
+    # Weight per text role — titles and badges render bold where a bold face exists.
+    ROLE_WEIGHTS = {'title': True, 'badge': True, 'body': False, 'caption': False}
 
-    def _load_fonts(self):
-        # Attempt to load premium fonts on Windows, with fallback to default
-        system_fonts = [
-            ("title", "arial.ttf", 46),
-            ("body", "arial.ttf", 26),
-            ("badge", "arial.ttf", 20),
-            ("caption", "arial.ttf", 18),
-        ]
-        
-        windows_font_dir = "C:\\Windows\\Fonts"
-        for role, name, size in system_fonts:
-            font_path = os.path.join(windows_font_dir, name)
-            try:
-                if os.path.exists(font_path):
-                    self.fonts[f"{role}_{size}"] = ImageFont.truetype(font_path, size)
-                else:
-                    self.fonts[f"{role}_{size}"] = ImageFont.truetype(name, size)
-            except Exception:
-                # Fallback to default
-                self.fonts[f"{role}_{size}"] = ImageFont.load_default()
+    def __init__(self):
+        # Warm the font cache for the sizes used on every slide.
+        for role, size in (("title", 46), ("body", 26), ("badge", 20), ("caption", 18)):
+            self.get_font(role, size)
 
     def get_font(self, role: str, size: int):
-        key = f"{role}_{size}"
-        if key in self.fonts:
-            return self.fonts[key]
-        
-        # Try dynamic loading
-        windows_font_dir = "C:\\Windows\\Fonts"
-        font_path = os.path.join(windows_font_dir, "arial.ttf")
-        try:
-            if os.path.exists(font_path):
-                self.fonts[key] = ImageFont.truetype(font_path, size)
-            else:
-                self.fonts[key] = ImageFont.truetype("arial.ttf", size)
-            return self.fonts[key]
-        except Exception:
-            return ImageFont.load_default()
+        """Resolve a font for a text role at ``size`` (cached inside app.video.fonts)."""
+        return load_font(size, bold=self.ROLE_WEIGHTS.get(role, False))
+
+    def resolve_theme(self, scene: dict) -> dict:
+        """Theme for this scene, honouring a per-scene ``background_color`` override.
+
+        The scene segmentation prompt emits a ``background_color`` hex per part.
+        When present it wins over the built-in palette so a director can retint a
+        scene without a code change; accent/text colours are kept from the part
+        theme so contrast rules still hold.
+        """
+        part_name = scene.get('part', 'CONCEPT').upper()
+        theme = dict(SCENE_THEMES.get(part_name, SCENE_THEMES['CONCEPT']))
+        override = hex_to_rgb(scene.get('background_color'))
+        if override:
+            theme['bg'] = override
+        return theme
 
     def render_scene_slide(self, scene: dict, output_path: str, transparent_bg: bool = False) -> str:
         """
@@ -88,13 +101,13 @@ class SlideRenderer:
         Returns the output file path.
         """
         part_name = scene.get('part', 'CONCEPT').upper()
-        theme = SCENE_THEMES.get(part_name, SCENE_THEMES['CONCEPT'])
-        
+        theme = self.resolve_theme(scene)
+
         # Create base image (RGBA to support transparency when compositing with background videos)
         bg_alpha = 0 if transparent_bg else 255
         img = Image.new('RGBA', (SLIDE_W, SLIDE_H), (theme['bg'][0], theme['bg'][1], theme['bg'][2], bg_alpha))
         draw = ImageDraw.Draw(img)
-        
+
         # Draw background decoration if not transparent
         if not transparent_bg:
             draw.polygon([(800, 0), (SLIDE_W, 0), (SLIDE_W, SLIDE_H), (1050, SLIDE_H)], fill=tuple(int(c * 0.9) for c in theme['bg']))
@@ -102,7 +115,7 @@ class SlideRenderer:
         # 1. Accent bar on left
         # Accent bar should be fully opaque (255 alpha)
         accent_color = (theme['accent'][0], theme['accent'][1], theme['accent'][2], 255)
-        draw.rectangle([0, 0, 10, SLIDE_H], fill=accent_color)
+        draw.rectangle([SAFE_MARGIN_X - 36, 0, SAFE_MARGIN_X - 20, SLIDE_H], fill=accent_color)
         
         # 2. Part label (top-left badge)
         badge_text = part_name.replace('_', ' ')
@@ -115,7 +128,7 @@ class SlideRenderer:
         except AttributeError:
             text_w, text_h = 100, 20  # estimate
             
-        badge_x1, badge_y1 = 40, 40
+        badge_x1, badge_y1 = SAFE_MARGIN_X, SAFE_MARGIN_Y
         badge_x2, badge_y2 = badge_x1 + text_w + 30, badge_y1 + 45
         draw.rounded_rectangle([badge_x1, badge_y1, badge_x2, badge_y2], radius=10, fill=accent_color)
         
@@ -131,9 +144,9 @@ class SlideRenderer:
         title_wrapper = textwrap.TextWrapper(width=30)
         title_lines = title_wrapper.wrap(title_text)
         
-        title_y = 110
+        title_y = SAFE_MARGIN_Y + 70
         for line in title_lines:
-            draw.text((40, title_y), line, font=title_font, fill=theme['text'])
+            draw.text((SAFE_MARGIN_X, title_y), line, font=title_font, fill=theme['text'])
             title_y += 55
             
         # 4. Bullet points (left side)
@@ -147,14 +160,14 @@ class SlideRenderer:
             bullet_lines = bullet_wrapper.wrap(bullet)
             
             # Draw bullet symbol
-            draw.text((40, bullet_y), "•", font=body_font, fill=theme['accent'])
+            draw.text((SAFE_MARGIN_X, bullet_y), "•", font=body_font, fill=theme['accent'])
             
             for line_idx, line in enumerate(bullet_lines):
-                draw.text((70, bullet_y + (line_idx * 32)), line, font=body_font, fill=theme['text'])
+                draw.text((SAFE_MARGIN_X + 30, bullet_y + (line_idx * 32)), line, font=body_font, fill=theme['text'])
             
             bullet_y += len(bullet_lines) * 32 + 25
             
-        # 5. Visual section on the right side (x = 750 to 1200)
+        # 5. Visual section on the right side, clamped to the safe area
         visual_type = scene.get('visual_type', 'none').lower()
         formula_latex = scene.get('formula_latex')
         
@@ -162,10 +175,16 @@ class SlideRenderer:
             # Render and paste LaTeX image
             try:
                 formula_img = render_latex_to_image(formula_latex, font_size=28, color='white')
-                # Center formula in the right area
-                fx = 750 + (450 - formula_img.width) // 2
-                fy = 200 + (400 - formula_img.height) // 2
-                img.paste(formula_img, (max(700, fx), max(150, fy)), formula_img)
+                # Matplotlib sizes the output from the expression, so a long
+                # formula easily exceeds the panel and used to bleed off-slide.
+                # Scale it down to fit, preserving aspect ratio.
+                formula_img = self._fit_within(
+                    formula_img, VISUAL_X1 - VISUAL_X0, VISUAL_Y1 - VISUAL_Y0
+                )
+                # Centre the formula inside the visual panel.
+                fx = VISUAL_X0 + (VISUAL_X1 - VISUAL_X0 - formula_img.width) // 2
+                fy = VISUAL_Y0 + (VISUAL_Y1 - VISUAL_Y0 - formula_img.height) // 2
+                img.paste(formula_img, (fx, fy), formula_img)
             except Exception as e:
                 # Fallback to plain text formula
                 draw.text((750, 300), formula_latex, font=body_font, fill=theme['accent'])
@@ -190,6 +209,15 @@ class SlideRenderer:
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         img.save(output_path, "PNG")
         return output_path
+
+    @staticmethod
+    def _fit_within(image: Image.Image, max_w: int, max_h: int) -> Image.Image:
+        """Downscale ``image`` to fit inside ``max_w`` x ``max_h``, keeping aspect."""
+        if image.width <= max_w and image.height <= max_h:
+            return image
+        scale = min(max_w / image.width, max_h / image.height)
+        new_size = (max(1, int(image.width * scale)), max(1, int(image.height * scale)))
+        return image.resize(new_size, Image.LANCZOS)
 
     def _draw_mock_diagram(self, draw: ImageDraw.Draw, theme: dict):
         """Draws a stylized biological cell/atomic diagram."""
