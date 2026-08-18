@@ -22,7 +22,6 @@ class GenerateRequest(BaseModel):
 class GenerateResponse(BaseModel):
     job_id: str
     status: JobStatus
-    cached: bool = False
     video_url: Optional[str] = None
     message: str
 
@@ -36,7 +35,7 @@ class JobState(BaseModel):
     topic: str
     subject: Optional[str] = None
     class_level: Optional[str] = None
-    student_id: Optional[str] = None
+    user_id: Optional[str] = None
     video_url: Optional[str] = None
     local_video_path: Optional[str] = None
     error: Optional[str] = None
@@ -56,12 +55,8 @@ class VideoRecord(BaseModel):
 
 
 class QuizSubmitRequest(BaseModel):
-    student_id: str = Field(..., min_length=1, max_length=120)
     question_id: str = Field(..., min_length=1, max_length=120)
     selected_option: str = Field(..., min_length=1, max_length=10)
-    correct_option: str = Field(..., min_length=1, max_length=10)
-    topic: str = Field(..., min_length=1, max_length=160)
-    difficulty: str = Field(default="MEDIUM", pattern="^(EASY|MEDIUM|HARD)$")
 
 
 class QuizSubmitResponse(BaseModel):
@@ -74,7 +69,7 @@ class QuizSubmitResponse(BaseModel):
 
 class QuizAttempt(BaseModel):
     attempt_id: str
-    student_id: str
+    user_id: str
     question_id: str
     topic: str
     difficulty: str
@@ -87,15 +82,16 @@ class QuizAttempt(BaseModel):
 
 
 class QuizHistoryResponse(BaseModel):
-    student_id: str
+    user_id: str
     total: int
     attempts: List[QuizAttempt] = Field(default_factory=list)
 
 
-class StudentDashboard(BaseModel):
-    student_id: str
+class UserDashboard(BaseModel):
+    user_id: str
     ability: float
     mastery_by_topic: Dict[str, float]
+    weak_areas: List[str]
     weak_areas: List[str]
     strong_areas: List[str]
     videos_watched: int = 0
@@ -116,6 +112,7 @@ class UserPublic(BaseModel):
     id: str
     name: str
     email: str
+    is_admin: bool = False
     created_at: datetime
 
 
@@ -123,3 +120,7 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserPublic
+
+
+class AdminCreateRequest(BaseModel):
+    email: str = Field(..., min_length=5, max_length=254)

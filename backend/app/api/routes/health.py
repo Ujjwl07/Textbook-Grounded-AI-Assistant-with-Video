@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 
 from app.core.config import get_settings
-from app.services.cache_manager import cache_manager
+from app.services.database import database
 
 router = APIRouter(tags=["health"])
 
@@ -13,6 +13,6 @@ async def health_check() -> dict:
         "status": "ok",
         "app": settings.app_name,
         "version": settings.app_version,
-        "database_connected": cache_manager.enabled,
+        "database_connected": database.enabled,
         "cloudinary_enabled": settings.cloudinary_enabled,
     }

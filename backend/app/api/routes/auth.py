@@ -23,3 +23,15 @@ async def login(request: UserLoginRequest) -> TokenResponse:
 @router.get("/me", response_model=UserPublic)
 async def get_me(current_user: dict = Depends(get_current_user)) -> UserPublic:
     return auth_service.to_public_user(current_user)
+
+
+from app.models.schemas import AdminCreateRequest
+from fastapi import HTTPException, status
+from app.services.database import database
+
+@router.post("/admins", status_code=201)
+async def create_admin(request: AdminCreateRequest, current_user: dict = Depends(get_current_user)):
+    if not current_user.get("is_admin"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admins can create new admins")
+    await database.add_admin(request.email)
+    return {"message": f"Successfully added {request.email} as an admin"}
