@@ -5,8 +5,8 @@ import math
 
 
 @dataclass
-class StudentProfile:
-    student_id: str
+class UserLearningProfile:
+    user_id: str
     ability: float = 0.0
     topic_mastery: Dict[str, float] = field(default_factory=dict)
     response_history: List[dict] = field(default_factory=list)
@@ -16,11 +16,11 @@ class StudentProfile:
 class AdaptiveEngine:
     difficulty_map = {"EASY": -1.0, "MEDIUM": 0.0, "HARD": 1.5}
 
-    def from_dict(self, payload: Optional[dict], student_id: str) -> StudentProfile:
+    def from_dict(self, payload: Optional[dict], user_id: str) -> UserLearningProfile:
         if not payload:
-            return StudentProfile(student_id=student_id)
-        return StudentProfile(
-            student_id=payload["student_id"],
+            return UserLearningProfile(user_id=user_id)
+        return UserLearningProfile(
+            user_id=payload.get("id", payload.get("user_id", user_id)),
             ability=float(payload.get("ability", 0.0)),
             topic_mastery=dict(payload.get("topic_mastery", {})),
             response_history=list(payload.get("response_history", [])),
@@ -29,12 +29,12 @@ class AdaptiveEngine:
 
     def update_after_answer(
         self,
-        profile: StudentProfile,
+        profile: UserLearningProfile,
         topic: str,
         difficulty: str,
         is_correct: bool,
         question_id: str,
-    ) -> StudentProfile:
+    ) -> UserLearningProfile:
         item_difficulty = self.difficulty_map[difficulty]
         probability = 1 / (1 + math.exp(-(profile.ability - item_difficulty)))
         observed = 1.0 if is_correct else 0.0
@@ -53,19 +53,19 @@ class AdaptiveEngine:
         )
         return profile
 
-    def weak_topics(self, profile: StudentProfile) -> List[str]:
+    def weak_topics(self, profile: UserLearningProfile) -> List[str]:
         return [topic for topic, score in profile.topic_mastery.items() if score < 0.45]
 
-    def strong_topics(self, profile: StudentProfile) -> List[str]:
+    def strong_topics(self, profile: UserLearningProfile) -> List[str]:
         return [topic for topic, score in profile.topic_mastery.items() if score >= 0.75]
 
-    def next_topic(self, profile: StudentProfile) -> Optional[str]:
+    def next_topic(self, profile: UserLearningProfile) -> Optional[str]:
         weak = self.weak_topics(profile)
         if weak:
             return sorted(weak, key=lambda topic: profile.topic_mastery[topic])[0]
         return None
 
-    def to_dict(self, profile: StudentProfile) -> dict:
+    def to_dict(self, profile: UserLearningProfile) -> dict:
         return asdict(profile)
 
 

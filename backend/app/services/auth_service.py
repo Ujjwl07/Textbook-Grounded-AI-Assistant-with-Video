@@ -9,7 +9,7 @@ from passlib.context import CryptContext
 
 from app.core.config import get_settings
 from app.models.schemas import UserPublic
-from app.services.cache_manager import cache_manager
+from app.services.database import database
 
 
 # Use pbkdf2_sha256 for stable cross-platform hashing without bcrypt backend issues.
@@ -36,7 +36,7 @@ class AuthService:
 
     async def register_user(self, name: str, email: str, password: str) -> dict:
         normalized_email = email.lower().strip()
-        existing = await cache_manager.get_user_by_email(normalized_email)
+        existing = await database.get_user_by_email(normalized_email)
         if existing:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
 
@@ -49,12 +49,18 @@ class AuthService:
             "created_at": now,
             "updated_at": now,
             "is_active": True,
+            # Student learning data
+            "ability": 0.0,
+            "topic_mastery": {},
+            "response_history": [],
+            "videos_watched": 0,
         }
-        await cache_manager.create_user(user)
+        await database.create_user(user)
+        user["is_admin"] = await database.is_user_admin(user["email"])
         return user
 
     async def authenticate_user(self, email: str, password: str) -> dict:
-        user = await cache_manager.get_user_by_email(email.lower().strip())
+        user = await database.get_user_by_email(email.lower().strip())
         if not user or not self.verify_password(password, user["password_hash"]):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -70,6 +76,7 @@ class AuthService:
             id=user["id"],
             name=user["name"],
             email=user["email"],
+            is_admin=user.get("is_admin", False),
             created_at=user["created_at"],
         )
 
@@ -93,7 +100,29 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
     except JWTError as exc:
         raise credentials_exception from exc
 
-    user = await cache_manager.get_user_by_id(user_id)
+    user = await database.get_user_by_id(user_id)
+    if not user:
+        raise credentials_exception
+    return user
+
+
+async def get_user_from_token(token: str) -> dict:
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        settings = get_settings()
+        payload = jwt.decode(token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])
+        user_id = payload.get("sub")
+        token_type = payload.get("type")
+        if not user_id or token_type != "access":
+            raise credentials_exception
+    except JWTError as exc:
+        raise credentials_exception from exc
+
+    user = await database.get_user_by_id(user_id)
     if not user:
         raise credentials_exception
     return user
