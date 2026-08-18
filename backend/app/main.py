@@ -5,14 +5,14 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import auth, dashboard, generation, health, quiz, videos
 from app.core.config import get_settings
-from app.services.cache_manager import cache_manager
+from app.services.database import database
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await cache_manager.connect()
+    await database.connect()
     yield
-    await cache_manager.close()
+    await database.close()
 
 
 settings = get_settings()
