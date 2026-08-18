@@ -28,6 +28,14 @@ if not QDRANT_URL or not QDRANT_API_KEY:
     raise EnvironmentError("\n.env file is missing or incomplete\n")
 
 SKIP_KEYWORDS = {"answer", "answers", "appendix", "appendices"}
+
+# NEET is a Class 11-12 syllabus. Class 9/10 "Science" books sitting in the same
+# dataset root were previously ingested into the shared collection, where they
+# outranked the correct book for NEET queries ("Newton's law of gravitation"
+# returned Class 9 Science above Class 11 Physics). Ingestion now skips them by
+# default; pass --all-classes to include them anyway.
+NEET_CLASS_LEVELS = {"11", "12"}
+
 _model: Optional[SentenceTransformer] = None
 
 
@@ -51,11 +59,17 @@ def ensure_collection(client: QdrantClient):
             vectors_config=VectorParams(size=EMBEDDING_DIM, distance=Distance.COSINE),
         )
         print(f"[qdrant] Created collection: {QDRANT_COLLECTION}")
-    client.create_payload_index(
-        collection_name=QDRANT_COLLECTION,
-        field_name="pdf_name",
-        field_schema=PayloadSchemaType.KEYWORD,
-    )
+    # Index every field the retriever filters on. Without these Qdrant falls
+    # back to a full scan for filtered searches. Re-creating is a no-op.
+    for field_name in ("pdf_name", "subject", "class_level", "chunk_type", "chapter_name"):
+        try:
+            client.create_payload_index(
+                collection_name=QDRANT_COLLECTION,
+                field_name=field_name,
+                field_schema=PayloadSchemaType.KEYWORD,
+            )
+        except Exception as exc:
+            print(f"[qdrant] index {field_name}: {exc}")
 
 
 def parse_metadata_from_path(pdf_path: Path) -> dict:
@@ -338,11 +352,14 @@ def is_already_ingested(pdf_name: str, client: QdrantClient) -> bool:
     return len(results[0]) > 0
 
 
-def process_pdf(pdf_path: Path, client: QdrantClient, force: bool = False):
+def process_pdf(pdf_path: Path, client: QdrantClient, force: bool = False, all_classes: bool = False):
     if should_skip(pdf_path):
         print(f"[skip] {pdf_path.name} (answer/appendix)")
         return
     meta = parse_metadata_from_path(pdf_path)
+    if not all_classes and meta["class_level"] not in NEET_CLASS_LEVELS:
+        print(f"[skip] {pdf_path.name} (Class {meta['class_level'] or '?'} is outside the NEET syllabus; use --all-classes to include)")
+        return
     if not force and is_already_ingested(meta["pdf_name"], client):
         print(f"[skip] Already in Qdrant: {pdf_path.name}")
         return
@@ -362,17 +379,19 @@ def main():
     parser = argparse.ArgumentParser(description="Ingest NCERT chapter PDFs into Qdrant.")
     parser.add_argument("input_path", help="Dataset root directory or single PDF file")
     parser.add_argument("--force", action="store_true", help="Re-ingest even if already present")
+    parser.add_argument("--all-classes", action="store_true",
+                        help="Also ingest Class 9/10 books (off-syllabus for NEET; excluded by default)")
     args = parser.parse_args()
     client = get_qdrant_client()
     ensure_collection(client)
     input_path = Path(args.input_path)
     if input_path.is_file() and input_path.suffix.lower() == ".pdf":
-        process_pdf(input_path, client, args.force)
+        process_pdf(input_path, client, args.force, args.all_classes)
     elif input_path.is_dir():
         pdf_files = sorted(input_path.rglob("*.pdf"))
         print(f"Found {len(pdf_files)} PDF(s) in {input_path}")
         for pdf in pdf_files:
-            process_pdf(pdf, client, args.force)
+            process_pdf(pdf, client, args.force, args.all_classes)
     else:
         print("Error: provide a valid PDF path or directory.")
 
