@@ -10,6 +10,7 @@ from app.services.database import database
 from app.services.storage import video_storage
 from app.services.websocket_manager import websocket_manager
 from app.tts.tts_generator import TTSGenerator
+from app.rag.scene_builder import build_scenes
 from app.video.scene_presets import get_fallback_scenes
 from app.video.slide_generator import SlideRenderer
 from app.video.video_assembler import VideoAssembler
@@ -95,7 +96,7 @@ class JobQueue:
             await asyncio.sleep(0.5)
 
             # 2. Retrieval stage (15%)
-            await self._set_progress(job, 15, "retrieving", "Searching NCERT textbook context")
+            await self._set_progress(job, 15, "retrieving", "Searching the NCERT textbook for this topic")
             await asyncio.sleep(0.5)
             
             # 3. Scripting stage (30%)
@@ -109,10 +110,18 @@ class JobQueue:
             # 5. Audio and Video Assembly stages (60% to 92%)
             await self._set_progress(job, 60, "audio", "Synthesizing vocal narration and rendering slide templates")
             
-            # Construct scene input
-            # In a fully integrated setting, these would come from RAG retrieval + LLM generation/segmentation.
-            # We use our dynamic fallback scenes representing the textbook assistant content.
-            scenes = get_fallback_scenes(job.topic, job.subject, job.class_level)
+            # Scenes come from the NCERT corpus. build_scenes retrieves the
+            # topic's chapter from Qdrant and assembles the five parts from real
+            # passages, so the definition on screen carries a citation. It
+            # returns None when retrieval finds nothing for the topic, in which
+            # case the hand-written presets keep the pipeline working.
+            scenes = None
+            try:
+                scenes = build_scenes(job.topic, job.subject, job.class_level)
+            except Exception as exc:
+                logger.warning("Retrieval-grounded scene build failed (%s); using presets", exc)
+            if not scenes:
+                scenes = get_fallback_scenes(job.topic, job.subject, job.class_level)
             
             local_path = str(video_storage.settings.video_output_dir / f"{job.job_id}.mp4")
             
