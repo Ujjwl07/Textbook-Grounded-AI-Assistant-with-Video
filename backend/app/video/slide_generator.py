@@ -1,8 +1,43 @@
+"""PIL slide renderer for the five NEET scene themes (Purnika, Section 11.4 #1).
+
+Slides are composed, not templated: the layout adapts to what the scene supplies.
+A scene with a definition gets a quoted definition card as the hero element; a
+scene with a figure gets a photo panel; a scene with process steps gets a real
+flowchart with the step names on it.
+
+Layout (1280x720, title-safe margins so zoom cannot clip anything):
+
+    +--------------------------------------------------------------+
+    | [BADGE]                             o--o--o--o--o  flow strip |
+    | Title                                                          |
+    | +----------------------------+   +--------------------------+ |
+    | | " Definition card          |   |                          | |
+    | +----------------------------+   |   visual panel           | |
+    | * bullet                         |   (figure / flow /       | |
+    | * bullet                         |    comparison / formula) | |
+    | * bullet                         |                          | |
+    |                                  +--------------------------+ |
+    |            (subtitle band is burned in later by the assembler) |
+    +--------------------------------------------------------------+
+"""
+
 import os
-import textwrap
+
 from PIL import Image, ImageDraw
-from app.video.formula_renderer import render_latex_to_image
+
 from app.video.fonts import load_font
+from app.video.formula_renderer import render_latex_to_image
+from app.video.layout import (
+    darken,
+    draw_lines,
+    fit_text,
+    lighten,
+    readable_on,
+    text_size,
+    text_width,
+    wrap_by_width,
+)
+from app.video import visuals
 
 
 def hex_to_rgb(value: str):
@@ -19,6 +54,7 @@ def hex_to_rgb(value: str):
     except ValueError:
         return None
 
+
 SLIDE_W, SLIDE_H = 1280, 720  # HD 16:9
 
 # Title-safe area. Ken Burns / zoom animations centre-crop the frame, so any
@@ -28,11 +64,17 @@ SLIDE_W, SLIDE_H = 1280, 720  # HD 16:9
 SAFE_MARGIN_X = 80
 SAFE_MARGIN_Y = 50
 
-# Right-hand visual panel, expressed inside the safe area.
+# The assembler burns the subtitle band over the bottom ~120 px, so slide
+# content stops above it.
+CONTENT_BOTTOM = 580
+
+# Left text column and right visual panel.
+TEXT_X = SAFE_MARGIN_X
+TEXT_W = 600
 VISUAL_X0 = 730
 VISUAL_X1 = SLIDE_W - SAFE_MARGIN_X   # 1200
-VISUAL_Y0 = 170
-VISUAL_Y1 = 560
+VISUAL_Y0 = 190
+VISUAL_Y1 = CONTENT_BOTTOM
 
 SCENE_THEMES = {
     'HOOK': {
@@ -67,18 +109,27 @@ SCENE_THEMES = {
     },
 }
 
+
 class SlideRenderer:
     # Weight per text role — titles and badges render bold where a bold face exists.
-    ROLE_WEIGHTS = {'title': True, 'badge': True, 'body': False, 'caption': False}
+    ROLE_WEIGHTS = {'title': True, 'badge': True, 'body': False,
+                    'caption': False, 'definition': False, 'source': False}
 
     def __init__(self):
         # Warm the font cache for the sizes used on every slide.
-        for role, size in (("title", 46), ("body", 26), ("badge", 20), ("caption", 18)):
+        for role, size in (("title", 44), ("body", 24), ("badge", 20), ("caption", 16)):
             self.get_font(role, size)
 
     def get_font(self, role: str, size: int):
         """Resolve a font for a text role at ``size`` (cached inside app.video.fonts)."""
         return load_font(size, bold=self.ROLE_WEIGHTS.get(role, False))
+
+    def _body_font(self, size: int):
+        """Callable of size -> font, for the auto-fitting helpers."""
+        return load_font(size, bold=False)
+
+    def _bold_font(self, size: int):
+        return load_font(size, bold=True)
 
     def resolve_theme(self, scene: dict) -> dict:
         """Theme for this scene, honouring a per-scene ``background_color`` override.
@@ -95,118 +146,158 @@ class SlideRenderer:
             theme['bg'] = override
         return theme
 
+    # -- individual elements ----------------------------------------------
+
+    def _draw_background(self, img, draw, theme, transparent_bg: bool):
+        if transparent_bg:
+            return
+        # Diagonal tint panel behind the visual column.
+        draw.polygon([(820, 0), (SLIDE_W, 0), (SLIDE_W, SLIDE_H), (1040, SLIDE_H)],
+                     fill=darken(theme['bg'], 0.10))
+
+    def _draw_badge(self, draw, theme, part_name: str) -> None:
+        badge_text = part_name.replace('_', ' ')
+        font = self.get_font("badge", 20)
+        width, height = text_size(badge_text, font)
+        x1, y1 = SAFE_MARGIN_X, SAFE_MARGIN_Y
+        x2, y2 = x1 + width + 30, y1 + 40
+        accent = tuple(theme['accent'][:3]) + (255,)
+        draw.rounded_rectangle([x1, y1, x2, y2], radius=10, fill=accent)
+        draw.text((x1 + 15, y1 + (40 - height) // 2 - 2), badge_text,
+                  font=font, fill=readable_on(theme['accent']))
+
+    def _draw_title(self, draw, theme, title: str) -> int:
+        """Draw the title, auto-shrinking to fit two lines. Returns the y below it."""
+        font, lines, line_height = fit_text(
+            title, self._bold_font, TEXT_W, 120, sizes=[44, 38, 34, 30]
+        )
+        y = SAFE_MARGIN_Y + 58
+        return draw_lines(draw, (TEXT_X, y), lines, font, theme['text'], line_height)
+
+    def _draw_definition(self, draw, theme, definition: str, source: str, y: int) -> int:
+        """Quoted definition card — the element the slides were missing.
+
+        A NEET student needs the exact NCERT wording on screen, not a paraphrase
+        in the narration only. The card is visually distinct from the bullets so
+        it reads as "this is the definition to memorise".
+        """
+        if not definition:
+            return y
+
+        font, lines, line_height = fit_text(
+            definition, self._body_font, TEXT_W - 56, 190, sizes=[24, 22, 20, 18]
+        )
+        source_font = self.get_font("source", 15)
+        body_h = len(lines) * line_height
+        card_h = body_h + 34 + (22 if source else 0)
+
+        draw.rounded_rectangle([TEXT_X, y, TEXT_X + TEXT_W, y + card_h],
+                               radius=12, fill=lighten(theme['bg'], 0.14))
+        # Accent spine
+        draw.rounded_rectangle([TEXT_X, y, TEXT_X + 6, y + card_h], radius=3,
+                               fill=theme['accent'])
+        # Opening quote mark
+        quote_font = self._bold_font(46)
+        draw.text((TEXT_X + 18, y - 4), "“", font=quote_font, fill=theme['accent'])
+
+        text_y = y + 16
+        text_y = draw_lines(draw, (TEXT_X + 44, text_y), lines, font,
+                            theme['text'], line_height)
+
+        if source:
+            draw.text((TEXT_X + 44, text_y + 4), f"— {source}",
+                      font=source_font, fill=theme['subtext'])
+
+        return y + card_h + 20
+
+    def _draw_bullets(self, draw, theme, bullets, y: int) -> int:
+        if not bullets:
+            return y
+        font = self.get_font("body", 24)
+        for bullet in list(bullets)[:3]:
+            if y > CONTENT_BOTTOM - 30:
+                break
+            lines = wrap_by_width(str(bullet), font, TEXT_W - 34)[:3]
+            draw.ellipse([TEXT_X + 3, y + 9, TEXT_X + 11, y + 17], fill=theme['accent'])
+            for line in lines:
+                draw.text((TEXT_X + 28, y), line, font=font, fill=theme['text'])
+                y += font.size + 8
+            y += 14
+        return y
+
+    def _draw_formula(self, img, theme, formula_latex: str, box) -> None:
+        x0, y0, x1, y1 = box
+        try:
+            formula_img = render_latex_to_image(formula_latex, font_size=28, color='white')
+        except Exception:
+            draw = ImageDraw.Draw(img)
+            draw.text((x0, (y0 + y1) // 2), formula_latex,
+                      font=self.get_font("body", 24), fill=theme['accent'])
+            return
+        # Matplotlib sizes the output from the expression, so a long formula
+        # easily exceeds the panel and used to bleed off-slide.
+        formula_img = self._fit_within(formula_img, x1 - x0, y1 - y0)
+        fx = x0 + (x1 - x0 - formula_img.width) // 2
+        fy = y0 + (y1 - y0 - formula_img.height) // 2
+        img.paste(formula_img, (fx, fy), formula_img)
+
+    # -- main entry point --------------------------------------------------
+
     def render_scene_slide(self, scene: dict, output_path: str, transparent_bg: bool = False) -> str:
-        """
-        Renders a full slide image based on the scene parameters and saves to output_path.
-        Returns the output file path.
-        """
+        """Render one scene to a PNG and return the path."""
         part_name = scene.get('part', 'CONCEPT').upper()
         theme = self.resolve_theme(scene)
 
-        # Create base image (RGBA to support transparency when compositing with background videos)
         bg_alpha = 0 if transparent_bg else 255
-        img = Image.new('RGBA', (SLIDE_W, SLIDE_H), (theme['bg'][0], theme['bg'][1], theme['bg'][2], bg_alpha))
+        img = Image.new('RGBA', (SLIDE_W, SLIDE_H),
+                        tuple(theme['bg'][:3]) + (bg_alpha,))
         draw = ImageDraw.Draw(img)
 
-        # Draw background decoration if not transparent
-        if not transparent_bg:
-            draw.polygon([(800, 0), (SLIDE_W, 0), (SLIDE_W, SLIDE_H), (1050, SLIDE_H)], fill=tuple(int(c * 0.9) for c in theme['bg']))
-        
-        # 1. Accent bar on left
-        # Accent bar should be fully opaque (255 alpha)
-        accent_color = (theme['accent'][0], theme['accent'][1], theme['accent'][2], 255)
-        draw.rectangle([SAFE_MARGIN_X - 36, 0, SAFE_MARGIN_X - 20, SLIDE_H], fill=accent_color)
-        
-        # 2. Part label (top-left badge)
-        badge_text = part_name.replace('_', ' ')
-        badge_font = self.get_font("badge", 20)
-        # Determine text size dynamically
-        try:
-            bbox = draw.textbbox((0, 0), badge_text, font=badge_font)
-            text_w = bbox[2] - bbox[0]
-            text_h = bbox[3] - bbox[1]
-        except AttributeError:
-            text_w, text_h = 100, 20  # estimate
-            
-        badge_x1, badge_y1 = SAFE_MARGIN_X, SAFE_MARGIN_Y
-        badge_x2, badge_y2 = badge_x1 + text_w + 30, badge_y1 + 45
-        draw.rounded_rectangle([badge_x1, badge_y1, badge_x2, badge_y2], radius=10, fill=accent_color)
-        
-        # Draw badge text (color contrasts with badge background)
-        badge_text_color = (0, 0, 0, 255) if part_name in ['EXAMPLE', 'NEET_ALERT'] else (theme['bg'][0], theme['bg'][1], theme['bg'][2], 255)
-        draw.text((badge_x1 + 15, badge_y1 + 10), badge_text, font=badge_font, fill=badge_text_color)
-        
-        # 3. Main title (top left below badge)
-        title_text = scene.get('slide_title', 'NCERT Concepts')
-        title_font = self.get_font("title", 46)
-        
-        # Wrap title if too long
-        title_wrapper = textwrap.TextWrapper(width=30)
-        title_lines = title_wrapper.wrap(title_text)
-        
-        title_y = SAFE_MARGIN_Y + 70
-        for line in title_lines:
-            draw.text((SAFE_MARGIN_X, title_y), line, font=title_font, fill=theme['text'])
-            title_y += 55
-            
-        # 4. Bullet points (left side)
-        bullets = scene.get('slide_bullets', [])
-        body_font = self.get_font("body", 26)
-        bullet_y = max(title_y + 30, 230)
-        
-        for bullet in bullets[:3]:  # max 3 bullet points
-            # Wrap bullet point
-            bullet_wrapper = textwrap.TextWrapper(width=45)
-            bullet_lines = bullet_wrapper.wrap(bullet)
-            
-            # Draw bullet symbol
-            draw.text((SAFE_MARGIN_X, bullet_y), "•", font=body_font, fill=theme['accent'])
-            
-            for line_idx, line in enumerate(bullet_lines):
-                draw.text((SAFE_MARGIN_X + 30, bullet_y + (line_idx * 32)), line, font=body_font, fill=theme['text'])
-            
-            bullet_y += len(bullet_lines) * 32 + 25
-            
-        # 5. Visual section on the right side, clamped to the safe area
-        visual_type = scene.get('visual_type', 'none').lower()
-        formula_latex = scene.get('formula_latex')
-        
-        if visual_type == 'formula' and formula_latex:
-            # Render and paste LaTeX image
-            try:
-                formula_img = render_latex_to_image(formula_latex, font_size=28, color='white')
-                # Matplotlib sizes the output from the expression, so a long
-                # formula easily exceeds the panel and used to bleed off-slide.
-                # Scale it down to fit, preserving aspect ratio.
-                formula_img = self._fit_within(
-                    formula_img, VISUAL_X1 - VISUAL_X0, VISUAL_Y1 - VISUAL_Y0
-                )
-                # Centre the formula inside the visual panel.
-                fx = VISUAL_X0 + (VISUAL_X1 - VISUAL_X0 - formula_img.width) // 2
-                fy = VISUAL_Y0 + (VISUAL_Y1 - VISUAL_Y0 - formula_img.height) // 2
-                img.paste(formula_img, (fx, fy), formula_img)
-            except Exception as e:
-                # Fallback to plain text formula
-                draw.text((750, 300), formula_latex, font=body_font, fill=theme['accent'])
-                
-        elif visual_type == 'diagram':
-            # Draw a beautiful mock diagram (e.g. cells or atoms)
-            self._draw_mock_diagram(draw, theme)
-            
-        elif visual_type == 'process':
-            # Draw a process flowchart
-            self._draw_process_flowchart(draw, theme)
-            
-        elif visual_type == 'comparison':
-            # Draw a comparison double box
-            self._draw_comparison(draw, theme)
-            
-        elif visual_type == 'alert':
-            # Draw a prominent alert shield
-            self._draw_alert_graphic(draw, theme)
-            
-        # Save image
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        self._draw_background(img, draw, theme, transparent_bg)
+
+        # Accent bar, inside the safe area so zoom cannot crop it away.
+        draw.rectangle([SAFE_MARGIN_X - 36, 0, SAFE_MARGIN_X - 20, SLIDE_H],
+                       fill=tuple(theme['accent'][:3]) + (255,))
+
+        self._draw_badge(draw, theme, part_name)
+
+        # Flow strip: where this scene sits in the five-part lesson.
+        if scene.get('show_flow', True) and part_name in visuals.FLOW_PARTS:
+            visuals.draw_flow_strip(
+                draw, (VISUAL_X0, SAFE_MARGIN_Y, VISUAL_X1, SAFE_MARGIN_Y + 40),
+                theme, part_name, self._body_font,
+            )
+
+        y = self._draw_title(draw, theme, scene.get('slide_title', 'NCERT Concepts'))
+        y += 14
+        y = self._draw_definition(draw, theme, str(scene.get('definition', '')).strip(),
+                                  str(scene.get('definition_source', '')).strip(), y)
+        self._draw_bullets(draw, theme, scene.get('slide_bullets', []), y)
+
+        # -- right-hand visual panel
+        visual_box = (VISUAL_X0, VISUAL_Y0, VISUAL_X1, VISUAL_Y1)
+        visual_type = str(scene.get('visual_type', 'none')).lower()
+        visual_data = scene.get('visual_data') or {}
+
+        # A supplied image always wins: a real NCERT figure beats a drawing.
+        rendered_image = visuals.paste_image_panel(
+            img, visual_box, theme,
+            scene.get('image_path'), scene.get('image_caption'), self._body_font,
+        )
+
+        if not rendered_image:
+            if visual_type == 'formula' and scene.get('formula_latex'):
+                self._draw_formula(img, theme, scene['formula_latex'], visual_box)
+            elif visual_type == 'process':
+                visuals.draw_process_flow(draw, visual_box, theme, visual_data, self._body_font)
+            elif visual_type == 'comparison':
+                visuals.draw_comparison(draw, visual_box, theme, visual_data, self._body_font)
+            elif visual_type == 'diagram':
+                visuals.draw_labelled_diagram(draw, visual_box, theme, visual_data, self._body_font)
+            elif visual_type == 'alert':
+                visuals.draw_alert(draw, visual_box, theme, visual_data, self._body_font)
+
+        os.makedirs(os.path.dirname(output_path) or '.', exist_ok=True)
         img.save(output_path, "PNG")
         return output_path
 
@@ -218,71 +309,3 @@ class SlideRenderer:
         scale = min(max_w / image.width, max_h / image.height)
         new_size = (max(1, int(image.width * scale)), max(1, int(image.height * scale)))
         return image.resize(new_size, Image.LANCZOS)
-
-    def _draw_mock_diagram(self, draw: ImageDraw.Draw, theme: dict):
-        """Draws a stylized biological cell/atomic diagram."""
-        center_x, center_y = 980, 360
-        # Draw outer circle (cell membrane)
-        draw.ellipse([center_x - 140, center_y - 140, center_x + 140, center_y + 140], 
-                     outline=theme['accent'], width=4)
-        # Draw inner circle (nucleus)
-        draw.ellipse([center_x - 50, center_y - 50, center_x + 50, center_y + 50], 
-                     fill=theme['accent'], outline=(255, 255, 255), width=2)
-        # Draw some smaller cytoplasm dots
-        draw.ellipse([center_x - 80, center_y - 70, center_x - 72, center_y - 62], fill=(255, 255, 255))
-        draw.ellipse([center_x + 70, center_y - 80, center_x + 78, center_y - 72], fill=(255, 255, 255))
-        draw.ellipse([center_x - 60, center_y + 80, center_x - 52, center_y + 88], fill=(255, 255, 255))
-        
-        caption_font = self.get_font("caption", 18)
-        draw.text((center_x - 60, center_y + 160), "Diagram Representation", font=caption_font, fill=theme['subtext'])
-
-    def _draw_process_flowchart(self, draw: ImageDraw.Draw, theme: dict):
-        """Draws three sequential horizontal boxes connected by arrows."""
-        y_center = 360
-        box_w, box_h = 110, 80
-        x_coords = [760, 930, 1100]
-        caption_font = self.get_font("caption", 18)
-        
-        for idx, x in enumerate(x_coords):
-            # Draw box
-            draw.rounded_rectangle([x, y_center - box_h//2, x + box_w, y_center + box_h//2], radius=6, 
-                                   fill=None, outline=theme['accent'], width=3)
-            # Label
-            draw.text((x + 25, y_center - 10), f"Step {idx+1}", font=caption_font, fill=theme['text'])
-            
-            # Arrow to next
-            if idx < 2:
-                arrow_x = x + box_w + 10
-                draw.line([(arrow_x, y_center), (arrow_x + 40, y_center)], fill=theme['accent'], width=3)
-                draw.polygon([(arrow_x + 40, y_center), (arrow_x + 30, y_center - 8), (arrow_x + 30, y_center + 8)], fill=theme['accent'])
-
-    def _draw_comparison(self, draw: ImageDraw.Draw, theme: dict):
-        """Draws a side-by-side comparison block."""
-        y_center = 360
-        box_w, box_h = 180, 220
-        caption_font = self.get_font("caption", 18)
-        
-        # Left block
-        draw.rounded_rectangle([750, y_center - box_h//2, 930, y_center + box_h//2], radius=8, 
-                               fill=None, outline=theme['accent'], width=3)
-        draw.text((790, y_center - 90), "Condition A", font=caption_font, fill=theme['accent'])
-        draw.line([(770, y_center - 40), (910, y_center - 40)], fill=theme['subtext'], width=1)
-        
-        # Right block
-        draw.rounded_rectangle([970, y_center - box_h//2, 1150, y_center + box_h//2], radius=8, 
-                               fill=None, outline=(255, 255, 255), width=3)
-        draw.text((1010, y_center - 90), "Condition B", font=caption_font, fill=(255, 255, 255))
-        draw.line([(990, y_center - 40), (1130, y_center - 40)], fill=theme['subtext'], width=1)
-
-    def _draw_alert_graphic(self, draw: ImageDraw.Draw, theme: dict):
-        """Draws a warning triangle icon on the right side."""
-        cx, cy = 960, 360
-        # Draw dynamic glowing hazard warning triangle
-        draw.polygon([(cx, cy - 100), (cx - 110, cy + 90), (cx + 110, cy + 90)], 
-                     fill=None, outline=theme['accent'], width=5)
-        # Exclamation point inside
-        draw.rectangle([cx - 5, cy - 50, cx + 5, cy + 30], fill=theme['accent'])
-        draw.ellipse([cx - 6, cy + 50, cx + 6, cy + 62], fill=theme['accent'])
-        
-        caption_font = self.get_font("caption", 18)
-        draw.text((cx - 75, cy + 120), "CRITICAL NEET TRAP", font=caption_font, fill=theme['accent'])
