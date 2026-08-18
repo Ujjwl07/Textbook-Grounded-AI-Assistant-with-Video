@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import List
 
 from dotenv import load_dotenv
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     mongodb_uri: str = "mongodb://localhost:27017"
     mongodb_db_name: str = "textbook_assistant"
 
-    jwt_secret_key: str = "change-this-secret-before-production"
+    jwt_secret_key: str = ""
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 60 * 24
 
@@ -33,7 +33,6 @@ class Settings(BaseSettings):
     video_output_dir: Path = BACKEND_DIR / "outputs" / "videos"
     audio_output_dir: Path = BACKEND_DIR / "outputs" / "audio"
     slide_output_dir: Path = BACKEND_DIR / "outputs" / "slides"
-    cache_ttl_seconds: int = 60 * 60 * 24 * 30
     generation_mock_delay_seconds: float = 0.15
 
     # --- Video assembly (Purnika) ---
@@ -76,6 +75,12 @@ class Settings(BaseSettings):
     @property
     def video_size(self) -> tuple:
         return (self.video_width, self.video_height)
+
+    @model_validator(mode="after")
+    def validate_security_settings(self):
+        if len(self.jwt_secret_key) < 32:
+            raise ValueError("JWT_SECRET_KEY must be set to a strong random value of at least 32 characters")
+        return self
 
 
 @lru_cache
