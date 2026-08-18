@@ -1,0 +1,462 @@
+{
+  "generated_at_utc": "2026-07-27T06:44:16Z",
+  "prompts": {
+    "v1": {
+      "biology": {
+        "edit": {
+          "added_lines": 0,
+          "author": "system",
+          "changed_lines": 0,
+          "diff": [],
+          "from_version": null,
+          "notes": "Discovered existing prompt file.",
+          "prompt_name": "biology",
+          "removed_lines": 0,
+          "timestamp_utc": "2026-07-27T06:44:16Z",
+          "to_version": "v1"
+        },
+        "metadata": {
+          "author": "system",
+          "content_hash": "ccecb7e41bb5fa2ecbe14b8be0f36f79ca5b391eeb0882ddf0784e3835e9c6fd",
+          "notes": "Discovered existing prompt file.",
+          "operation": "discover",
+          "performance": {},
+          "prompt_name": "biology",
+          "source_version": null,
+          "timestamp_utc": "2026-07-27T06:44:16Z",
+          "version": "v1"
+        }
+      },
+      "chemistry": {
+        "edit": {
+          "added_lines": 0,
+          "author": "system",
+          "changed_lines": 0,
+          "diff": [],
+          "from_version": null,
+          "notes": "Discovered existing prompt file.",
+          "prompt_name": "chemistry",
+          "removed_lines": 0,
+          "timestamp_utc": "2026-07-27T06:44:16Z",
+          "to_version": "v1"
+        },
+        "metadata": {
+          "author": "system",
+          "content_hash": "e2f4af25677090dfd98080fb3a48648ce7f984bca1b16c92ed5d9549315d306a",
+          "notes": "Discovered existing prompt file.",
+          "operation": "discover",
+          "performance": {},
+          "prompt_name": "chemistry",
+          "source_version": null,
+          "timestamp_utc": "2026-07-27T06:44:16Z",
+          "version": "v1"
+        }
+      },
+      "master": {
+        "edit": {
+          "added_lines": 0,
+          "author": "system",
+          "changed_lines": 0,
+          "diff": [],
+          "from_version": null,
+          "notes": "Discovered existing prompt file.",
+          "prompt_name": "master",
+          "removed_lines": 0,
+          "timestamp_utc": "2026-07-27T06:44:16Z",
+          "to_version": "v1"
+        },
+        "metadata": {
+          "author": "system",
+          "content_hash": "509995a4e53037d78ab4c41569ea92e1bf5542f09d277c67447f3311176e26aa",
+          "notes": "Discovered existing prompt file.",
+          "operation": "discover",
+          "performance": {},
+          "prompt_name": "master",
+          "source_version": null,
+          "timestamp_utc": "2026-07-27T06:44:16Z",
+          "version": "v1"
+        }
+      },
+      "physics": {
+        "edit": {
+          "added_lines": 0,
+          "author": "system",
+          "changed_lines": 0,
+          "diff": [],
+          "from_version": null,
+          "notes": "Discovered existing prompt file.",
+          "prompt_name": "physics",
+          "removed_lines": 0,
+          "timestamp_utc": "2026-07-27T06:44:16Z",
+          "to_version": "v1"
+        },
+        "metadata": {
+          "author": "system",
+          "content_hash": "93362f5a14b46a16abc82651fea45a4da271c0c7fa2d9e8d2def421417b1cd2a",
+          "notes": "Discovered existing prompt file.",
+          "operation": "discover",
+          "performance": {},
+          "prompt_name": "physics",
+          "source_version": null,
+          "timestamp_utc": "2026-07-27T06:44:16Z",
+          "version": "v1"
+        }
+      },
+      "quiz": {
+        "edit": {
+          "added_lines": 0,
+          "author": "system",
+          "changed_lines": 0,
+          "diff": [],
+          "from_version": null,
+          "notes": "Discovered existing prompt file.",
+          "prompt_name": "quiz",
+          "removed_lines": 0,
+          "timestamp_utc": "2026-07-27T06:44:16Z",
+          "to_version": "v1"
+        },
+        "metadata": {
+          "author": "system",
+          "content_hash": "403250ca063356fd12dffd056b965343715dd90ab4ce28ac7e8e12202bba79bd",
+          "notes": "Discovered existing prompt file.",
+          "operation": "discover",
+          "performance": {},
+          "prompt_name": "quiz",
+          "source_version": null,
+          "timestamp_utc": "2026-07-27T06:44:16Z",
+          "version": "v1"
+        }
+      },
+      "scene": {
+        "edit": {
+          "added_lines": 0,
+          "author": "system",
+          "changed_lines": 0,
+          "diff": [],
+          "from_version": null,
+          "notes": "Discovered existing prompt file.",
+          "prompt_name": "scene",
+          "removed_lines": 0,
+          "timestamp_utc": "2026-07-27T06:44:16Z",
+          "to_version": "v1"
+        },
+        "metadata": {
+          "author": "system",
+          "content_hash": "742e9cf358652fcbee1cf136cde962c5ff0e4ed387ddde689ed55dabce30aa9c",
+          "notes": "Discovered existing prompt file.",
+          "operation": "discover",
+          "performance": {},
+          "prompt_name": "scene",
+          "source_version": null,
+          "timestamp_utc": "2026-07-27T06:44:16Z",
+          "version": "v1"
+        }
+      }
+    },
+    "v2": {
+      "biology": {
+        "edit": {
+          "added_lines": 0,
+          "author": "system",
+          "changed_lines": 0,
+          "diff": [],
+          "from_version": null,
+          "notes": "Discovered existing prompt file.",
+          "prompt_name": "biology",
+          "removed_lines": 0,
+          "timestamp_utc": "2026-07-27T06:44:16Z",
+          "to_version": "v2"
+        },
+        "metadata": {
+          "author": "system",
+          "content_hash": "eefa1722d2d027fe1ed2a20ad6d88c92038aaa2d951a93ad2fd5f4c14c89b4b1",
+          "notes": "Discovered existing prompt file.",
+          "operation": "discover",
+          "performance": {},
+          "prompt_name": "biology",
+          "source_version": null,
+          "timestamp_utc": "2026-07-27T06:44:16Z",
+          "version": "v2"
+        }
+      },
+      "chemistry": {
+        "edit": {
+          "added_lines": 0,
+          "author": "system",
+          "changed_lines": 0,
+          "diff": [],
+          "from_version": null,
+          "notes": "Discovered existing prompt file.",
+          "prompt_name": "chemistry",
+          "removed_lines": 0,
+          "timestamp_utc": "2026-07-27T06:44:16Z",
+          "to_version": "v2"
+        },
+        "metadata": {
+          "author": "system",
+          "content_hash": "682d29fe2c738ba2f4d8f8f9e62688da91583e7234d333eefe64adc5d78dae15",
+          "notes": "Discovered existing prompt file.",
+          "operation": "discover",
+          "performance": {},
+          "prompt_name": "chemistry",
+          "source_version": null,
+          "timestamp_utc": "2026-07-27T06:44:16Z",
+          "version": "v2"
+        }
+      },
+      "master": {
+        "edit": {
+          "added_lines": 0,
+          "author": "system",
+          "changed_lines": 0,
+          "diff": [],
+          "from_version": null,
+          "notes": "Discovered existing prompt file.",
+          "prompt_name": "master",
+          "removed_lines": 0,
+          "timestamp_utc": "2026-07-27T06:44:16Z",
+          "to_version": "v2"
+        },
+        "metadata": {
+          "author": "system",
+          "content_hash": "11ffe0bf4a5272ee25df8521d4b67002f144514fdbe6c005950938870ad85ab0",
+          "notes": "Discovered existing prompt file.",
+          "operation": "discover",
+          "performance": {},
+          "prompt_name": "master",
+          "source_version": null,
+          "timestamp_utc": "2026-07-27T06:44:16Z",
+          "version": "v2"
+        }
+      },
+      "physics": {
+        "edit": {
+          "added_lines": 0,
+          "author": "system",
+          "changed_lines": 0,
+          "diff": [],
+          "from_version": null,
+          "notes": "Discovered existing prompt file.",
+          "prompt_name": "physics",
+          "removed_lines": 0,
+          "timestamp_utc": "2026-07-27T06:44:16Z",
+          "to_version": "v2"
+        },
+        "metadata": {
+          "author": "system",
+          "content_hash": "dda573e3cbd2895b14fab3a4f066abf626060841c72277beb103c592fed2491a",
+          "notes": "Discovered existing prompt file.",
+          "operation": "discover",
+          "performance": {},
+          "prompt_name": "physics",
+          "source_version": null,
+          "timestamp_utc": "2026-07-27T06:44:16Z",
+          "version": "v2"
+        }
+      },
+      "quiz": {
+        "edit": {
+          "added_lines": 0,
+          "author": "system",
+          "changed_lines": 0,
+          "diff": [],
+          "from_version": null,
+          "notes": "Discovered existing prompt file.",
+          "prompt_name": "quiz",
+          "removed_lines": 0,
+          "timestamp_utc": "2026-07-27T06:44:16Z",
+          "to_version": "v2"
+        },
+        "metadata": {
+          "author": "system",
+          "content_hash": "ea30910ddcff9d18589e7343489f4fa23d252c2fd886f2d96af67c73f76f4bbe",
+          "notes": "Discovered existing prompt file.",
+          "operation": "discover",
+          "performance": {},
+          "prompt_name": "quiz",
+          "source_version": null,
+          "timestamp_utc": "2026-07-27T06:44:16Z",
+          "version": "v2"
+        }
+      },
+      "scene": {
+        "edit": {
+          "added_lines": 0,
+          "author": "system",
+          "changed_lines": 0,
+          "diff": [],
+          "from_version": null,
+          "notes": "Discovered existing prompt file.",
+          "prompt_name": "scene",
+          "removed_lines": 0,
+          "timestamp_utc": "2026-07-27T06:44:16Z",
+          "to_version": "v2"
+        },
+        "metadata": {
+          "author": "system",
+          "content_hash": "e56ea10123c3cfcbc312f831a8b01eda013ae0924e7fa3cc6aa7310b37ca9c01",
+          "notes": "Discovered existing prompt file.",
+          "operation": "discover",
+          "performance": {},
+          "prompt_name": "scene",
+          "source_version": null,
+          "timestamp_utc": "2026-07-27T06:44:16Z",
+          "version": "v2"
+        }
+      }
+    },
+    "v3": {
+      "biology": {
+        "edit": {
+          "added_lines": 0,
+          "author": "system",
+          "changed_lines": 0,
+          "diff": [],
+          "from_version": null,
+          "notes": "Discovered existing prompt file.",
+          "prompt_name": "biology",
+          "removed_lines": 0,
+          "timestamp_utc": "2026-07-27T06:44:16Z",
+          "to_version": "v3"
+        },
+        "metadata": {
+          "author": "system",
+          "content_hash": "8796bf418d23c1b80a3ab4b572253394537dd025678240d9815d458c50bde58d",
+          "notes": "Discovered existing prompt file.",
+          "operation": "discover",
+          "performance": {},
+          "prompt_name": "biology",
+          "source_version": null,
+          "timestamp_utc": "2026-07-27T06:44:16Z",
+          "version": "v3"
+        }
+      },
+      "chemistry": {
+        "edit": {
+          "added_lines": 0,
+          "author": "system",
+          "changed_lines": 0,
+          "diff": [],
+          "from_version": null,
+          "notes": "Discovered existing prompt file.",
+          "prompt_name": "chemistry",
+          "removed_lines": 0,
+          "timestamp_utc": "2026-07-27T06:44:16Z",
+          "to_version": "v3"
+        },
+        "metadata": {
+          "author": "system",
+          "content_hash": "3b5d1784386e2fe0bd46a741f59f77afd149d196c7186116aa7269e961b075bc",
+          "notes": "Discovered existing prompt file.",
+          "operation": "discover",
+          "performance": {},
+          "prompt_name": "chemistry",
+          "source_version": null,
+          "timestamp_utc": "2026-07-27T06:44:16Z",
+          "version": "v3"
+        }
+      },
+      "master": {
+        "edit": {
+          "added_lines": 0,
+          "author": "system",
+          "changed_lines": 0,
+          "diff": [],
+          "from_version": null,
+          "notes": "Discovered existing prompt file.",
+          "prompt_name": "master",
+          "removed_lines": 0,
+          "timestamp_utc": "2026-07-27T06:44:16Z",
+          "to_version": "v3"
+        },
+        "metadata": {
+          "author": "system",
+          "content_hash": "139ebff47d2aa0f2e4392d0fc2066eb89bc017bacbb0279931cf72681138cd0b",
+          "notes": "Discovered existing prompt file.",
+          "operation": "discover",
+          "performance": {},
+          "prompt_name": "master",
+          "source_version": null,
+          "timestamp_utc": "2026-07-27T06:44:16Z",
+          "version": "v3"
+        }
+      },
+      "physics": {
+        "edit": {
+          "added_lines": 0,
+          "author": "system",
+          "changed_lines": 0,
+          "diff": [],
+          "from_version": null,
+          "notes": "Discovered existing prompt file.",
+          "prompt_name": "physics",
+          "removed_lines": 0,
+          "timestamp_utc": "2026-07-27T06:44:16Z",
+          "to_version": "v3"
+        },
+        "metadata": {
+          "author": "system",
+          "content_hash": "f25fb5113a1f44e74fa06c5b1ac051d533ed4ad554265af7f9e39b8593624127",
+          "notes": "Discovered existing prompt file.",
+          "operation": "discover",
+          "performance": {},
+          "prompt_name": "physics",
+          "source_version": null,
+          "timestamp_utc": "2026-07-27T06:44:16Z",
+          "version": "v3"
+        }
+      },
+      "quiz": {
+        "edit": {
+          "added_lines": 0,
+          "author": "system",
+          "changed_lines": 0,
+          "diff": [],
+          "from_version": null,
+          "notes": "Discovered existing prompt file.",
+          "prompt_name": "quiz",
+          "removed_lines": 0,
+          "timestamp_utc": "2026-07-27T06:44:16Z",
+          "to_version": "v3"
+        },
+        "metadata": {
+          "author": "system",
+          "content_hash": "c957a5144dae07099a18055be552146f3c2f300c17fba8d3926902380e565caf",
+          "notes": "Discovered existing prompt file.",
+          "operation": "discover",
+          "performance": {},
+          "prompt_name": "quiz",
+          "source_version": null,
+          "timestamp_utc": "2026-07-27T06:44:16Z",
+          "version": "v3"
+        }
+      },
+      "scene": {
+        "edit": {
+          "added_lines": 0,
+          "author": "system",
+          "changed_lines": 0,
+          "diff": [],
+          "from_version": null,
+          "notes": "Discovered existing prompt file.",
+          "prompt_name": "scene",
+          "removed_lines": 0,
+          "timestamp_utc": "2026-07-27T06:44:16Z",
+          "to_version": "v3"
+        },
+        "metadata": {
+          "author": "system",
+          "content_hash": "f7db92a00257d18657ea9ba12963360153733612ea386ff9e8743ad902dcdc3d",
+          "notes": "Discovered existing prompt file.",
+          "operation": "discover",
+          "performance": {},
+          "prompt_name": "scene",
+          "source_version": null,
+          "timestamp_utc": "2026-07-27T06:44:16Z",
+          "version": "v3"
+        }
+      }
+    }
+  },
+  "schema_version": 1
+}

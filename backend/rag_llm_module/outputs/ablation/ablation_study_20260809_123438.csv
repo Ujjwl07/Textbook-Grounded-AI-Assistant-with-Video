@@ -1,0 +1,21 @@
+topic,subject,mode,structure_score,word_count,word_count_valid,context_grounding,bleu,rouge_l,cosine,hallucination_rate,overall
+Newton's First Law & Inertia,Physics,WITHOUT_PPA,1.0,239,0.0,0.65,0.1314,0.2441,0.7402,0.35,0.5611
+Newton's Second Law & F=ma,Physics,WITHOUT_PPA,1.0,239,0.0,0.65,0.0463,0.1424,0.5641,0.35,0.516
+Work-Energy Theorem,Physics,WITHOUT_PPA,1.0,239,0.0,0.65,0.0306,0.0833,0.2626,0.35,0.4633
+Prokaryotic vs Eukaryotic Cells,Biology,WITHOUT_PPA,1.0,239,0.0,0.65,0.0,0.0412,0.151,0.35,0.4393
+Light Reactions & Calvin Cycle,Biology,WITHOUT_PPA,1.0,239,0.0,0.65,0.0,0.0426,0.1513,0.35,0.4395
+Mendel's Laws of Inheritance,Biology,WITHOUT_PPA,1.0,239,0.0,0.65,0.0174,0.0544,0.1634,0.35,0.4442
+Transcription & Translation,Biology,WITHOUT_PPA,1.0,239,0.0,0.65,0.0129,0.0548,0.1833,0.35,0.4468
+Gibbs Free Energy & Spontaneity,Chemistry,WITHOUT_PPA,1.0,239,0.0,0.65,0.0283,0.0664,0.1757,0.35,0.4483
+Le Chatelier's Principle,Chemistry,WITHOUT_PPA,1.0,239,0.0,0.65,0.0,0.0481,0.1942,0.35,0.4464
+Rate Laws & Arrhenius Equation,Chemistry,WITHOUT_PPA,1.0,239,0.0,0.65,0.0178,0.0779,0.3331,0.35,0.472
+Newton's First Law & Inertia,Physics,WITH_PPA,1.0,239,0.0,0.65,0.1314,0.2441,0.7402,0.35,0.5611
+Newton's Second Law & F=ma,Physics,WITH_PPA,1.0,239,0.0,0.65,0.0463,0.1424,0.5641,0.35,0.516
+Work-Energy Theorem,Physics,WITH_PPA,1.0,239,0.0,0.65,0.0306,0.0833,0.2626,0.35,0.4633
+Prokaryotic vs Eukaryotic Cells,Biology,WITH_PPA,1.0,239,0.0,0.65,0.0,0.0412,0.151,0.35,0.4393
+Light Reactions & Calvin Cycle,Biology,WITH_PPA,1.0,239,0.0,0.65,0.0,0.0426,0.1513,0.35,0.4395
+Mendel's Laws of Inheritance,Biology,WITH_PPA,1.0,239,0.0,0.65,0.0174,0.0544,0.1634,0.35,0.4442
+Transcription & Translation,Biology,WITH_PPA,1.0,239,0.0,0.65,0.0129,0.0548,0.1833,0.35,0.4468
+Gibbs Free Energy & Spontaneity,Chemistry,WITH_PPA,1.0,239,0.0,0.65,0.0283,0.0664,0.1757,0.35,0.4483
+Le Chatelier's Principle,Chemistry,WITH_PPA,1.0,239,0.0,0.65,0.0,0.0481,0.1942,0.35,0.4464
+Rate Laws & Arrhenius Equation,Chemistry,WITH_PPA,1.0,239,0.0,0.65,0.0178,0.0779,0.3331,0.35,0.472

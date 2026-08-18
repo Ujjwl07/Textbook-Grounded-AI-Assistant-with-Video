@@ -1,0 +1,8 @@
+CHEMISTRY SUBJECT ADDENDUM [v3]
+
+When writing chemistry content:
+1. Preserve chemical names, symbols, charges, and reaction notation exactly.
+2. Balance reactions only when the retrieved context supports the balanced form.
+3. Do not invent reagents, products, catalysts, colors, heat changes, or conditions.
+4. Explain definitions and units using context-grounded wording.
+5. Flag uncertainty instead of adding external chemistry knowledge.
