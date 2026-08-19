@@ -173,6 +173,15 @@ def build_scenes(
     # extraction; the slides simply fall back to drawn panels until then.
     figures = _collect_figures(overview, chapter)
 
+    # Drawn concept diagram, used on scenes with no real figure. Selected from
+    # the topic; app.video.diagrams returns nothing when no diagram fits, and
+    # the slide then falls back to its text panel.
+    diagram_fields = {
+        "diagram_topic": topic,
+        "diagram_chapter": chapter,
+        "diagram_subject": subject_title,
+    }
+
     # The caution search runs over the same chapter, so it can return the
     # definition itself or a sentence already shown. Exclude anything used.
     shown = {definition_text}
@@ -218,6 +227,7 @@ def build_scenes(
             ),
             "visual_type": "process" if steps else "alert",
             "visual_data": {"steps": steps} if steps else {"caption": topic},
+            **({} if steps else diagram_fields),
             "animation_type": "slide_left",
             "duration_hint_seconds": 18,
         },
@@ -235,6 +245,7 @@ def build_scenes(
             "visual_data": {"title": chapter.title(), "labels": []},
             "image_path": figures[0].path if figures else None,
             "image_caption": figures[0].caption if figures else None,
+            **({} if (formula_candidates or figures) else diagram_fields),
             "animation_type": "zoom",
             "duration_hint_seconds": 16,
         },
@@ -253,6 +264,7 @@ def build_scenes(
             "visual_data": {"caption": chapter.title()},
             "image_path": figures[1].path if len(figures) > 1 else None,
             "image_caption": figures[1].caption if len(figures) > 1 else None,
+            **({} if len(figures) > 1 else diagram_fields),
             "animation_type": "slide_left",
             "duration_hint_seconds": 14,
         },

@@ -241,6 +241,42 @@ class SlideRenderer:
         fy = y0 + (y1 - y0 - formula_img.height) // 2
         img.paste(formula_img, (fx, fy), formula_img)
 
+    def _draw_concept_diagram(self, img, theme, scene: dict, box) -> bool:
+        """Draw a topic-matched concept diagram into the visual panel.
+
+        Returns False when no diagram fits the topic, so the caller falls back
+        to the text panels — an unrelated diagram is worse than none.
+        """
+        from app.video import diagrams
+
+        x0, y0, x1, y1 = box
+        caption = str(scene.get('diagram_caption', '')).strip()
+        caption_h = 34 if caption else 0
+
+        drawing = diagrams.render_for_topic(
+            scene['diagram_topic'],
+            theme,
+            chapter=scene.get('diagram_chapter', ''),
+            subject=scene.get('diagram_subject', ''),
+            size=(x1 - x0, (y1 - y0) - caption_h),
+            labels=scene.get('diagram_labels'),
+        )
+        if drawing is None:
+            return False
+
+        # Scale to fill the panel. matplotlib's tight bounding box crops the
+        # figure smaller than requested, and _fit_within only shrinks, so the
+        # diagram used to sit small in the middle of an empty panel.
+        drawing = self._fit_to_box(drawing, x1 - x0, (y1 - y0) - caption_h)
+        dx = x0 + (x1 - x0 - drawing.width) // 2
+        dy = y0 + ((y1 - y0 - caption_h) - drawing.height) // 2
+        img.paste(drawing, (dx, dy), drawing)
+
+        if caption:
+            visuals.draw_caption(ImageDraw.Draw(img), (x0, y1 - caption_h, x1, y1),
+                                 theme, caption, self.get_font("caption", 16))
+        return True
+
     # -- main entry point --------------------------------------------------
 
     def render_scene_slide(self, scene: dict, output_path: str, transparent_bg: bool = False) -> str:
@@ -285,6 +321,11 @@ class SlideRenderer:
             scene.get('image_path'), scene.get('image_caption'), self._body_font,
         )
 
+        # A drawn concept diagram, selected from the topic. Used when no real
+        # figure is available; never captioned as a textbook figure.
+        if not rendered_image and scene.get('diagram_topic'):
+            rendered_image = self._draw_concept_diagram(img, theme, scene, visual_box)
+
         if not rendered_image:
             if visual_type == 'formula' and scene.get('formula_latex'):
                 self._draw_formula(img, theme, scene['formula_latex'], visual_box)
@@ -300,6 +341,15 @@ class SlideRenderer:
         os.makedirs(os.path.dirname(output_path) or '.', exist_ok=True)
         img.save(output_path, "PNG")
         return output_path
+
+    @staticmethod
+    def _fit_to_box(image: Image.Image, max_w: int, max_h: int) -> Image.Image:
+        """Scale ``image`` up or down to fill the box, keeping aspect ratio."""
+        if image.width <= 0 or image.height <= 0:
+            return image
+        scale = min(max_w / image.width, max_h / image.height)
+        new_size = (max(1, int(image.width * scale)), max(1, int(image.height * scale)))
+        return image.resize(new_size, Image.LANCZOS)
 
     @staticmethod
     def _fit_within(image: Image.Image, max_w: int, max_h: int) -> Image.Image:
