@@ -2,6 +2,7 @@ import os
 os.environ.setdefault("PADDLE_PDX_ENABLE_MKLDNN_BYDEFAULT", "0")
 
 import argparse
+import json
 import fitz
 import pymupdf4llm
 import re
@@ -22,7 +23,14 @@ QDRANT_API_KEY    = os.getenv("QDRANT_API_KEY")
 QDRANT_COLLECTION = os.getenv("QDRANT_COLLECTION")
 EMBEDDING_MODEL   = os.getenv("EMBEDDING_MODEL")
 EMBEDDING_DIM     = 384
-MAX_TEXT_CHUNK_CHARS = 5000
+# Retrieval unit size. This was 5,000, which made a chunk embedding an average
+# over a whole section: the universal law of gravitation sat at character 2,951
+# of its chunk, and a query quoting the law verbatim did not retrieve that chunk
+# at all. ~1,200 characters is roughly a paragraph, which is what a definition
+# or a worked step actually occupies.
+MAX_TEXT_CHUNK_CHARS = 1200
+
+FIGURES_DIR = Path(__file__).resolve().parents[1] / "data" / "figures"
 
 if not QDRANT_URL or not QDRANT_API_KEY:
     raise EnvironmentError("\n.env file is missing or incomplete\n")
@@ -105,6 +113,128 @@ def parse_metadata_from_path(pdf_path: Path) -> dict:
         "chapter_name": chapter_name,
         "pdf_name": stem,
     }
+
+
+def extract_figures(pdf_path: Path, meta: dict, out_root: Path, min_side: int = 110) -> list:
+    """Save the embedded diagrams of a chapter PDF and label them by caption.
+
+    Chunks carry no page numbers, so a figure cannot be linked to a chunk by
+    position. It is linked by label instead: NCERT prose refers to its diagrams
+    explicitly ("as shown in Fig. 7.2"), so the caption under each image is read
+    and stored, and app.rag.figures resolves a label mentioned in retrieved text
+    back to the saved file.
+
+    Returns the manifest entries; writes PNGs plus figures.json under
+    ``out_root/<pdf_name>/``.
+    """
+    out_dir = out_root / meta["pdf_name"]
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    doc = fitz.open(str(pdf_path))
+    entries = []
+    seen_xrefs = set()
+
+    for page_index in range(len(doc)):
+        page = doc[page_index]
+        # Text blocks on this page, used to find the caption under an image.
+        blocks = [b for b in page.get_text("blocks") if len(b) >= 5 and str(b[4]).strip()]
+
+        for image in page.get_images(full=True):
+            xref = image[0]
+            if xref in seen_xrefs:
+                continue
+
+            try:
+                rects = page.get_image_rects(xref)
+            except Exception:
+                rects = []
+            if not rects:
+                continue
+            rect = rects[0]
+
+            # Skip rules, decorative borders and tiny icons.
+            if rect.width < min_side or rect.height < min_side:
+                continue
+
+            try:
+                pixmap = fitz.Pixmap(doc, xref)
+                if pixmap.n - pixmap.alpha >= 4:      # CMYK -> RGB
+                    pixmap = fitz.Pixmap(fitz.csRGB, pixmap)
+            except Exception as exc:
+                print(f"[figures] xref {xref} on page {page_index + 1}: {exc}")
+                continue
+
+            caption, label = _caption_for_rect(blocks, rect)
+            if not label:
+                # Unlabelled images are decoration far more often than content.
+                pixmap = None
+                continue
+
+            safe_label = re.sub(r"[^0-9a-zA-Z]+", "_", label)
+            filename = f"fig_{safe_label}_p{page_index + 1:02d}_x{xref}.png"
+            try:
+                pixmap.save(str(out_dir / filename))
+            except Exception as exc:
+                print(f"[figures] could not save {filename}: {exc}")
+                continue
+            finally:
+                pixmap = None
+
+            seen_xrefs.add(xref)
+            entries.append({
+                "label": label,
+                "caption": caption,
+                "page": page_index + 1,
+                "path": filename,
+                "width": int(rect.width),
+                "height": int(rect.height),
+            })
+
+    doc.close()
+
+    manifest = {
+        "meta": {
+            "pdf_name": meta["pdf_name"],
+            "chapter_name": meta["chapter_name"],
+            "chapter_number": meta["chapter_number"],
+            "subject": meta["subject"],
+            "class_level": meta["class_level"],
+        },
+        "figures": entries,
+    }
+    (out_dir / "figures.json").write_text(
+        json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
+    print(f"[figures] {len(entries)} labelled figure(s) -> {out_dir}")
+    return entries
+
+
+CAPTION_LABEL = re.compile(r"\bFig(?:ure)?\.?\s*(\d+\.\d+[a-z]?)", re.I)
+
+
+def _caption_for_rect(blocks, rect, max_gap: float = 90.0):
+    """Find the 'Fig. X.Y ...' caption belonging to an image rectangle.
+
+    NCERT captions sit directly below the figure, so the nearest text block that
+    starts with a figure label and begins within ``max_gap`` points of the
+    image's bottom edge wins.
+    """
+    best = (None, None, max_gap)
+    for block in blocks:
+        x0, y0, x1, y1, text = block[0], block[1], block[2], block[3], str(block[4])
+        match = CAPTION_LABEL.search(text)
+        if not match:
+            continue
+        gap = y0 - rect.y1
+        if gap < -20:            # caption above the image: unusual, allow a little
+            continue
+        # Require horizontal overlap with the image column.
+        if x1 < rect.x0 - 40 or x0 > rect.x1 + 40:
+            continue
+        if gap < best[2]:
+            caption = " ".join(text.split())
+            best = (caption, match.group(1), gap)
+    return best[0], best[1]
 
 
 def should_skip(pdf_path: Path) -> bool:
@@ -352,7 +482,8 @@ def is_already_ingested(pdf_name: str, client: QdrantClient) -> bool:
     return len(results[0]) > 0
 
 
-def process_pdf(pdf_path: Path, client: QdrantClient, force: bool = False, all_classes: bool = False):
+def process_pdf(pdf_path: Path, client: QdrantClient, force: bool = False,
+                all_classes: bool = False, with_figures: bool = True):
     if should_skip(pdf_path):
         print(f"[skip] {pdf_path.name} (answer/appendix)")
         return
@@ -364,6 +495,13 @@ def process_pdf(pdf_path: Path, client: QdrantClient, force: bool = False, all_c
         print(f"[skip] Already in Qdrant: {pdf_path.name}")
         return
     print(f"\n[process] Class {meta['class_level']} | {meta['subject']} {meta['part']} | Ch.{meta['chapter_number']} {meta['chapter_name']}")
+
+    if with_figures:
+        try:
+            extract_figures(pdf_path, meta, FIGURES_DIR)
+        except Exception as exc:
+            print(f"[figures] extraction failed for {pdf_path.name}: {exc}")
+
     text = extract_text(str(pdf_path), meta["pdf_name"])
     if len(text) < 5000:
         print("[extract] Low yield — falling back to OCR")
@@ -379,6 +517,8 @@ def main():
     parser = argparse.ArgumentParser(description="Ingest NCERT chapter PDFs into Qdrant.")
     parser.add_argument("input_path", help="Dataset root directory or single PDF file")
     parser.add_argument("--force", action="store_true", help="Re-ingest even if already present")
+    parser.add_argument("--no-figures", action="store_true",
+                        help="Skip extracting diagrams from the PDFs")
     parser.add_argument("--all-classes", action="store_true",
                         help="Also ingest Class 9/10 books (off-syllabus for NEET; excluded by default)")
     args = parser.parse_args()
@@ -386,12 +526,12 @@ def main():
     ensure_collection(client)
     input_path = Path(args.input_path)
     if input_path.is_file() and input_path.suffix.lower() == ".pdf":
-        process_pdf(input_path, client, args.force, args.all_classes)
+        process_pdf(input_path, client, args.force, args.all_classes, not args.no_figures)
     elif input_path.is_dir():
         pdf_files = sorted(input_path.rglob("*.pdf"))
         print(f"Found {len(pdf_files)} PDF(s) in {input_path}")
         for pdf in pdf_files:
-            process_pdf(pdf, client, args.force, args.all_classes)
+            process_pdf(pdf, client, args.force, args.all_classes, not args.no_figures)
     else:
         print("Error: provide a valid PDF path or directory.")
 

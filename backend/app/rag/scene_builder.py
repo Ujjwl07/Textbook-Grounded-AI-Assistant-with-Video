@@ -21,6 +21,7 @@ import logging
 import re
 from typing import Optional
 
+from app.rag.figures import get_figure_store
 from app.rag.retriever import (
     NCERTRetriever,
     clean_ncert_text,
@@ -79,6 +80,22 @@ def _shorten_for_bullet(text: str, limit: int = 110) -> str:
     if len(cleaned) > limit:
         cleaned = cleaned[:limit].rsplit(" ", 1)[0].rstrip(" ,;:") + "…"
     return cleaned
+
+
+def _collect_figures(passages, chapter_name: str, limit: int = 2) -> list:
+    """Resolve figure labels mentioned in retrieved passages to image files."""
+    store = get_figure_store()
+    if store.count() == 0:
+        return []
+    found, seen = [], set()
+    for passage in passages:
+        figure = store.first_in_text(passage.text, chapter_name=chapter_name)
+        if figure and figure.path not in seen:
+            seen.add(figure.path)
+            found.append(figure)
+            if len(found) >= limit:
+                break
+    return found
 
 
 def build_scenes(
@@ -151,6 +168,11 @@ def build_scenes(
 
     formula_candidates = [p.text for p in overview if _FORMULA_HINT.search(p.text)]
 
+    # Real NCERT diagrams, resolved from the "Fig. 7.2" labels the prose itself
+    # mentions. Empty until the textbook PDFs are ingested with figure
+    # extraction; the slides simply fall back to drawn panels until then.
+    figures = _collect_figures(overview, chapter)
+
     # The caution search runs over the same chapter, so it can return the
     # definition itself or a sentence already shown. Exclude anything used.
     shown = {definition_text}
@@ -206,9 +228,13 @@ def build_scenes(
             "narration_text": " ".join(
                 _tidy(p.text, limit=240) for p in example_facts[:2]
             ) or f"Let us apply what the chapter says about {topic}.",
+            # A real textbook figure wins over a drawn panel; the renderer
+            # ignores visual_type when image_path is set and present.
             "visual_type": "formula" if formula_candidates else "diagram",
             "formula_latex": _extract_formula(formula_candidates) if formula_candidates else None,
             "visual_data": {"title": chapter.title(), "labels": []},
+            "image_path": figures[0].path if figures else None,
+            "image_caption": figures[0].caption if figures else None,
             "animation_type": "zoom",
             "duration_hint_seconds": 16,
         },
@@ -225,6 +251,8 @@ def build_scenes(
             # noise. An alert panel with the chapter name is honest instead.
             "visual_type": "alert",
             "visual_data": {"caption": chapter.title()},
+            "image_path": figures[1].path if len(figures) > 1 else None,
+            "image_caption": figures[1].caption if len(figures) > 1 else None,
             "animation_type": "slide_left",
             "duration_hint_seconds": 14,
         },
@@ -247,8 +275,8 @@ def build_scenes(
     ]
 
     logger.info(
-        "Built %s scenes for %r from chapter %r (definition: %s, cautions: %s)",
-        len(scenes), topic, chapter, bool(definition), len(cautions),
+        "Built %s scenes for %r from chapter %r (definition: %s, cautions: %s, figures: %s)",
+        len(scenes), topic, chapter, bool(definition), len(cautions), len(figures),
     )
     return scenes
 
