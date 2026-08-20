@@ -16,7 +16,7 @@ from typing import Dict, Any, List, Optional, Tuple, Union
 from pydantic import BaseModel, Field, ConfigDict, field_validator
 
 from prompt_manager import PromptManager, Prompt
-from script_generator import Script, LLMClient, OpenAIClient, MockLLMClient
+from script_generator import Script, LLMClient, OpenAIClient, GeminiClient, MockLLMClient, get_default_llm_client
 
 # Configure logger
 logger = logging.getLogger("scene_segmenter")
@@ -232,7 +232,7 @@ class SceneSegmenter:
         max_retries: int = 3,
     ):
         self.prompt_manager = prompt_manager or PromptManager(prompts_dir="prompts")
-        self.llm_client = llm_client or OpenAIClient()
+        self.llm_client = llm_client or get_default_llm_client()
         self.max_retries = max_retries
 
     async def segment_script(
@@ -320,9 +320,9 @@ class SceneSegmenter:
                 logger.warning(f"Scene segmentation attempt {attempt}/{self.max_retries} failed: {e}")
                 await asyncio.sleep(1.0)
 
-        # Fallback fixture if retries exhausted
-        logger.error(f"Scene segmentation failed after {self.max_retries} retries. Generating fallback scene set: {last_error}")
-        return self._generate_fallback_collection(script_title, script_text)
+        error_msg = f"Scene segmentation failed after {self.max_retries} retries: {last_error}"
+        logger.error(error_msg)
+        raise RuntimeError(error_msg)
 
     def _fill_missing_scenes(self, existing: List[Scene], script_text: str) -> List[Scene]:
         """Fills missing scenes up to 5."""

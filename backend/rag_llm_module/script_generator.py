@@ -110,13 +110,77 @@ class LLMClient(ABC):
         pass
 
 
+import httpx
+
+
+class GeminiClient(LLMClient):
+    """Production Google Gemini LLM client supporting async generation."""
+
+    def __init__(self, api_key: Optional[str] = None, model: str = "gemini-3.6-flash", max_retries: int = 3):
+        self.api_key = api_key or os.getenv("GEMINI_API_KEY")
+        self.model = model
+        self.max_retries = max_retries
+        self.base_url = "https://generativelanguage.googleapis.com/v1beta/models"
+
+    async def generate(self, prompt: str, temperature: float = 0.2) -> LLMResponse:
+        if not self.api_key:
+            error_msg = "GEMINI_API_KEY is not configured in .env. Cannot execute Gemini generation."
+            logger.error(error_msg)
+            raise RuntimeError(error_msg)
+
+        start_time = time.time()
+        endpoint = f"{self.base_url}/{self.model}:generateContent?key={self.api_key}"
+        payload = {
+            "contents": [{"parts": [{"text": prompt}]}],
+            "generationConfig": {"temperature": temperature, "maxOutputTokens": 2048},
+        }
+
+        async with httpx.AsyncClient(timeout=45.0) as client:
+            response = await client.post(endpoint, json=payload)
+            if response.status_code != 200:
+                error_msg = f"Gemini API error ({response.status_code}): {response.text[:300]}"
+                logger.error(error_msg)
+                raise RuntimeError(error_msg)
+
+            data = response.json()
+            candidates = data.get("candidates", [])
+            if not candidates:
+                raise RuntimeError("Gemini returned empty candidates list")
+
+            text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "").strip()
+            latency = time.time() - start_time
+            p_tokens = len(prompt) // 4
+            c_tokens = len(text) // 4
+
+            return LLMResponse(
+                text=text,
+                prompt_tokens=p_tokens,
+                completion_tokens=c_tokens,
+                total_tokens=p_tokens + c_tokens,
+                latency_sec=round(latency, 3),
+            )
+
+    async def generate_stream(self, prompt: str, temperature: float = 0.2) -> AsyncGenerator[str, None]:
+        res = await self.generate(prompt, temperature)
+        yield res.text
+
+
+def get_default_llm_client() -> LLMClient:
+    """Return default configured LLM client or raise explicit error."""
+    if os.getenv("GEMINI_API_KEY"):
+        return GeminiClient()
+    if os.getenv("OPENAI_API_KEY"):
+        return OpenAIClient()
+    raise RuntimeError("No LLM API key configured in .env (GEMINI_API_KEY or OPENAI_API_KEY required).")
+
+
 class OpenAIClient(LLMClient):
     """Production OpenAI LLM client supporting async generation, retries, and streaming."""
 
-    MODEL_PRICING_PER_1K = {
+    MODEL_PRICING_PER_1K: Dict[str, Dict[str, float]] = {
         "gpt-4o": {"input": 0.0025, "output": 0.0100},
-        "gpt-4o-mini": {"input": 0.00015, "output": 0.0006},
-        "gpt-4-turbo": {"input": 0.0100, "output": 0.0300},
+        "gpt-4o-mini": {"input": 0.00015, "output": 0.00060},
+        "gpt-3.5-turbo": {"input": 0.0005, "output": 0.0015},
     }
 
     def __init__(self, api_key: Optional[str] = None, model: str = "gpt-4o", max_retries: int = 3, backoff_factor: float = 1.5):
@@ -128,20 +192,17 @@ class OpenAIClient(LLMClient):
 
     def _get_client(self):
         if self._client is None:
+            if not self.api_key:
+                raise RuntimeError("OPENAI_API_KEY is not configured in .env.")
             try:
                 from openai import AsyncOpenAI
                 self._client = AsyncOpenAI(api_key=self.api_key)
             except ImportError:
-                logger.warning("OpenAI package not installed. OpenAILLMClient requires 'pip install openai'.")
-                self._client = None
+                raise RuntimeError("OpenAI package not installed. Please run 'pip install openai'.")
         return self._client
 
     async def generate(self, prompt: str, temperature: float = 0.2) -> LLMResponse:
         client = self._get_client()
-        if not client or not self.api_key:
-            # Fallback to mock behavior if key or package unavailable
-            logger.info("OpenAI API key missing or package unavailable. Executing Mock completion.")
-            return await MockLLMClient().generate(prompt, temperature)
 
         start_time = time.time()
         attempt = 0
@@ -177,10 +238,6 @@ class OpenAIClient(LLMClient):
 
     async def generate_stream(self, prompt: str, temperature: float = 0.2) -> AsyncGenerator[str, None]:
         client = self._get_client()
-        if not client or not self.api_key:
-            async for chunk in MockLLMClient().generate_stream(prompt, temperature):
-                yield chunk
-            return
 
         response = await client.chat.completions.create(
             model=self.model,
@@ -363,7 +420,7 @@ class ScriptGenerator:
         validator: Optional[ScriptValidator] = None,
     ):
         self.prompt_manager = prompt_manager or PromptManager(prompts_dir="prompts")
-        self.llm_client = llm_client or OpenAIClient()
+        self.llm_client = llm_client or get_default_llm_client()
         self.parser = parser or ScriptParser()
         self.validator = validator or ScriptValidator()
 

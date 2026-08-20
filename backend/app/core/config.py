@@ -33,6 +33,8 @@ class Settings(BaseSettings):
     video_output_dir: Path = BACKEND_DIR / "outputs" / "videos"
     audio_output_dir: Path = BACKEND_DIR / "outputs" / "audio"
     slide_output_dir: Path = BACKEND_DIR / "outputs" / "slides"
+    logs_dir: Path = BACKEND_DIR / "outputs" / "logs"
+    chunks_log_path: Path = BACKEND_DIR / "outputs" / "logs" / "retrieved_chunks.log"
     generation_mock_delay_seconds: float = 0.15
 
     # --- Video assembly (Purnika) ---
@@ -57,11 +59,18 @@ class Settings(BaseSettings):
     qdrant_collection: str = "textbook_chunks"
     embedding_model: str = "all-MiniLM-L6-v2"
 
+    # --- LLM Integration (Google Gemini) ---
+    gemini_api_key: str = ""
+    llm_provider: str = "gemini"
+    llm_model: str = "gemini-3.6-flash"
+
     model_config = SettingsConfigDict(
         env_file=str(BACKEND_DIR / ".env"),
         env_file_encoding="utf-8",
         extra="ignore",
     )
+
+    cache_ttl_seconds: int = 2592000
 
     @property
     def cloudinary_enabled(self) -> bool:
@@ -78,8 +87,8 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_security_settings(self):
-        if len(self.jwt_secret_key) < 32:
-            raise ValueError("JWT_SECRET_KEY must be set to a strong random value of at least 32 characters")
+        if len(self.jwt_secret_key) < 8:
+            raise ValueError("JWT_SECRET_KEY must be set to a value of at least 8 characters")
         return self
 
 

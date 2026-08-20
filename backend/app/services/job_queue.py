@@ -6,11 +6,12 @@ from pathlib import Path
 from typing import Dict, Optional
 
 from app.models.schemas import GenerateRequest, JobState, JobStatus
+from app.rag.retriever import retriever
+from app.llm.gemini_service import gemini_service
 from app.services.database import database
 from app.services.storage import video_storage
 from app.services.websocket_manager import websocket_manager
 from app.tts.tts_generator import TTSGenerator
-from app.video.scene_presets import get_fallback_scenes
 from app.video.slide_generator import SlideRenderer
 from app.video.video_assembler import VideoAssembler
 
@@ -96,23 +97,34 @@ class JobQueue:
 
             # 2. Retrieval stage (15%)
             await self._set_progress(job, 15, "retrieving", "Searching NCERT textbook context")
-            await asyncio.sleep(0.5)
+            retrieval_res = retriever.retrieve(
+                query=job.topic,
+                subject=job.subject,
+                class_level=job.class_level,
+                caller=f"JobQueue:{job.job_id[:8]}",
+                log_to_file=True,
+            )
+            retrieved_context = retrieval_res.context_text
+            logger.info(
+                f"Job {job.job_id}: Extracted {retrieval_res.total_chunks} chunks for topic '{job.topic}' "
+                f"(logged to {retrieval_res.log_file_path})"
+            )
+            await asyncio.sleep(0.3)
             
             # 3. Scripting stage (30%)
-            await self._set_progress(job, 30, "scripting", "Generating personalization script")
-            await asyncio.sleep(0.5)
+            await self._set_progress(job, 30, "scripting", "Generating curriculum-grounded script via Gemini")
             
             # 4. Segmentation stage (45%)
             await self._set_progress(job, 45, "segmenting", "Segmenting script into educational scenes")
-            await asyncio.sleep(0.5)
+            scenes = await gemini_service.generate_educational_scenes(
+                topic=job.topic,
+                subject=job.subject,
+                class_level=job.class_level,
+                retrieved_context=retrieved_context,
+            )
 
             # 5. Audio and Video Assembly stages (60% to 92%)
             await self._set_progress(job, 60, "audio", "Synthesizing vocal narration and rendering slide templates")
-            
-            # Construct scene input
-            # In a fully integrated setting, these would come from RAG retrieval + LLM generation/segmentation.
-            # We use our dynamic fallback scenes representing the textbook assistant content.
-            scenes = get_fallback_scenes(job.topic, job.subject, job.class_level)
             
             local_path = str(video_storage.settings.video_output_dir / f"{job.job_id}.mp4")
             
