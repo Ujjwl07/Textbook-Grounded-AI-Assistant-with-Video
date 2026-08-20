@@ -7,7 +7,6 @@ from typing import Dict, Optional
 
 from app.models.schemas import GenerateRequest, JobState, JobStatus
 from app.rag.scene_builder import build_scenes
-from app.video.scene_presets import get_fallback_scenes
 from app.rag.retriever import retriever
 from app.llm.gemini_service import GeminiUnavailable, gemini_service
 from app.services.database import database
@@ -18,6 +17,24 @@ from app.video.slide_generator import SlideRenderer
 from app.video.video_assembler import VideoAssembler
 
 logger = logging.getLogger(__name__)
+
+
+class TopicNotInCorpus(Exception):
+    """The requested topic is not in the indexed textbooks.
+
+    Distinct from a generation failure: nothing is broken, the corpus simply
+    does not cover what was asked for, and the student needs different wording
+    rather than a retry.
+    """
+
+
+def _not_found_message(topic: str) -> str:
+    return (
+        f"“{topic}” was not found in the indexed NCERT textbooks. "
+        "Try a Class 11 or 12 Physics, Chemistry or Biology topic — for "
+        "example “Photosynthesis”, “Ray Optics” or "
+        "“Chemical Kinetics”."
+    )
 
 GENERATION_STAGES = [
     (5, "initializing", "Starting generation"),
@@ -130,12 +147,14 @@ class JobQueue:
         if scenes:
             return scenes, "retrieval"
 
-        logger.warning(
-            "Job %s: no scenes from Gemini or retrieval for %r; using presets. "
-            "This video is NOT textbook-grounded.",
-            job.job_id, job.topic,
+        # No hand-written presets here any more. They exist to exercise the
+        # renderer, and their content is generic physics: a Biology topic that
+        # reached them was taught "F = ma" under a heading claiming to quote
+        # NCERT. Failing is the honest outcome, and the caller turns this into
+        # a message the student can act on.
+        raise TopicNotInCorpus(
+            f"No usable textbook passages were found for '{job.topic}'."
         )
-        return get_fallback_scenes(job.topic, subject, class_level), "presets"
 
     async def run_generation(self, job_id: str) -> None:
         job = self.jobs[job_id]
@@ -166,6 +185,21 @@ class JobQueue:
             applied = retrieval_res.filters_applied
             subject = applied.get("resolved_subject") or job.subject
             class_level = applied.get("resolved_class_level") or job.class_level
+
+            # Checked before the LLM, not after: the retrieved chunks are always
+            # *something*, and Gemini would write a confident lesson out of a
+            # chapter that has nothing to do with the question.
+            if not applied.get("topic_matched", True):
+                logger.info(
+                    "Job %s: %r did not match the corpus (best score %.3f)",
+                    job.job_id, job.topic, applied.get("match_score", 0.0),
+                )
+                job.scene_source = "none"
+                job.error = _not_found_message(job.topic)
+                await self._set_progress(
+                    job, job.progress, "topic_not_found", job.error, JobStatus.failed
+                )
+                return
 
             # 3. Scripting stage (30%)
             await self._set_progress(job, 30, "scripting", "Generating curriculum-grounded script via Gemini")
@@ -202,6 +236,13 @@ class JobQueue:
             job.local_video_path = local_path
 
             await self._set_progress(job, 100, "complete", "Video is ready", JobStatus.completed)
+        except TopicNotInCorpus:
+            logger.info("Job %s: no usable passages for %r", job.job_id, job.topic)
+            job.scene_source = "none"
+            job.error = _not_found_message(job.topic)
+            await self._set_progress(
+                job, job.progress, "topic_not_found", job.error, JobStatus.failed
+            )
         except Exception as exc:
             logger.exception("Video generation job failed")
             job.error = str(exc)

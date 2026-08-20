@@ -419,6 +419,7 @@ class NCERTRetriever:
         class_level: Optional[str] = None,
         top_k: int = 8,
         override_margin: float = 0.10,
+        min_score: Optional[float] = None,
     ) -> Optional[dict]:
         """Resolve which book and chapter a topic belongs to.
 
@@ -493,6 +494,20 @@ class NCERTRetriever:
 
         if not class_level:
             inferred.append("class_level")
+
+        # A vector search always returns its nearest neighbours, however far
+        # away they are, so without a floor every string resolves to some
+        # chapter: "Cristiano Ronaldo" matched Work, Energy and Power at 0.191
+        # and "Pizza" matched Microbes in Human Welfare at 0.202, and both
+        # produced a full lesson claiming to quote the textbook.
+        floor = self.settings.topic_match_threshold if min_score is None else min_score
+        if floor and result["top_score"] < floor:
+            logger.info(
+                "Topic %r best match is %s at %.3f, below the %.2f floor; "
+                "treating it as absent from the corpus",
+                topic, result["chapter"], result["top_score"], floor,
+            )
+            return None
 
         result["inferred"] = sorted(set(inferred))
         logger.info(
@@ -960,11 +975,18 @@ class TextbookRetriever:
         """
         scope = None
         try:
+            # Resolved without the floor so the real similarity is available to
+            # report, then compared here. Letting find_topic_scope reject it
+            # would leave this layer with None and nothing to log but a zero,
+            # which reads as "no match found" rather than "matched at 0.31".
             scope = self.retriever.find_topic_scope(
-                query, subject=subject, class_level=class_level
+                query, subject=subject, class_level=class_level, min_score=0.0
             )
         except Exception as exc:
             logger.warning("Topic scope resolution failed for %r: %s", query, exc)
+
+        match_score = float((scope or {}).get("top_score", 0.0))
+        matched = scope is not None and match_score >= self.retriever.settings.topic_match_threshold
 
         resolved_subject = (scope or {}).get("subject") or subject
         resolved_class = (scope or {}).get("class_level") or class_level
@@ -991,6 +1013,11 @@ class TextbookRetriever:
             "resolved_subject": resolved_subject,
             "resolved_class_level": resolved_class,
             "inferred": (scope or {}).get("inferred", []),
+            # False when no chapter cleared the similarity floor. Callers must
+            # check it: the chunks below are still the nearest neighbours of the
+            # query, they are simply not about the topic that was asked for.
+            "topic_matched": matched,
+            "match_score": match_score,
         })
 
         log_file_path = ""

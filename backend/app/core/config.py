@@ -59,6 +59,14 @@ class Settings(BaseSettings):
     qdrant_collection: str = "textbook_chunks"
     embedding_model: str = "all-MiniLM-L6-v2"
 
+    # Below this similarity a topic is treated as absent from the corpus rather
+    # than matched to the least-bad chapter. Measured over 11 topics, the
+    # in-corpus and off-corpus scores do not overlap: the weakest real topic
+    # ("circulation of blood") scores 0.482 and the strongest miss ("Quantum
+    # Tunnelling") 0.312, with "Blockchain" at 0.147. 0.40 sits in that gap.
+    # Configurable because the gap is a property of the corpus, not a constant.
+    topic_match_threshold: float = 0.40
+
     # --- LLM Integration (Google Gemini) ---
     gemini_api_key: str = ""
     llm_provider: str = "gemini"
