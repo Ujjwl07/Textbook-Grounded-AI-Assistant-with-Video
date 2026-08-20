@@ -31,6 +31,15 @@ from app.rag.retriever import (
 
 logger = logging.getLogger(__name__)
 
+# One equation-shaped fragment: a short operand, an equals sign, then a
+# right-hand side that may contain spaces (trimmed back to the equation by
+# _PROSE_TOKENS below).
+_EQUATION_FRAGMENT = re.compile(
+    r"[A-Za-z0-9πΔ][A-Za-z0-9πΔ_^/*+\-().]{0,11}"
+    r"\s*=\s*"
+    r"[A-Za-z0-9πΔ][A-Za-z0-9πΔ_^/*+\-(). ]{0,15}"
+)
+
 # Formula-ish lines worth putting on the EXAMPLE slide, in rough priority order.
 _FORMULA_HINT = re.compile(r"[=∝]")
 
@@ -162,7 +171,15 @@ _DEPENDENT_OPENER = re.compile(
     r"^\s*(however|but|thus|therefore|hence|also|moreover|furthermore|besides|"
     r"this|that|these|those|it|its|they|their|them|such|so|then|here|"
     r"consequently|similarly|again|now|both|each|either|neither|"
-    r"in this case|for this|as a result|on the other hand)\b",
+    r"in this case|for this|as a result|on the other hand|"
+    # Added after these reached rendered slides: "In other words, taking into
+    # account the points mentioned above ..." and "In view of the shortcoming of
+    # the Bohr's model ...". Both refer back to something the slide never shows.
+    # "note that" is deliberately absent: it is a caution cue, and a caution
+    # opening with it is exactly what the alert scene is looking for.
+    r"in other words|in view of|on the basis of|in addition|in fact|"
+    r"in general|in particular|for example|for instance|instead|"
+    r"accordingly|nevertheless|nonetheless|conversely|meanwhile|otherwise)\b",
     re.I,
 )
 
@@ -317,6 +334,12 @@ def build_scenes(
     corpus_terms = _key_terms(overview, topic, limit=8)
     example_labels, revision_terms = corpus_terms[0::2][:4], corpus_terms[1::2][:4]
 
+    # The drawn diagrams take their stage/part names from ``diagram_labels``.
+    # Nothing set it, so every drawing fell back to its own defaults: the lens
+    # and atom pictures label themselves sensibly, but the cycle came out as
+    # "Stage 1 / Stage 2 / Stage 3 / Stage 4" on a Photosynthesis slide.
+    diagram_fields["diagram_labels"] = example_labels
+
     # EXAMPLE panel, in order of how much the panel actually says: a real
     # textbook figure, then a compact formula, then the topic's drawn diagram,
     # then a labelled diagram — and that last one only when the labels are real
@@ -355,11 +378,26 @@ def build_scenes(
 
     # The caution search runs over the same chapter, so it can return the
     # definition itself or a sentence already shown. Exclude anything used.
+    # Compare the rendered bullets, not the raw passages. The caution search
+    # returns its own sentence windows, so a passage that differs by a word from
+    # one already used still shortens to the identical bullet — which is how
+    # "Can you name some other parts where you think photosynthesis may occur?"
+    # appeared on both the example and the alert slide of the same video.
     shown = {definition_text}
     shown.update(p.text for p in concept_facts + example_facts + memory_facts)
-    alert_passages = [
-        p for p in cautions if p.text not in shown and is_self_contained(p.text)
-    ][:3]
+    shown_bullets = set(concept_bullets) | set(example_points) | set(memory_bullets)
+
+    alert_passages = []
+    for passage in cautions:
+        if passage.text in shown or not is_self_contained(passage.text):
+            continue
+        bullet = _shorten_for_bullet(passage.text)
+        if bullet in shown_bullets:
+            continue
+        shown_bullets.add(bullet)
+        alert_passages.append(passage)
+        if len(alert_passages) == 3:
+            break
     alert_bullets = [_shorten_for_bullet(p.text) for p in alert_passages]
     if not alert_bullets:
         alert_bullets = [
@@ -487,19 +525,66 @@ def build_scenes(
     return scenes
 
 
+# Words that mark the end of an equation and the resumption of prose. Without
+# them "PV = nRT is the ideal gas equation" extracted whole, because the operand
+# pattern has to allow spaces and then runs straight into the sentence.
+_PROSE_TOKENS = {
+    "is", "are", "was", "were", "the", "a", "an", "of", "in", "on", "for",
+    "and", "or", "to", "with", "this", "that", "these", "where", "which",
+    "when", "here", "gives", "given", "we", "it", "its", "as", "at", "by",
+    "from", "than", "then", "so", "if", "can", "will", "may", "be", "has",
+}
+
+
 def _extract_formula(candidates: list) -> Optional[str]:
     """Pull a short equation out of a retrieved sentence, as LaTeX-ish text.
 
-    Extraction from PDF loses most equation structure, so this deliberately only
-    accepts something that already looks like a compact equation, and returns
-    None otherwise rather than rendering a mangled formula.
+    Returning None matters as much as returning a formula: the caller falls back
+    to the topic's drawn diagram, so a bad formula does not merely look wrong, it
+    displaces a correct picture. That is what happened on the Ray Optics slide —
+    "Reflection is governed by the equation <angle> i = <angle> r" extracted with
+    its symbols mis-decoded, the old pattern lifted "_i =_" out of it, and the
+    ray diagram was replaced by two characters and an equals sign.
+
+    So the bar is high on purpose:
+
+      * the passage has to *be* an equation, not mention one (length cap);
+      * both operands must carry a real symbol;
+      * the right-hand side stops at the first ordinary English word.
+
+    On the retrieval path this rejects most candidates, which is the intended
+    outcome. When the LLM stage supplies ``formula_latex`` directly, none of this
+    runs.
     """
     for text in candidates:
-        for fragment in re.findall(r"[A-Za-z0-9πΔ()\[\]/^_*+\-. ]{3,28}=[A-Za-z0-9πΔ()\[\]/^_*+\-. ]{1,28}", text):
-            fragment = fragment.strip()
-            # Reject prose that merely contains '=' inside a longer sentence.
-            if len(fragment.split()) > 8:
+        # Cleaned first: the raw chunk still carries the markdown underscores
+        # that produced "_i =_".
+        cleaned = clean_ncert_text(text).strip()
+        # A sentence *about* an equation is long; an equation line is short.
+        if len(cleaned) > 60:
+            continue
+
+        for raw in _EQUATION_FRAGMENT.findall(cleaned):
+            fragment = re.sub(r"[_\s]+", " ", raw).strip(" .,;:")
+            left, _, right = fragment.partition("=")
+            left = left.strip()
+
+            # An ordinary word on the left is prose, not a quantity.
+            if left.isalpha() and len(left) > 6:
                 continue
-            if any(ch.isalpha() for ch in fragment):
-                return fragment.replace("*", r"\times ")
+            if not re.search(r"[A-Za-z0-9]", left):
+                continue
+
+            kept = []
+            for token in right.split():
+                if token.lower() in _PROSE_TOKENS or (token.isalpha() and len(token) > 6):
+                    break
+                kept.append(token)
+            if not kept:
+                continue
+
+            fragment = f"{left} = {' '.join(kept)}"
+            if len(re.sub(r"[^A-Za-z0-9]", "", fragment)) < 3:
+                continue
+            return fragment.replace("*", r"\times ")
     return None
