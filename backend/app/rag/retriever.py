@@ -668,13 +668,50 @@ _CAUTION_CUES = [
 ]
 
 
+# NCERT sets its section headings with a decorative oversized first letter, and
+# the PDF stores that letter as its own text run. Extraction therefore echoes the
+# heading: "FERTILISATION AND IMPLANTATION IMPLANTATIONMPLANTATION" is one
+# heading, not three words. The same echo appears mid-sentence around bolded key
+# terms ("... is called fertilisation.fertilisation."). Left in, it reaches the
+# slides verbatim and inflates the word counts split_sentences() filters on.
+#
+# Fixing this at the source needs the PDFs re-ingested; until then it is cleaned
+# on the way out, which costs one pass over text already in memory.
+
+# The echo takes two shapes, glued and spaced. Both length floors are set well
+# above what English doubles naturally: "had had" and "that that" must survive,
+# while "stable table" must not collapse to "stable".
+#
+# "IMPLANTATIONMPLANTATION" -> a word followed by itself minus its capital.
+_ECHO_GLUED = re.compile(r"\b(\w)(\w{4,})\2\b")
+# "GRAVITATION RAVITATION" -> the same, with the runs separated by a space.
+_ECHO_DROPCAP = re.compile(r"\b(\w)(\w{6,})\s+\2\b")
+# "WORD WORD" or "word.word" -> the word repeated whole.
+_ECHO_REPEATED = re.compile(r"\b(\w{6,})\b([.\s]+)\1\b", re.I)
+# Exactly two dots, which is what an echo leaves behind. A real ellipsis is
+# three and stays intact.
+_ECHO_DOTS = re.compile(r"(?<!\.)\.\.(?!\.)")
+
+
+def collapse_echoes(text: str) -> str:
+    """Remove the duplicated words left behind by drop-cap extraction."""
+    for _ in range(3):
+        collapsed = _ECHO_GLUED.sub(r"\1\2", text)
+        collapsed = _ECHO_DROPCAP.sub(r"\1\2", collapsed)
+        collapsed = _ECHO_REPEATED.sub(r"\1", collapsed)
+        if collapsed == text:
+            break
+        text = collapsed
+    return _ECHO_DOTS.sub(".", text)
+
+
 def clean_ncert_text(text: str) -> str:
     """Strip markdown and print artefacts from extracted chunk text."""
     cleaned = str(text or "")
     for pattern in _NOISE_PATTERNS:
         cleaned = pattern.sub(" ", cleaned)
     cleaned = re.sub(r"\s+", " ", cleaned)
-    return cleaned.strip()
+    return collapse_echoes(cleaned.strip())
 
 
 def split_sentences(text: str) -> list:
@@ -685,7 +722,13 @@ def split_sentences(text: str) -> list:
         if len(sentence.split()) < 6:
             continue
         # Table rows and figure labels are not narratable prose.
-        if sentence.count("|") > 1 or re.match(r"^(Fig|Table|Example)\b", sentence, re.I):
+        # "Fig\b" does not match "Figure": the word boundary after "Fig"
+        # fails against the following "u", so full-word captions ("Figure
+        # 2.1(b) Diagrammatic view of male reproductive system") reached the
+        # slides as if they were prose.
+        if sentence.count("|") > 1 or re.match(
+            r"^(Figs?\.?|Figures?|Tables?|Examples?)\b", sentence, re.I
+        ):
             continue
         # Section headers swept up by the splitter, e.g. "6.7 Chemical The
         # reactions of haloalkanes may be divided into the following categories".
