@@ -1,31 +1,4 @@
-# TEXTBOOK-GROUNDED AI ASSISTANT WITH VIDEO GENERATION FOR NEET
-
-## Capstone Project Report
-### MID SEMESTER EVALUATION
-
-**Submitted by:**
-
-(102303093) UJJWAL DALAL
-(102303412) PURNIKA MALHOTRA
-(102313055) PALLIKA MALHOTRA
-(102316042) UJJWAL THAPA
-(102316044) SHUBHAM
-
-BE Third Year, CoE/CoSE
-
-**CPG No: 92**
-
-Under the Mentorship of
-
-**Dr. Chinmaya Panigrahy**
-Assistant Professor - III
-
-Computer Science and Engineering Department
-Thapar Institute of Engineering and Technology, Patiala
-
-**August 2026**
-
----
+<div class="cover"><p class="cover-title">TEXTBOOK-GROUNDED AI ASSISTANT<br/>WITH VIDEO GENERATION FOR NEET</p><p class="cover-h1">Capstone Project Report</p><p class="cover-h2">MID SEMESTER EVALUATION</p><p class="cover-h2">Submitted by:</p><p class="cover-names">(102303093) UJJWAL DALAL<br/>(102303412) PURNIKA MALHOTRA<br/>(102313055) PALLIKA MALHOTRA<br/>(102316042) UJJWAL THAPA<br/>(102316044) SHUBHAM</p><p class="cover-line">BE Third Year, CoE/CoSE</p><p class="cover-h2">CPG No: 92</p><p class="cover-line">Under the Mentorship of</p><p class="cover-h2">Dr. Chinmaya Panigrahy</p><p class="cover-line">Assistant Professor - III</p><p class="cover-dept">Computer Science and Engineering Department</p><p class="cover-line">Thapar Institute of Engineering and Technology, Patiala</p><p class="cover-h2">August 2026</p><p class="cover-break"></p></div>
 
 # ABSTRACT
 
@@ -341,6 +314,8 @@ a per-topic mastery score, from which weak topics and a recommended next topic a
 A distinguishing characteristic of this project is that the components which determine output
 quality are implemented rather than consumed as services. Table 1 separates the two.
 
+**TABLE 1: Technology stack: components built versus libraries used**
+
 | Layer | Built from scratch in this project | Libraries used |
 | --- | --- | --- |
 | PDF ingestion | Layout-aware parser, OCR fallback policy, table-row decomposition, metadata derivation from directory structure, syllabus-scope filtering | PyMuPDF, pymupdf4llm, PaddleOCR |
@@ -352,7 +327,6 @@ quality are implemented rather than consumed as services. Table 1 separates the 
 | Quiz engine | 1PL IRT ability update, mastery tracking, weak-topic selection | — |
 | Web platform | REST API, async job queue, WebSocket progress broadcast, JWT authentication, React client | FastAPI, MongoDB, React |
 
-**TABLE 1: Technology stack: components built versus libraries used**
 
 The distinction matters for a capstone assessment. Calling a video-generation API is a single
 function call; deciding what the video should contain, proving that the content came from the
@@ -498,6 +472,8 @@ instructional artefact *V* such that:
 
 ## 1.5 Assumptions and Constraints
 
+**TABLE 2: Assumptions**
+
 | S. No. | Assumption |
 | --- | --- |
 | 1 | The NCERT chapter PDFs supplied to the ingestion engine are digitally generated documents with a recoverable text layer. Where the text layer is degraded, the ingestion engine detects low extraction yield and falls back to OCR; a scanned-only corpus would rely entirely on this path and would extract more slowly and less accurately. |
@@ -507,7 +483,8 @@ instructional artefact *V* such that:
 | 5 | Students are assumed to attempt the assessment honestly and without external assistance, since the ability estimate produced by the IRT model is only meaningful under that assumption. |
 | 6 | Generated videos are consumed on a display of at least 1280x720, which is the render resolution. Playback on smaller displays will scale but subtitle legibility has not been evaluated below this resolution. |
 
-**TABLE 2: Assumptions**
+
+**TABLE 3: Constraints**
 
 | S. No. | Constraint |
 | --- | --- |
@@ -518,7 +495,6 @@ instructional artefact *V* such that:
 | 5 | Copyright in the NCERT text and figures rests with NCERT. The system reproduces short passages with attribution for educational use and does not redistribute the source PDFs. |
 | 6 | Development is on Windows; the code is written to be portable, and font and path handling in particular were made platform-independent (Section 4.4), but deployment on Linux has not yet been validated. |
 
-**TABLE 3: Constraints**
 
 ## 1.6 Standards
 
@@ -556,6 +532,8 @@ chip remains readable.
 The following four objectives were approved at proposal evaluation. Table 4 maps each to the modules
 that implement it; Section 5.1 discusses the extent to which each has been met.
 
+**TABLE 4: Approved objectives and their mapping to implemented modules**
+
 | No. | Approved objective | Implementing modules |
 | --- | --- | --- |
 | 1 | **Build a textbook-grounded RAG pipeline** — extract and chunk school textbook content, retrieve the most relevant passages for a given student query, and use them as the sole source for answer generation, ensuring curriculum-aligned and factually accurate responses. | `scripts/extract.py`, `app/rag/retriever.py`, `app/rag/scene_builder.py` |
@@ -563,7 +541,6 @@ that implement it; Section 5.1 discusses the extent to which each has been met.
 | 3 | **Deliver a focused and functional student-facing interface** — a responsive web application through which students submit queries, watch the generated lesson, and track progress. | `app/api/routes/*`, `app/services/websocket_manager.py`, React client |
 | 4 | **Optimise system performance and response time** — minimise end-to-end latency to enable near real-time generation. | `app/video/subtitle_engine.py`, `scripts/profile_frame_pipeline.py`, `scripts/benchmark_video.py` |
 
-**TABLE 4: Approved objectives and their mapping to implemented modules**
 
 ## 1.8 Methodology
 
@@ -745,6 +722,8 @@ subsequent instruction to measured understanding.
 
 ### 2.1.3 Research Findings for Existing Literature
 
+**TABLE 5: Literature survey, distributed by team member**
+
 | S. No. | Roll Number | Name | Paper Title | Tools / Technology | Findings | Citation |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | 102316044 | Shubham | Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks | Dense passage retriever, BART generator, Wikipedia index | Conditioning generation on retrieved passages substantially improves factual accuracy over parametric generation alone; establishes the RAG architecture this project's Phase 2 is built on. Output is free text with no source attribution surfaced to the user. | [1] |
@@ -760,7 +739,6 @@ subsequent instruction to measured understanding.
 | 11 | 102303093 | Ujjwal Dalal | BLIP-2: Bootstrapping Language-Image Pre-training with Frozen Image Encoders and Large Language Models | Q-Former, frozen encoders | Shows that a lightweight bridging module can connect frozen encoders efficiently; the architectural lesson — thin adapters between independently developed components — is applied in the scene JSON contract between content and media subsystems. | [8] |
 | 12 | 102303093 | Ujjwal Dalal | Multi-RAG: Multimodal Retrieval-Augmented Generation System | Unified text, audio, video retrieval | Unifies three modalities in one retrieval pipeline; confirms that multimodal RAG is feasible end to end, while remaining an information-retrieval system rather than a lesson-delivery system. | [12] |
 
-**TABLE 5: Literature survey, distributed by team member**
 
 ### 2.1.4 Problem Identified
 
@@ -846,6 +824,8 @@ Figure 3.
 
 #### 2.2.2.2 Product Features
 
+**TABLE 6: Functional requirements**
+
 | ID | Requirement | Priority | Status |
 | --- | --- | --- | --- |
 | FR-1 | The system shall ingest NCERT chapter PDFs and index them as metadata-tagged retrieval units. | High | Implemented |
@@ -870,7 +850,6 @@ Figure 3.
 | FR-20 | The system shall present a dashboard of mastery, weak areas and history. | Medium | Implemented |
 | FR-21 | The system shall cache generated lessons so that a repeated topic is served without regeneration. | Medium | Deferred - see Section 5.4 |
 
-**TABLE 6: Functional requirements**
 
 ### 2.2.3 External Interface Requirements
 
@@ -907,6 +886,8 @@ contract** (Table 15). Because it was fixed early, the two halves of the system 
 tested independently, and the language-model stage can replace the retrieval-only assembler without
 any change to the video code.
 
+**TABLE 7: API endpoints exposed by the backend**
+
 | Endpoint | Method | Purpose |
 | --- | --- | --- |
 | /api/health | GET | Service liveness |
@@ -924,7 +905,8 @@ any change to the video code.
 | /api/quiz/history/{user_id} | GET | Attempt history |
 | /api/users/{user_id}/dashboard | GET | Mastery, weak and strong areas, videos watched |
 
-**TABLE 7: API endpoints exposed by the backend**
+
+**TABLE 8: MongoDB collections and indexes**
 
 | Collection | Purpose | Indexes |
 | --- | --- | --- |
@@ -934,11 +916,12 @@ any change to the video code.
 | quiz_attempts | Per-response record with updated ability and mastery | (user_id, created_at) |
 | admins | Administrator allow-list | email (unique) |
 
-**TABLE 8: MongoDB collections and indexes**
 
 ### 2.2.4 Other Non-functional Requirements
 
 #### 2.2.4.1 Performance Requirements
+
+**TABLE 9: Non-functional requirements and measured status**
 
 | ID | Requirement | Target | Measured |
 | --- | --- | --- | --- |
@@ -949,7 +932,6 @@ any change to the video code.
 | NFR-5 | Output resolution and frame rate | 1280x720 @ 24 fps | Met |
 | NFR-6 | Progress events delivered to the client | Every pipeline stage | Met (8 stages) |
 
-**TABLE 9: Non-functional requirements and measured status**
 
 NFR-1 is not yet met and is analysed in Section 4.4; the identified remedy is parallel per-scene
 rendering, which is scheduled in Section 5.4.
@@ -984,6 +966,8 @@ The project is developed on existing student hardware and free service tiers, so
 cost is negligible. The table below separates development from the projected cost of operating the
 system for a modest pilot deployment.
 
+**TABLE 10: Cost analysis**
+
 | Item | Basis | Development cost (INR) | Projected monthly at pilot scale |
 | --- | --- | --- | --- |
 | Vector database (Qdrant Cloud) | Free tier, 1 GB; sufficient for the current 2,876 vectors and roughly 100k at 384 dimensions | 0 | ~2,000 for a paid cluster if the corpus grows beyond the free tier |
@@ -996,13 +980,14 @@ system for a modest pilot deployment.
 | Developer effort | 5 members, one semester | Not costed (academic) | — |
 | **Total** | | **0** | **~10,600** |
 
-**TABLE 10: Cost analysis**
 
 The dominant recurring cost at scale is compute for video encoding, not the language model. This
 reinforces the priority given to the rendering optimisation described in Section 4.4: a 4.7x
 reduction in generation time is also, approximately, a 4.7x reduction in the compute bill.
 
 ## 2.4 Risk Analysis
+
+**TABLE 11: Risk analysis**
 
 | ID | Risk | Likelihood | Impact | Mitigation |
 | --- | --- | --- | --- | --- |
@@ -1016,7 +1001,6 @@ reduction in generation time is also, approximately, a 4.7x reduction in the com
 | R-8 | Ingestion quality varies across chapters, with some yielding very few units | Medium | Medium | Low-yield detection with OCR fallback is implemented; per-chapter unit counts are reported by the corpus audit script so weak chapters can be re-ingested selectively |
 | R-9 | Copyright concerns over reproduction of textbook material | Low | Medium | Only short passages are reproduced, always with attribution, for non-commercial educational use; source PDFs are not redistributed with the repository |
 
-**TABLE 11: Risk analysis**
 
 ---
 
@@ -1029,13 +1013,14 @@ reduction in generation time is also, approximately, a 4.7x reduction in the com
 Capstone projects are conventionally classified under one of three investigative techniques. Table 12
 summarises them and records how each relates to the present work.
 
+**TABLE 12: Investigative techniques considered**
+
 | S. No. | Investigative technique | Description | Typical project examples | Relation to this project |
 | --- | --- | --- | --- | --- |
 | 1 | Descriptive | An investigation in which scientific questions are investigated and observations of a phenomenon are recorded and catalogued. | Projects designing new system models, concepts or algorithms. | Partially applicable: the system architecture and the sentence-window retrieval strategy are new designs that had to be specified before they could be measured. |
 | 2 | Comparative | Investigations in which observations are made that compare two objects or phenomena. | Algorithm-comparison and system-comparison projects. | Directly applicable: several design decisions were settled by measuring competing alternatives against one another under identical conditions. |
 | 3 | Experimental | An organised investigation that includes a control condition, is designed to test a hypothesis, and has independent and dependent variables. | Machine learning, deep learning and artificial-intelligence projects. | Directly applicable: the principal engineering findings of this phase were obtained by holding a pipeline fixed, varying one component, and measuring the effect. |
 
-**TABLE 12: Investigative techniques considered**
 
 ### 3.1.2 Selected technique and its justification
 
@@ -1261,6 +1246,8 @@ to the mentor without the rest of the system being present. This was a deliberat
 it is what allowed the media pipeline to be completed and measured while the language-model stage was
 still awaiting a provider.
 
+**TABLE 13: Module ownership and deliverable status**
+
 | Module | Owner | Principal artefacts | Status |
 | --- | --- | --- | --- |
 | Ingestion and indexing | Shubham | extract.py — layout-aware parsing, OCR fallback, table-row decomposition, metadata derivation, syllabus filtering, payload indexes | Working; corpus of 2,876 units indexed |
@@ -1274,7 +1261,6 @@ still awaiting a provider.
 | Front end | Ujjwal Dalal | 7 pages, progress ring, subject badge, protected routes, WebSocket hook | Developed on a separate branch; integration scheduled |
 | Measurement suite | All | eval_retrieval_filters, benchmark_video, profile_frame_pipeline, demo_text_preprocessor, test_video_pipeline, test_figure_extraction | Working; regenerates every figure in this report |
 
-**TABLE 13: Module ownership and deliverable status**
 
 ### 3.3.2 Integration approach
 
@@ -1289,6 +1275,8 @@ merged into the integration branch. Consolidating them is the first scheduled ac
 increment (Section 5.4).
 
 ## 3.4 Tools and Technology
+
+**TABLE 14: Tools and technologies used**
 
 | Category | Tool / technology | Version | Role in the project |
 | --- | --- | --- | --- |
@@ -1315,7 +1303,6 @@ increment (Section 5.4).
 | Front end | React + Vite | 18.x | Student-facing client |
 | Version control | Git, GitHub | — | Branch-per-module workflow |
 
-**TABLE 14: Tools and technologies used**
 
 Selection rationale for the decisions that were not obvious is recorded in Section 2.1.5: Qdrant over
 FAISS for native payload filtering, Edge-TTS over gTTS and Coqui for word-boundary timestamps, and
@@ -1472,6 +1459,8 @@ the 4,797-character mean unit size and is the cost that the reduced ingestion un
 
 ### 4.2.3 Scene JSON contract
 
+**TABLE 15: Scene JSON contract between the LLM and video stages**
+
 | Field | Type | Meaning |
 | --- | --- | --- |
 | part | string | HOOK, CONCEPT, EXAMPLE, MEMORY or NEET_ALERT; selects the colour theme and the flow-strip position |
@@ -1489,7 +1478,6 @@ the 4,797-character mean unit size and is the cost that the reduced ingestion un
 | duration_hint_seconds | number | Requested scene length; the narration length is authoritative |
 | background_color | string | Optional per-scene theme override |
 
-**TABLE 15: Scene JSON contract between the LLM and video stages**
 
 ### 4.2.4 Video assembly pipeline
 
@@ -1614,6 +1602,8 @@ measurement taken at each stage. Every figure named here is regenerated by the s
 
 Command: `python backend/scripts/eval_retrieval_filters.py`
 
+**TABLE 16: Corpus composition of the indexed NCERT collection**
+
 | Dimension | Composition |
 | --- | --- |
 | Total retrieval units | 2,876 |
@@ -1626,7 +1616,6 @@ Command: `python backend/scripts/eval_retrieval_filters.py`
 | Mean unit size | 4,797 characters |
 | Chapters indexed | approximately 60 |
 
-**TABLE 16: Corpus composition of the indexed NCERT collection**
 
 Two findings from this audit drove design changes. First, 18% of the corpus is Class 9 and 10 Science,
 which is off-syllabus for NEET and, as Section 4.4.2 shows, was actively displacing correct results.
@@ -1641,6 +1630,8 @@ The same eight NEET-style queries were run twice against the same corpus: once u
 through the retriever's default filters. A result is scored correct only if the top-ranked passage
 comes from the expected class, subject and chapter.
 
+**TABLE 17: Retrieval accuracy before and after metadata filtering**
+
 | Query | Unfiltered top-1 | Filtered top-1 |
 | --- | --- | --- |
 | State Newton's universal law of gravitation | Class 9 Science, Ch.9 (0.586) — FAIL | Class 11 Physics, Ch.7 GRAVITATION — PASS |
@@ -1653,7 +1644,6 @@ comes from the expected class, subject and chapter.
 | Explain the kinetic theory of gases | Class 11 Physics, Ch.5 — PASS | Class 11 Physics, Ch.5 — PASS |
 | **Top-1 correct book** | **5/8 (62%)** | **8/8 (100%)** |
 
-**TABLE 17: Retrieval accuracy before and after metadata filtering**
 
 The three failures are instructive. Two were caused by out-of-syllabus material outranking the correct
 book — a NEET aspirant asking about gravitation received the Class 9 treatment. The third was
@@ -1672,6 +1662,8 @@ and correctly returns nothing for the tenth.
 
 Command: `python backend/scripts/demo_text_preprocessor.py`
 
+**TABLE 18: Subject-specific text normalisation examples**
+
 | Subject | Raw script text | Text sent to the speech engine |
 | --- | --- | --- |
 | Physics | v² = u² + 2as | v squared equals u squared plus 2 a s |
@@ -1683,7 +1675,6 @@ Command: `python backend/scripts/demo_text_preprocessor.py`
 | Biology | 70S ribosomes, NOT 80S | seventy S ribosomes, NOT eighty S |
 | Biology | 5' to 3' direction | five prime to three prime direction |
 
-**TABLE 18: Subject-specific text normalisation examples**
 
 Without this stage the engine voices "v² = u² + 2as" as "v u as". Two defects found while building it
 are worth recording because both are the kind that a regex-only approach produces. Expanding SI units
@@ -1697,13 +1688,14 @@ E E T"; it now validates every group against a real element-symbol set before sp
 
 Command: `python backend/app/tts/multi_voice_test.py`
 
+**TABLE 19: TTS engine comparison**
+
 | Engine | Mean latency | Mean RTF | Sample rate | Word timestamps | Offline | Indian-English voice |
 | --- | --- | --- | --- | --- | --- | --- |
 | **Edge-TTS** | **5.26 s** | **0.449** | 24 kHz | **Yes** | No | Yes |
 | gTTS | 5.91 s | 0.503 | 24 kHz | No | No | Accent only |
 | Coqui-TTS | not installed | — | — | No | Yes | No |
 
-**TABLE 19: TTS engine comparison**
 
 Per-subject latency for Edge-TTS was 12.31 s, 1.95 s and 1.53 s; the first figure is a cold-start
 artefact including connection establishment, and warm requests settle at roughly 1.5-2 s. The decision
@@ -1726,18 +1718,22 @@ sentence retrieved verbatim from the corpus, with its citation beneath it; the f
 marks the current position in the five-part lesson; the right panel holds a process flow whose steps
 are real retrieved statements rather than placeholders.
 
-> **FIGURE 9: Prototype snapshot — CONCEPT slide with cited definition**
-> ![CONCEPT slide](figures/fig09_concept_slide.png)
->
-> Definition displayed: "Newton's law of universal gravitation states that the gravitational force of
-> attraction between any two particles of masses m1 and m2 separated by a distance r has the
-> magnitude." — Class 11 Physics, Ch.7 GRAVITATION
+![CONCEPT slide](figures/fig09_concept_slide.png){: width="620" }
 
-> **FIGURE 10: Prototype snapshot — EXAMPLE slide with generated concept diagram**
-> ![EXAMPLE slide](figures/fig10_example_slide.png)
->
-> The right panel shows two attracting masses with the force pair and the separation r labelled,
-> drawn by the concept-diagram library and selected automatically from the topic.
+**FIGURE 9: Prototype snapshot — CONCEPT slide with cited definition**
+
+The definition card reproduces the retrieved sentence verbatim — "Newton's law of universal
+gravitation states that the gravitational force of attraction between any two particles of masses m1
+and m2 separated by a distance r has the magnitude." — above its citation to Class 11 Physics,
+Ch.7 GRAVITATION. The flow strip at top right marks the current part of the five-part lesson.
+
+![EXAMPLE slide](figures/fig10_example_slide.png){: width="620" }
+
+**FIGURE 10: Prototype snapshot — EXAMPLE slide with generated concept diagram**
+
+The right panel shows two attracting masses with the force pair and the separation r labelled, drawn
+by the concept-diagram library and selected automatically from the topic. Bullets on the left are
+retrieved textbook sentences.
 
 Three rendering defects were found by inspecting output frames rather than by reading code, and each
 is recorded here because each was invisible in the source.
@@ -1760,12 +1756,16 @@ text panel rather than showing an unrelated illustration.
 
 ### 4.4.6 Step 6 — The assembled video
 
-> **FIGURE 11: Prototype snapshot — complete video timeline, all five scenes**
-> ![Video timeline](figures/fig11_video_timeline.png)
->
-> Left to right: intro card, HOOK, CONCEPT with definition card, EXAMPLE with formula and concept
-> diagram, MEMORY, NEET ALERT, outro card. The karaoke subtitle band is visible on every scene with
-> the active word highlighted.
+![Video timeline](figures/fig11_video_timeline.png){: width="640" }
+
+**FIGURE 11: Prototype snapshot — complete video timeline, all five scenes**
+
+Frames sampled at eleven-second intervals from the generated lesson. Left to right: intro card, HOOK,
+CONCEPT with the definition card, EXAMPLE with the formula and concept diagram, MEMORY, NEET ALERT
+and the outro card. The karaoke subtitle band is visible on every scene with the active word
+highlighted.
+
+**TABLE 20: Output video specifications**
 
 | Property | Value |
 | --- | --- |
@@ -1778,7 +1778,6 @@ text panel rather than showing an unrelated illustration.
 | Measured output | 82.7 s, 3.62 MB |
 | Content source | NCERT corpus, retrieved at request time |
 
-**TABLE 20: Output video specifications**
 
 ### 4.4.7 Step 7 — Performance analysis
 
@@ -1792,6 +1791,8 @@ Python-side frame generation.
 
 The profiler encodes the same ten-second slide six ways, isolating each feature.
 
+**TABLE 21: Frame pipeline profile: cost per rendering feature**
+
 | Variant | Time | Throughput | Overhead vs baseline |
 | --- | --- | --- | --- |
 | static (encoder floor) | 1.77 s | 136.0 fps | — |
@@ -1801,11 +1802,14 @@ The profiler encodes the same ten-second slide six ways, isolating each feature.
 | ken_burns + library composite (original) | 20.92 s | 11.5 fps | +1082% |
 | **ken_burns + purpose-built (current)** | **4.79 s** | **50.2 fps** | **+171%** |
 
-**TABLE 21: Frame pipeline profile: cost per rendering feature**
 
-> **FIGURE 12: Frame-generation cost by pipeline stage**
-> *(Bar chart of the throughput column of Table 21; data in
-> `backend/outputs/benchmarks/frame_pipeline_profile.json`)*
+![Frame profile](figures/fig12_frame_profile.png){: width="620" }
+
+**FIGURE 12: Frame-generation cost by pipeline stage**
+
+Throughput for each variant of Table 21. Red bars use the media library's generic compositing path;
+green bars use the purpose-built band compositor. The zoom animation costs comparatively little; the
+subtitle compositing method accounts for almost the whole difference.
 
 Profiling within the slow variant attributed 8.9 s of 11.4 s to the media library's generic blit
 routine, at approximately 37 ms per call, with a further 1.5 s in channel-stacking the alpha mask.
@@ -1819,6 +1823,8 @@ the band region, and centre-crops the zoomed base frame in the same pass. That l
 corrected a latent visual defect: the library was anchoring the enlarged frame at the top-left, so the
 zoom drifted into a corner instead of pushing into the centre.
 
+**TABLE 22: End-to-end generation time before and after optimisation**
+
 | Stage | Before | After | Change |
 | --- | --- | --- | --- |
 | Encode (including frame generation) | 593.39 s | 111.63 s | 5.3x faster |
@@ -1829,7 +1835,6 @@ zoom drifted into a corner instead of pushing into the centre.
 | **Total** | **625.18 s** | **125.37 s** | **4.7x faster** |
 | Real-time factor | 8.48x | 1.70x | — |
 
-**TABLE 22: End-to-end generation time before and after optimisation**
 
 The 90-second target of NFR-1 is not yet met for a full-length lesson: 125 s is 1.4x over. Three
 observations bound the remaining work. Encoding is now 89% of the residual and scales with video
@@ -1853,6 +1858,8 @@ two figures in this report are not read as contradictory.
 Table 23 states attainment against each approved objective. The discussion that follows explains the
 two entries that are partial and records one deliberate departure from the proposal.
 
+**TABLE 23: Objective-wise work accomplished**
+
 | Objective | Status | Evidence |
 | --- | --- | --- |
 | **1. Build a textbook-grounded RAG pipeline** | Achieved | 2,876 units indexed across ~60 chapters with class, subject and chapter metadata (Table 16). Retrieval restricted to the correct book, with two-stage chapter selection and sentence-window re-ranking. Top-1 correct book 8/8 on the benchmark, up from 5/8 unfiltered (Table 17). Definitions displayed verbatim with citation. |
@@ -1860,7 +1867,6 @@ two entries that are partial and records one deliberate departure from the propo
 | **3. Deliver a student-facing interface** | Achieved in components; integration pending | Fourteen REST endpoints and a WebSocket progress channel (Table 7), JWT authentication with per-user resource isolation, MongoDB persistence, and a seven-page React client. The client currently resides on a separate branch and is scheduled for integration. |
 | **4. Optimise performance and response time** | Substantially advanced; target not yet met | End-to-end generation reduced 4.7x, from 625 s to 125 s, by locating the bottleneck through profiling and replacing the generic compositing path (Tables 21 and 22). The 90 s target is not met for a full-length lesson; the remedy is identified and scheduled. |
 
-**TABLE 23: Objective-wise work accomplished**
 
 ### 5.1.1 Objective 1 in detail
 
