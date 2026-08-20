@@ -92,7 +92,7 @@ class GeminiLLMService:
         prompt: str,
         system_instruction: Optional[str] = None,
         temperature: float = 0.2,
-        max_output_tokens: int = 2048,
+        max_output_tokens: Optional[int] = None,
     ) -> str:
         """Call Gemini API to generate plain text or structured response."""
         if not self.is_configured:
@@ -108,7 +108,7 @@ class GeminiLLMService:
             ],
             "generationConfig": {
                 "temperature": temperature,
-                "maxOutputTokens": max_output_tokens,
+                "maxOutputTokens": max_output_tokens or self.settings.llm_max_output_tokens,
             },
         }
 
@@ -152,11 +152,33 @@ class GeminiLLMService:
             if not candidates:
                 raise RuntimeError("Gemini returned empty candidates list")
 
-            parts = candidates[0].get("content", {}).get("parts", [])
-            if not parts:
-                raise RuntimeError("Gemini returned no content parts")
+            candidate = candidates[0]
+            finish_reason = candidate.get("finishReason")
+            # Join every part: a reasoning model can return the answer split
+            # across parts, and reading parts[0] alone dropped the rest.
+            parts = candidate.get("content", {}).get("parts", [])
+            text = "".join(part.get("text", "") for part in parts).strip()
 
-            return parts[0].get("text", "").strip()
+            usage = data.get("usageMetadata", {})
+            if finish_reason == "MAX_TOKENS":
+                # Truncated output is not a transient failure and retrying the
+                # same prompt cannot fix it. Saying so beats letting the caller
+                # discover it as "Expecting value: line 1 column 1 (char 0)"
+                # when the half-written JSON fails to parse.
+                raise RuntimeError(
+                    "Gemini hit maxOutputTokens and the answer was truncated "
+                    f"({usage.get('thoughtsTokenCount', 0)} thinking + "
+                    f"{usage.get('candidatesTokenCount', 0)} output tokens against a "
+                    f"{max_output_tokens or self.settings.llm_max_output_tokens} cap). "
+                    "Raise LLM_MAX_OUTPUT_TOKENS."
+                )
+            if not text:
+                raise RuntimeError(
+                    f"Gemini returned no text (finishReason={finish_reason}, "
+                    f"thinking tokens={usage.get('thoughtsTokenCount', 0)})"
+                )
+
+            return text
 
     def _extract_json_block(self, raw_text: str) -> Any:
         """Extract and parse JSON array or object from markdown or raw text."""

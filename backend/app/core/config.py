@@ -71,6 +71,12 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""
     llm_provider: str = "gemini"
     llm_model: str = "gemini-3.6-flash"
+    # gemini-3.6-flash reasons before answering and those thinking tokens come
+    # out of this budget: a five-scene script measured 1,097 thinking tokens
+    # against 803 of actual output. At the old 2,048 the response came back
+    # finishReason=MAX_TOKENS, truncated mid-JSON. thinkingConfig is not
+    # accepted by this model (HTTP 400), so headroom is the available lever.
+    llm_max_output_tokens: int = 8192
 
     model_config = SettingsConfigDict(
         env_file=str(BACKEND_DIR / ".env"),
