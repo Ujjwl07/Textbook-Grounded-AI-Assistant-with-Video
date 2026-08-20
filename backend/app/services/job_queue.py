@@ -6,8 +6,10 @@ from pathlib import Path
 from typing import Dict, Optional
 
 from app.models.schemas import GenerateRequest, JobState, JobStatus
+from app.rag.scene_builder import build_scenes
+from app.video.scene_presets import get_fallback_scenes
 from app.rag.retriever import retriever
-from app.llm.gemini_service import gemini_service
+from app.llm.gemini_service import GeminiUnavailable, gemini_service
 from app.services.database import database
 from app.services.storage import video_storage
 from app.services.websocket_manager import websocket_manager
@@ -63,6 +65,7 @@ class JobQueue:
             "video_url": job.video_url,
             "local_video_path": job.local_video_path,
             "local_filename": Path(job.local_video_path).name if job.local_video_path else None,
+            "scene_source": job.scene_source,
             "status": job.status.value,
             "progress": job.progress,
             "stage": job.stage,
@@ -87,6 +90,52 @@ class JobQueue:
         job.updated_at = datetime.utcnow()
         await database.save_video_record(self._record_from_job(job))
         await websocket_manager.broadcast(job.job_id, job.model_dump(mode="json"))
+
+    async def _build_scenes(self, job: JobState, subject, class_level, context) -> tuple:
+        """Scenes for ``job``, and the name of the stage that produced them.
+
+        Gemini writes the script when it can. When it is overloaded — the API
+        answers 503 for minutes at a time under load, and generate_text already
+        retries with backoff before giving up — the video is still assembled,
+        from passages retrieved out of the textbook rather than from nothing.
+
+        That fallback is quoted NCERT prose, so it is grounded; what it is not
+        is a written script. The distinction is recorded on the job and returned
+        by the status endpoint, because a fallback nobody can see is exactly the
+        silent fallback this pipeline removed.
+        """
+        try:
+            scenes = await gemini_service.generate_educational_scenes(
+                topic=job.topic,
+                subject=subject,
+                class_level=class_level,
+                retrieved_context=context,
+            )
+            return scenes, "gemini"
+        except GeminiUnavailable as exc:
+            logger.warning(
+                "Job %s: Gemini unavailable (%s); assembling scenes from retrieval instead",
+                job.job_id, exc,
+            )
+        except Exception:
+            # A bad key or a malformed prompt is a real defect. Retrieval can
+            # still carry this one video, but the traceback must be recorded.
+            logger.exception("Job %s: Gemini scene generation failed", job.job_id)
+
+        try:
+            scenes = build_scenes(job.topic, subject, class_level)
+        except Exception:
+            logger.exception("Job %s: retrieval-grounded scene build failed", job.job_id)
+            scenes = None
+        if scenes:
+            return scenes, "retrieval"
+
+        logger.warning(
+            "Job %s: no scenes from Gemini or retrieval for %r; using presets. "
+            "This video is NOT textbook-grounded.",
+            job.job_id, job.topic,
+        )
+        return get_fallback_scenes(job.topic, subject, class_level), "presets"
 
     async def run_generation(self, job_id: str) -> None:
         job = self.jobs[job_id]
@@ -123,11 +172,8 @@ class JobQueue:
             
             # 4. Segmentation stage (45%)
             await self._set_progress(job, 45, "segmenting", "Segmenting script into educational scenes")
-            scenes = await gemini_service.generate_educational_scenes(
-                topic=job.topic,
-                subject=subject,
-                class_level=class_level,
-                retrieved_context=retrieved_context,
+            scenes, job.scene_source = await self._build_scenes(
+                job, subject, class_level, retrieved_context
             )
 
             # Stamp the resolved scope on every scene. The renderer tints

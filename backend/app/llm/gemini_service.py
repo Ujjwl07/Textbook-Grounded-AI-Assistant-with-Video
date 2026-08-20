@@ -1,4 +1,6 @@
+import asyncio
 import json
+import random
 import logging
 import re
 from typing import Any, Dict, List, Optional
@@ -7,6 +9,24 @@ import httpx
 from app.core.config import get_settings
 
 logger = logging.getLogger("textbook_assistant.gemini")
+
+
+class GeminiUnavailable(RuntimeError):
+    """Gemini could not be reached, or was too busy to answer.
+
+    Separate from a configuration or request error on purpose: an overloaded
+    model is a temporary condition the caller can work around, while a missing
+    key or a malformed prompt is not.
+    """
+
+
+# Statuses worth trying again. 429 is the quota/rate limit, 503 is the
+# "model is overloaded" the API returns under load; the 5xx family is transient
+# by definition. Anything else (400 bad request, 403 bad key) will fail the same
+# way on every attempt, so it is raised immediately.
+_RETRY_STATUS = {429, 500, 502, 503, 504}
+_MAX_ATTEMPTS = 4
+_BASE_BACKOFF_SECONDS = 1.5
 
 
 # The model is asked for NEET_ALERT but reliably shortens it. An unknown part
@@ -51,6 +71,22 @@ class GeminiLLMService:
     def is_configured(self) -> bool:
         return bool(self.api_key and len(self.api_key.strip()) > 10)
 
+    async def _backoff(self, attempt: int, retry_after: Optional[str], detail: str) -> None:
+        """Wait before retrying, honouring Retry-After when the API sends one."""
+        delay = _BASE_BACKOFF_SECONDS * (2 ** (attempt - 1))
+        if retry_after:
+            try:
+                delay = max(delay, float(retry_after))
+            except ValueError:
+                pass
+        # Jitter, so several queued jobs do not all retry on the same tick.
+        delay += random.uniform(0, 0.5)
+        logger.warning(
+            "Gemini unavailable (attempt %s/%s), retrying in %.1fs: %s",
+            attempt, _MAX_ATTEMPTS, delay, detail,
+        )
+        await asyncio.sleep(delay)
+
     async def generate_text(
         self,
         prompt: str,
@@ -81,11 +117,35 @@ class GeminiLLMService:
                 "parts": [{"text": system_instruction}]
             }
 
+        last_error = None
         async with httpx.AsyncClient(timeout=45.0) as client:
-            response = await client.post(endpoint, json=payload)
-            if response.status_code != 200:
+            for attempt in range(1, _MAX_ATTEMPTS + 1):
+                try:
+                    response = await client.post(endpoint, json=payload)
+                except httpx.RequestError as exc:
+                    # DNS, connection reset, timeout: transient like a 503.
+                    last_error = GeminiUnavailable(f"Gemini request failed: {exc}")
+                    await self._backoff(attempt, None, str(exc))
+                    continue
+
+                if response.status_code == 200:
+                    break
+
+                detail = response.text[:200]
+                if response.status_code in _RETRY_STATUS and attempt < _MAX_ATTEMPTS:
+                    last_error = GeminiUnavailable(
+                        f"Gemini API error {response.status_code}: {detail}"
+                    )
+                    await self._backoff(attempt, response.headers.get("Retry-After"), detail)
+                    continue
+
                 logger.error(f"Gemini API error ({response.status_code}): {response.text}")
-                raise RuntimeError(f"Gemini API error {response.status_code}: {response.text[:200]}")
+                message = f"Gemini API error {response.status_code}: {detail}"
+                if response.status_code in _RETRY_STATUS:
+                    raise GeminiUnavailable(message)
+                raise RuntimeError(message)
+            else:
+                raise last_error or GeminiUnavailable("Gemini did not respond")
 
             data = response.json()
             candidates = data.get("candidates", [])

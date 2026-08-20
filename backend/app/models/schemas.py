@@ -38,6 +38,10 @@ class JobState(BaseModel):
     user_id: Optional[str] = None
     video_url: Optional[str] = None
     local_video_path: Optional[str] = None
+    # Which stage produced the scenes: "gemini", "retrieval" or "presets". A
+    # fallback that nobody can see is a silent fallback, so it is recorded on
+    # the job and returned by the status and video endpoints.
+    scene_source: Optional[str] = None
     error: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
