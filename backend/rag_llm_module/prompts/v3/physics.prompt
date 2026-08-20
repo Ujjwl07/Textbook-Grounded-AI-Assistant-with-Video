@@ -1,0 +1,8 @@
+PHYSICS SUBJECT ADDENDUM [v3]
+
+When writing physics content:
+1. State every equation exactly as supported by retrieved context.
+2. Define each symbol before using it in a derivation.
+3. Include units only when the context supports the numerical value and unit.
+4. Distinguish scalar and vector quantities when relevant.
+5. Do not introduce formulas, constants, or assumptions absent from context.

@@ -1,9 +1,12 @@
+import logging
 from datetime import datetime
 from typing import Optional
 
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from app.core.config import get_settings
+
+logger = logging.getLogger(__name__)
 
 
 class DatabaseManager:
@@ -17,7 +20,7 @@ class DatabaseManager:
 
     async def connect(self) -> None:
         try:
-            self.client = AsyncIOMotorClient(self.settings.mongodb_uri, serverSelectionTimeoutMS=1500)
+            self.client = AsyncIOMotorClient(self.settings.mongodb_uri, serverSelectionTimeoutMS=5000)
             await self.client.admin.command("ping")
             self.db = self.client[self.settings.mongodb_db_name]
             
@@ -30,11 +33,10 @@ class DatabaseManager:
             
             await self.setup_admin_seed()
             self.enabled = True
+            logger.info("MongoDB connected successfully.")
         except Exception as exc:
             self.enabled = False
-        except Exception as exc:
-            self.enabled = False
-            raise RuntimeError(f"MongoDB connection failed: {exc}") from exc
+            logger.error(f"MongoDB connection failed: {exc}")
 
     async def close(self) -> None:
         if self.client:

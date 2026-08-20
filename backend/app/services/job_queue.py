@@ -6,12 +6,12 @@ from pathlib import Path
 from typing import Dict, Optional
 
 from app.models.schemas import GenerateRequest, JobState, JobStatus
+from app.rag.retriever import retriever
+from app.llm.gemini_service import gemini_service
 from app.services.database import database
 from app.services.storage import video_storage
 from app.services.websocket_manager import websocket_manager
 from app.tts.tts_generator import TTSGenerator
-from app.rag.scene_builder import build_scenes
-from app.video.scene_presets import get_fallback_scenes
 from app.video.slide_generator import SlideRenderer
 from app.video.video_assembler import VideoAssembler
 
@@ -96,39 +96,56 @@ class JobQueue:
             await asyncio.sleep(0.5)
 
             # 2. Retrieval stage (15%)
-            await self._set_progress(job, 15, "retrieving", "Searching the NCERT textbook for this topic")
-            await asyncio.sleep(0.5)
-            
+            await self._set_progress(job, 15, "retrieving", "Searching NCERT textbook context")
+            retrieval_res = retriever.retrieve(
+                query=job.topic,
+                subject=job.subject,
+                class_level=job.class_level,
+                caller=f"JobQueue:{job.job_id[:8]}",
+                log_to_file=True,
+            )
+            retrieved_context = retrieval_res.context_text
+            logger.info(
+                f"Job {job.job_id}: Extracted {retrieval_res.total_chunks} chunks for topic '{job.topic}' "
+                f"(logged to {retrieval_res.log_file_path})"
+            )
+
+            # Subject and class may have been left out by the client or set
+            # wrongly; retrieval resolves them against the corpus. Both the
+            # prompt and the narration voice need the resolved values, not the
+            # requested ones.
+            applied = retrieval_res.filters_applied
+            subject = applied.get("resolved_subject") or job.subject
+            class_level = applied.get("resolved_class_level") or job.class_level
+
             # 3. Scripting stage (30%)
-            await self._set_progress(job, 30, "scripting", "Generating personalization script")
-            await asyncio.sleep(0.5)
+            await self._set_progress(job, 30, "scripting", "Generating curriculum-grounded script via Gemini")
             
             # 4. Segmentation stage (45%)
             await self._set_progress(job, 45, "segmenting", "Segmenting script into educational scenes")
-            await asyncio.sleep(0.5)
+            scenes = await gemini_service.generate_educational_scenes(
+                topic=job.topic,
+                subject=subject,
+                class_level=class_level,
+                retrieved_context=retrieved_context,
+            )
+
+            # Stamp the resolved scope on every scene. The renderer tints
+            # backgrounds by subject and the assembler picks the narration voice
+            # from it, and the model is not asked to echo it back.
+            for scene in scenes:
+                scene.setdefault("subject", (subject or "physics").lower())
+                scene.setdefault("class_level", class_level or "")
 
             # 5. Audio and Video Assembly stages (60% to 92%)
             await self._set_progress(job, 60, "audio", "Synthesizing vocal narration and rendering slide templates")
-            
-            # Scenes come from the NCERT corpus. build_scenes retrieves the
-            # topic's chapter from Qdrant and assembles the five parts from real
-            # passages, so the definition on screen carries a citation. It
-            # returns None when retrieval finds nothing for the topic, in which
-            # case the hand-written presets keep the pipeline working.
-            scenes = None
-            try:
-                scenes = build_scenes(job.topic, job.subject, job.class_level)
-            except Exception as exc:
-                logger.warning("Retrieval-grounded scene build failed (%s); using presets", exc)
-            if not scenes:
-                scenes = get_fallback_scenes(job.topic, job.subject, job.class_level)
             
             local_path = str(video_storage.settings.video_output_dir / f"{job.job_id}.mp4")
             
             # Generate the video (takes care of TTS, slide drawing, Ken Burns, Karaoke subtitles)
             # Narrate in the voice of the subject the topic actually belongs to,
             # which may have been inferred rather than supplied by the client.
-            voice_subject = (scenes[0].get("subject") if scenes else None) or job.subject or "physics"
+            voice_subject = (subject or "physics").lower()
             await self.assembler.assemble_full_video(scenes, voice_subject, local_path)
             
             # 6. Upload stage (92%)
