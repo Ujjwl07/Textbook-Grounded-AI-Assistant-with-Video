@@ -51,15 +51,22 @@ async def main() -> None:
 
     parser = argparse.ArgumentParser()
     parser.add_argument("topic")
-    parser.add_argument("--subject", default="physics", choices=["physics", "chemistry", "biology"])
-    parser.add_argument("--class", dest="class_level", default="11", choices=["11", "12"])
+    # Both default to None so the retriever infers them from the corpus, which is
+    # what the API does when a client sends only a topic. Defaulting them here
+    # silently constrained the search: "Human Reproduction" with the old
+    # default of Class 11 resolved to Cell Cycle and Cell Division rather than
+    # the Class 12 chapter of that name.
+    parser.add_argument("--subject", default=None, choices=["physics", "chemistry", "biology"])
+    parser.add_argument("--class", dest="class_level", default=None, choices=["11", "12"])
     parser.add_argument("--slides-only", action="store_true",
                         help="Render the five PNGs and skip TTS/encoding")
     parser.add_argument("--out", default=None, help="Output MP4 path")
     args = parser.parse_args()
 
     print("=" * 76)
-    print(f"GROUNDED VIDEO — {args.topic}  (Class {args.class_level} {args.subject})")
+    requested = (f"Class {args.class_level}" if args.class_level else "class: infer") + \
+                (f", {args.subject}" if args.subject else ", subject: infer")
+    print(f"GROUNDED VIDEO — {args.topic}  [{requested}]")
     print("=" * 76)
 
     start = time.perf_counter()
@@ -67,7 +74,10 @@ async def main() -> None:
     retrieval_seconds = time.perf_counter() - start
 
     if scenes:
-        print(f"\nRetrieved and assembled 5 scenes in {retrieval_seconds:.1f}s")
+        resolved = scenes[0]
+        print(f"\nResolved to: Class {resolved.get('class_level')} "
+              f"{str(resolved.get('subject', '')).title()} / {resolved.get('chapter_name')}")
+        print(f"Retrieved and assembled 5 scenes in {retrieval_seconds:.1f}s")
         grounded = True
     else:
         print("\nRetrieval found nothing for this topic — falling back to presets")
@@ -100,7 +110,8 @@ async def main() -> None:
     assembler = VideoAssembler(TTSGenerator(), renderer)
     print(f"\nAssembling video -> {output_path}")
     render_start = time.perf_counter()
-    await assembler.assemble_full_video(scenes, args.subject, output_path)
+    voice_subject = (scenes[0].get("subject") if scenes else None) or args.subject
+    await assembler.assemble_full_video(scenes, voice_subject, output_path)
     total = time.perf_counter() - render_start
 
     stats = assembler.last_render_stats

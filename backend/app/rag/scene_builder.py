@@ -110,13 +110,22 @@ def build_scenes(
     to the hand-written presets rather than render an empty video.
     """
     retriever = retriever or get_retriever()
-    subject_key = (subject or "physics").lower()
-    subject_title = SUBJECT_TITLES.get(subject_key, subject_key.title())
 
-    chapter = retriever.find_chapter(topic, subject=subject_title, class_level=class_level)
-    if not chapter:
+    # Subject and class are resolved against the corpus rather than defaulted.
+    # A missing subject used to fall back to "physics", which sent a query for
+    # Photosynthesis to the Class 11 Physics chapter on Thermodynamics.
+    requested_subject = SUBJECT_TITLES.get((subject or "").lower()) if subject else None
+    scope = retriever.find_topic_scope(
+        topic, subject=requested_subject, class_level=class_level
+    )
+    if not scope:
         logger.info("No chapter matched topic %r; falling back to presets", topic)
         return None
+
+    chapter = scope["chapter"]
+    subject_title = scope["subject"] or requested_subject or "Physics"
+    class_level = scope["class_level"] or class_level or "11"
+    subject_key = subject_title.lower()
 
     # Core passages for the concept and example scenes.
     overview = retriever.search_passages(
@@ -287,9 +296,20 @@ def build_scenes(
     ]
 
     logger.info(
-        "Built %s scenes for %r from chapter %r (definition: %s, cautions: %s, figures: %s)",
-        len(scenes), topic, chapter, bool(definition), len(cautions), len(figures),
+        "Built %s scenes for %r from Class %s %s / %s "
+        "(definition: %s, cautions: %s, figures: %s)",
+        len(scenes), topic, class_level, subject_title, chapter,
+        bool(definition), len(cautions), len(figures),
     )
+
+    # Stamp the resolved scope on every scene. The caller needs it to pick the
+    # narration voice: with only the requested subject available, a Biology
+    # lesson whose subject was inferred would be read in the Physics voice.
+    for scene in scenes:
+        scene["subject"] = subject_key
+        scene["class_level"] = class_level
+        scene["chapter_name"] = chapter
+
     return scenes
 
 

@@ -126,7 +126,10 @@ class JobQueue:
             local_path = str(video_storage.settings.video_output_dir / f"{job.job_id}.mp4")
             
             # Generate the video (takes care of TTS, slide drawing, Ken Burns, Karaoke subtitles)
-            await self.assembler.assemble_full_video(scenes, job.subject, local_path)
+            # Narrate in the voice of the subject the topic actually belongs to,
+            # which may have been inferred rather than supplied by the client.
+            voice_subject = (scenes[0].get("subject") if scenes else None) or job.subject or "physics"
+            await self.assembler.assemble_full_video(scenes, voice_subject, local_path)
             
             # 6. Upload stage (92%)
             await self._set_progress(job, 92, "uploading", "Uploading final video clip to storage")

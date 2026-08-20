@@ -390,6 +390,96 @@ class NCERTRetriever:
                 weights[chunk.chapter_name] += chunk.score
         return max(weights, key=weights.get) if weights else None
 
+    def find_topic_scope(
+        self,
+        topic: str,
+        subject: Optional[str] = None,
+        class_level: Optional[str] = None,
+        top_k: int = 8,
+        override_margin: float = 0.10,
+    ) -> Optional[dict]:
+        """Resolve which book and chapter a topic belongs to.
+
+        Callers may know none, some or all of subject and class. Anything not
+        supplied is inferred from the corpus rather than defaulted, because a
+        silent default is worse than a search: defaulting an unspecified subject
+        to Physics routed "Photosynthesis" to the Thermodynamics chapter.
+
+        A supplied subject is also overridden when searching without it finds a
+        markedly better match, so a student who picks the wrong subject in a
+        dropdown still gets the right chapter. The margin separates the two cases
+        cleanly in measurement: with a correct subject the filtered and unfiltered
+        top similarities differ by at most 0.003 ("Human Reproduction" 0.595 vs
+        0.595, "Chemical Kinetics" 0.677 vs 0.680), while with a wrong subject the
+        unfiltered search wins by 0.28 or more ("Photosynthesis" as Physics scores
+        0.305 against 0.728 unfiltered).
+
+        Returns ``{chapter, subject, class_level, score, top_score, inferred}``
+        or None.
+        """
+        from collections import defaultdict
+
+        def best(subject_filter):
+            chunks = self.search(
+                topic, subject=subject_filter, class_level=class_level, top_k=top_k
+            ).chunks
+            if not chunks:
+                return None
+            weights = defaultdict(float)
+            for chunk in chunks:
+                if chunk.chapter_name:
+                    weights[(chunk.chapter_name, chunk.subject, chunk.class_level)] += chunk.score
+            if not weights:
+                return None
+            (chapter, found_subject, found_class), score = max(
+                weights.items(), key=lambda kv: kv[1]
+            )
+            return {
+                "chapter": chapter,
+                "subject": found_subject or subject_filter,
+                "class_level": found_class or class_level,
+                "score": score,
+                # Ranking uses the best single chunk, not the accumulated weight:
+                # the sum grows with how many chunks a chapter contributed, which
+                # is not a measure of how well the topic matched.
+                "top_score": max(c.score for c in chunks),
+            }
+
+        result = best(subject)
+        inferred = []
+
+        if subject:
+            relaxed = best(None)
+            if relaxed and (
+                result is None
+                or relaxed["top_score"] > result["top_score"] + override_margin
+            ):
+                if result is not None:
+                    logger.info(
+                        "Topic %r was given subject %r but matches %s far better "
+                        "(%.3f vs %.3f); using the corpus match",
+                        topic, subject, relaxed["subject"],
+                        relaxed["top_score"], result["top_score"],
+                    )
+                inferred.append("subject")
+                result = relaxed
+        else:
+            inferred.append("subject")
+
+        if result is None:
+            return None
+
+        if not class_level:
+            inferred.append("class_level")
+
+        result["inferred"] = sorted(set(inferred))
+        logger.info(
+            "Topic %r resolved to Class %s %s / %s (inferred: %s)",
+            topic, result["class_level"], result["subject"],
+            result["chapter"], result["inferred"] or "nothing",
+        )
+        return result
+
     def find_definition(
         self,
         topic: str,
