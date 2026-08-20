@@ -122,7 +122,20 @@ GENERIC_TOPIC = {
         "Choose the equation that links them.",
         "Substitute in SI units and check the final unit.",
     ],
-    "memory": {},
+    # Generic advice, but real content: with these empty the memory scene had
+    # nothing to draw and rendered a blank panel.
+    "memory_bullets": [
+        "Learn the exact NCERT wording — questions test the phrasing.",
+        "Tie every symbol in the formula to the quantity it stands for.",
+    ],
+    "memory": {
+        "left": {"title": "Do", "points": ["Quote the definition",
+                                           "Check units at each step",
+                                           "Read the exceptions"]},
+        "right": {"title": "Avoid", "points": ["Paraphrasing key terms",
+                                               "Skipping sign conventions",
+                                               "Guessing from the options"]},
+    },
     "alert_caption": "Common NEET traps",
     "alert_bullets": [
         "Watch sign conventions and unit conversions.",
@@ -154,8 +167,18 @@ def get_fallback_scenes(topic: str, subject: str, class_level: str) -> list:
     preset = _preset_for(topic, subject)
     steps = preset.get("concept_steps") or []
     comparison = preset.get("memory") or {}
+    subject_key = (subject or preset.get("subject") or "physics").lower()
 
-    return [
+    # Stand-in for the panels that have no content in a preset. Both places that
+    # use it previously fell through to a labelled diagram with an empty label
+    # list, which draws two concentric circles and says nothing.
+    scope_card = {
+        "kicker": "NEET TOPIC",
+        "chapter": topic,
+        "scope": (f"Class {class_level} · " if class_level else "") + subject_key.title(),
+    }
+
+    scenes = [
         {
             "part": "HOOK",
             "slide_title": f"The Mystery of {topic}",
@@ -169,8 +192,8 @@ def get_fallback_scenes(topic: str, subject: str, class_level: str) -> list:
                 "This is a crucial topic for NEET, appearing almost every year. "
                 "Let's master it quickly."
             ),
-            "visual_type": "alert",
-            "visual_data": {"caption": "High-weightage topic"},
+            "visual_type": "topic_card",
+            "visual_data": scope_card,
             "animation_type": "fade_in",
             "duration_hint_seconds": 12,
         },
@@ -190,8 +213,8 @@ def get_fallback_scenes(topic: str, subject: str, class_level: str) -> list:
                 "by specific physical properties. Remember these exact terms, as questions "
                 "test your vocabulary directly."
             ),
-            "visual_type": "process" if steps else "diagram",
-            "visual_data": {"steps": steps} if steps else {"title": topic, "labels": []},
+            "visual_type": "process" if steps else "topic_card",
+            "visual_data": {"steps": steps} if steps else scope_card,
             "animation_type": "slide_left",
             "duration_hint_seconds": 16,
         },
@@ -220,8 +243,9 @@ def get_fallback_scenes(topic: str, subject: str, class_level: str) -> list:
                 "To remember this easily during the high-pressure NEET exam, compare the "
                 "two side by side. Anchoring the difference visually stops you mixing them up."
             ),
-            "visual_type": "comparison" if comparison else "diagram",
-            "visual_data": comparison if comparison else {"title": topic, "labels": []},
+            "visual_type": "comparison" if comparison else "checklist",
+            "visual_data": comparison if comparison else {
+                "items": preset.get("memory_bullets") or []},
             "animation_type": "slide_left",
             "duration_hint_seconds": 14,
         },
@@ -239,3 +263,10 @@ def get_fallback_scenes(topic: str, subject: str, class_level: str) -> list:
             "duration_hint_seconds": 14,
         },
     ]
+
+    # Stamp the scope the same way build_scenes does, so the renderer's
+    # per-subject tint applies to fallback videos too.
+    for scene in scenes:
+        scene["subject"] = subject_key
+        scene["class_level"] = class_level or ""
+    return scenes

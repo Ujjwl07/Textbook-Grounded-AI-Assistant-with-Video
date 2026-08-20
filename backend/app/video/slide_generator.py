@@ -109,6 +109,41 @@ SCENE_THEMES = {
     },
 }
 
+# Per-subject background tints.
+#
+# SCENE_THEMES sets the *rhythm* of one lesson: five parts, five colours. Keyed
+# on the part and nothing else, it also made every video in the library open on
+# the same navy and close on the same crimson, whatever the subject. A tint
+# shifts the whole run into its own family so a Biology video does not look like
+# a Physics one at a glance.
+#
+# Only the background moves. Accents, text and subtext stay with the part theme,
+# and every tint here is dark enough that readable_on() still resolves the
+# part's light accent the same way, so the contrast rules are unchanged.
+SUBJECT_TINTS = {
+    'physics': {
+        'HOOK': (26, 35, 126),      # deep navy
+        'CONCEPT': (20, 90, 172),   # royal blue
+        'EXAMPLE': (13, 71, 92),    # deep teal
+        'MEMORY': (49, 27, 146),    # indigo
+        'NEET_ALERT': (136, 14, 79),  # deep magenta
+    },
+    'chemistry': {
+        'HOOK': (0, 51, 43),        # dark spruce
+        'CONCEPT': (0, 105, 92),    # teal
+        'EXAMPLE': (130, 71, 12),   # burnt amber
+        'MEMORY': (69, 39, 120),    # plum
+        'NEET_ALERT': (153, 27, 27),  # brick
+    },
+    'biology': {
+        'HOOK': (8, 48, 31),        # forest
+        'CONCEPT': (27, 94, 60),    # leaf green
+        'EXAMPLE': (46, 91, 26),    # olive
+        'MEMORY': (74, 45, 110),    # violet
+        'NEET_ALERT': (140, 30, 40),  # deep rose
+    },
+}
+
 
 class SlideRenderer:
     # Weight per text role — titles and badges render bold where a bold face exists.
@@ -134,13 +169,22 @@ class SlideRenderer:
     def resolve_theme(self, scene: dict) -> dict:
         """Theme for this scene, honouring a per-scene ``background_color`` override.
 
-        The scene segmentation prompt emits a ``background_color`` hex per part.
-        When present it wins over the built-in palette so a director can retint a
-        scene without a code change; accent/text colours are kept from the part
-        theme so contrast rules still hold.
+        Precedence: an explicit ``background_color`` hex beats the scene's
+        ``subject`` tint, which beats the part's built-in background. The scene
+        segmentation prompt emits ``background_color`` per part, so a director
+        can retint a scene without a code change. Accent/text colours always come
+        from the part theme, so contrast rules still hold.
         """
         part_name = scene.get('part', 'CONCEPT').upper()
         theme = dict(SCENE_THEMES.get(part_name, SCENE_THEMES['CONCEPT']))
+
+        # Subject tint first, so two videos from different subjects do not share
+        # the identical five backgrounds. An explicit background_color still
+        # wins, keeping the documented per-scene override contract.
+        tint = SUBJECT_TINTS.get(str(scene.get('subject', '')).strip().lower())
+        if tint and part_name in tint:
+            theme['bg'] = tint[part_name]
+
         override = hex_to_rgb(scene.get('background_color'))
         if override:
             theme['bg'] = override
@@ -337,6 +381,10 @@ class SlideRenderer:
                 visuals.draw_labelled_diagram(draw, visual_box, theme, visual_data, self._body_font)
             elif visual_type == 'alert':
                 visuals.draw_alert(draw, visual_box, theme, visual_data, self._body_font)
+            elif visual_type == 'topic_card':
+                visuals.draw_topic_card(draw, visual_box, theme, visual_data, self._body_font)
+            elif visual_type == 'checklist':
+                visuals.draw_checklist(draw, visual_box, theme, visual_data, self._body_font)
 
         os.makedirs(os.path.dirname(output_path) or '.', exist_ok=True)
         img.save(output_path, "PNG")

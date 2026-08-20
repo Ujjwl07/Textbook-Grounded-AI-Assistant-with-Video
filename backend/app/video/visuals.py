@@ -358,3 +358,138 @@ def draw_flow_strip(draw, box, theme, current_part, font_for_size):
         lw = text_width(label, font)
         colour = theme["text"] if active else theme["subtext"]
         draw.text((cx - lw // 2, y_dot + dot_r + 6), label, font=font, fill=colour)
+
+
+# ---------------------------------------------------------------------------
+# Topic card
+# ---------------------------------------------------------------------------
+
+
+def draw_topic_card(draw, box, theme, data, font_for_size):
+    """Chapter identity card, for the opening scene.
+
+    The hook scene used to draw the same hazard triangle as the two later alert
+    scenes, so three of the five slides in every video carried an identical
+    graphic. This panel states what the lesson is sourced from instead, which is
+    also the one thing the hook is actually claiming.
+
+        "visual_data": {"kicker": "SOURCED FROM",
+                        "chapter": "Gravitation",
+                        "scope": "Class 11 - Physics"}
+    """
+    data = data or {}
+    chapter = str(data.get("chapter", "")).strip()
+    scope = str(data.get("scope", "")).strip()
+    kicker = str(data.get("kicker", "")).strip()
+    if not chapter and not scope:
+        return
+
+    x0, y0, x1, y1 = box
+    width = x1 - x0
+
+    kicker_font = font_for_size(14)
+    scope_font = font_for_size(18)
+    chapter_font, chapter_lines, chapter_lh = fit_text(
+        chapter.title(), font_for_size, width - 60, 160, sizes=[30, 26, 23, 20]
+    )
+    scope_lines = wrap_by_width(scope, scope_font, width - 60)[:2]
+
+    body_h = len(chapter_lines) * chapter_lh
+    if kicker:
+        body_h += 28
+    if scope_lines:
+        body_h += 18 + len(scope_lines) * (scope_font.size + 6)
+
+    # Hold the card to most of the panel height. Sized to its content alone it
+    # was a small box floating in the middle of an otherwise empty half-slide,
+    # which reads as a rendering failure rather than as a design.
+    panel_h = y1 - y0
+    card_h = min(max(body_h + 52, int(panel_h * 0.72)), panel_h)
+    top = y0 + (panel_h - card_h) // 2
+
+    draw.rounded_rectangle([x0, top, x1, top + card_h], radius=16,
+                           fill=lighten(theme["bg"], 0.13),
+                           outline=theme["accent"], width=3)
+    # Accent spine, echoing the definition card in the left text column.
+    draw.rounded_rectangle([x0, top, x0 + 8, top + card_h], radius=4, fill=theme["accent"])
+
+    y = top + max(24, (card_h - body_h) // 2)
+    if kicker:
+        draw.text((x0 + 30, y), kicker, font=kicker_font, fill=theme["subtext"])
+        y += 28
+
+    y = draw_lines(draw, (x0 + 30, y), chapter_lines, chapter_font, theme["text"], chapter_lh)
+
+    if scope_lines:
+        y += 10
+        draw.line([(x0 + 30, y), (x1 - 30, y)], fill=theme["accent"], width=2)
+        y += 8
+        for line in scope_lines:
+            draw.text((x0 + 30, y), line, font=scope_font, fill=theme["subtext"])
+            y += scope_font.size + 6
+
+
+# ---------------------------------------------------------------------------
+# Checklist
+# ---------------------------------------------------------------------------
+
+
+def draw_checklist(draw, box, theme, data, font_for_size):
+    """Ticked recall points, for the memory scene.
+
+    Deliberately unlike draw_process_flow: no boxes and no arrows, because these
+    points are not ordered steps. They are things to carry into the exam, so the
+    panel reads as a list to check off rather than a sequence to follow.
+
+    The items are often single terms, which is why the list is set large behind a
+    heading and an accent rule — three short words laid out at body size sat in
+    the middle of a mostly empty panel and read as a rendering failure.
+
+        "visual_data": {"title": "REVISE THESE",
+                        "items": ["Activation Energy", "Rate Constant"]}
+    """
+    data = data or {}
+    items = [str(i) for i in data.get("items", []) if str(i).strip()][:4]
+    if not items:
+        return
+    title = str(data.get("title", "")).strip()
+
+    x0, y0, x1, y1 = box
+    title_font = font_for_size(14)
+    # Short items get the larger size; a wrapped sentence would overflow at it.
+    longest = max(len(i) for i in items)
+    font = font_for_size(24 if longest <= 22 else 19)
+
+    rule_x = x0 + 4
+    text_x = rule_x + 46
+    row_gap = 22
+    tick_r = 11
+
+    rows = [wrap_by_width(item, font, x1 - text_x)[:2] for item in items]
+    list_h = (sum(len(lines) * (font.size + 6) for lines in rows)
+              + row_gap * (len(rows) - 1))
+    total_h = list_h + (28 if title else 0)
+    y = y0 + max(0, ((y1 - y0) - total_h) // 2)
+
+    if title:
+        draw.text((rule_x, y), title, font=title_font, fill=theme["subtext"])
+        y += 28
+
+    # Accent rule spanning the list, tying the rows into one block.
+    draw.rounded_rectangle([rule_x, y, rule_x + 3, y + list_h], radius=2,
+                           fill=theme["accent"])
+
+    for lines in rows:
+        if y + font.size > y1:
+            break
+        cy = y + font.size // 2
+        draw.ellipse([rule_x + 15, cy - tick_r, rule_x + 15 + tick_r * 2, cy + tick_r],
+                     outline=theme["accent"], width=2)
+        # Tick inside the circle.
+        draw.line([(rule_x + 21, cy), (rule_x + 25, cy + 5)], fill=theme["accent"], width=3)
+        draw.line([(rule_x + 25, cy + 5), (rule_x + 32, cy - 6)], fill=theme["accent"], width=3)
+
+        for line in lines:
+            draw.text((text_x, y), line, font=font, fill=theme["text"])
+            y += font.size + 6
+        y += row_gap

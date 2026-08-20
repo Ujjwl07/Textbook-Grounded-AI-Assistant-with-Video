@@ -17,6 +17,7 @@ When the LLM stage lands, it replaces ``build_scenes`` and consumes the same
 ``RetrievalResult``; the scene dict contract does not change.
 """
 
+import hashlib
 import logging
 import re
 from typing import Optional
@@ -34,6 +35,123 @@ logger = logging.getLogger(__name__)
 _FORMULA_HINT = re.compile(r"[=∝]")
 
 SUBJECT_TITLES = {"physics": "Physics", "chemistry": "Chemistry", "biology": "Biology"}
+
+
+# Three of the five slide titles used to be string constants — "From the
+# Textbook", "Points to Remember", "Watch Out For This" — so every video ever
+# generated shared them, and a student who watched two lessons saw the same
+# three headings twice. Each part now draws from a small set, keyed on the topic
+# so one topic always renders the same title while the library as a whole varies.
+TITLE_TEMPLATES = {
+    "CONCEPT": ["What is {topic}?", "{topic}, Defined", "Understanding {topic}"],
+    "EXAMPLE": ["{topic} in the Textbook", "How {topic} Works",
+                "{topic}, Step by Step", "Seeing {topic} in Action"],
+    "MEMORY": ["Carry This Into the Exam", "What to Remember About {topic}",
+               "{topic}: Recall Points", "Before You Move On"],
+    "NEET_ALERT": ["Where Students Slip Up", "NEET Traps in {topic}",
+                   "Read the Wording Carefully", "Watch Out For This"],
+}
+
+# Function words and textbook furniture that survive a frequency filter while
+# saying nothing about the topic.
+_TERM_STOPWORDS = {
+    "about", "above", "after", "again", "against", "along", "also", "although",
+    "among", "another", "because", "become", "becomes", "been", "before",
+    "being", "below", "besides", "between", "both", "called", "cannot", "case",
+    "cases", "chapter", "different", "does", "doing", "done", "down", "during",
+    "diagram", "diagrammatic", "each", "either", "equal", "even",
+    "every", "example", "figure", "first",
+    "following", "form", "forms", "from", "further", "gives", "given", "great",
+    "have", "having", "hence", "here", "however", "into", "itself", "just",
+    "known", "large", "larger", "less", "like", "made", "make", "makes", "many",
+    "more", "most", "much", "must", "near", "neither", "next", "note", "number",
+    "numbers", "often", "only", "other", "others", "over", "part", "parts",
+    "process", "processes", "results", "same", "second", "section", "seen",
+    "several", "shall", "shown", "shows", "similar", "since", "small", "some",
+    "still", "such", "system", "systems", "take", "taken", "takes", "than",
+    "that", "their", "them", "then", "there", "therefore", "these", "they",
+    "thing", "things", "this", "those", "three", "through", "thus", "time",
+    "times", "type", "types", "under", "unit", "units", "upon", "used", "using",
+    "value", "values", "very", "well", "were", "what", "when", "where",
+    "whether", "which", "while", "will", "with", "within", "without", "would",
+    "your",
+    # Verbs. A label has to name something; "Determine" and "Depends" are
+    # exactly what a frequency count surfaces from explanatory prose, and
+    # neither says anything when it lands on a diagram anchor.
+    "affect", "affects", "answer", "answered", "answers", "carry", "consider",
+    "consists", "contain", "contains", "decrease", "decreases", "depend",
+    "depends", "describe", "describes", "determine", "determined", "determines",
+    "explain", "explains", "find", "found", "help", "helps", "increase",
+    "increases", "involve", "involved", "involves", "know", "mean", "means",
+    "measure", "measured", "obtain", "obtained", "occur", "occurs", "produce",
+    "produces", "represent", "represents", "require", "requires", "study",
+    "studied", "studies", "tell", "tells", "vary", "varies",
+}
+
+
+def _pick(options: list, key: str) -> str:
+    """Deterministic choice from ``options``, stable for a given ``key``.
+
+    Stable matters: regenerating a video for the same topic should not silently
+    change its headings, or two runs of the same lesson stop being comparable.
+    """
+    digest = hashlib.md5(key.strip().lower().encode("utf-8")).hexdigest()
+    return options[int(digest, 16) % len(options)]
+
+
+def _title_for(part: str, topic: str) -> str:
+    return _pick(TITLE_TEMPLATES[part], f"{part}:{topic}").format(topic=topic)
+
+
+def _key_terms(passages, topic: str, limit: int = 8) -> list:
+    """Terms the retrieved prose keeps repeating, for labels and recall chips.
+
+    The labelled-diagram panel needs *terms*, not sentence fragments: feeding it
+    truncated sentences produced labels like "These observations led…", which is
+    why the memory scene dropped its diagram entirely. Scoring by repetition is
+    the point — a word the chapter says once is a passing mention, a word it says
+    three times is what the chapter is about.
+
+    Returns fewer than ``limit`` terms, or none at all, rather than padding with
+    weak matches; callers fall back to a different panel when the list is short.
+    """
+    from collections import Counter
+
+    topic_words = {w for w in re.findall(r"[a-z]+", topic.lower()) if len(w) > 3}
+
+    def echoes_topic(word: str) -> bool:
+        # Prefix match, not equality: with an exact test the topic "Chemical
+        # Kinetics" still let "Kinetic" through as a label, which tells a
+        # student nothing they cannot read in the slide title.
+        return any(word.startswith(t[:5]) or t.startswith(word[:5])
+                   for t in topic_words)
+
+    counts = Counter()
+    for passage in passages:
+        for word in re.findall(r"[A-Za-z][A-Za-z\-]{3,17}", passage.text):
+            lower = word.lower()
+            if lower in _TERM_STOPWORDS or echoes_topic(lower):
+                continue
+            counts[lower] += 1
+
+    # Fold plurals into the singular the chapter also uses, so "Reaction" and
+    # "Reactions" cannot take two of the four label slots. Both suffixes are
+    # tried, and only when the singular was actually seen: stripping blindly
+    # turns "rates" into "rat", and checking only "s" leaves "masses" beside
+    # "mass".
+    def fold(word: str) -> str:
+        if word.endswith("es") and word[:-2] in counts:
+            return word[:-2]
+        if word.endswith("s") and word[:-1] in counts:
+            return word[:-1]
+        return word
+
+    merged = Counter()
+    for word, count in counts.items():
+        merged[fold(word)] += count
+
+    return [word.title() for word, count in merged.most_common(limit * 3)
+            if count >= 2][:limit]
 
 
 # A sentence that opens with a discourse marker or a bare pronoun refers back to
@@ -176,6 +294,7 @@ def build_scenes(
     steps = [_shorten_for_bullet(p.text, limit=68) for p in (concept_facts + example_facts)[:4]]
 
     formula_candidates = [p.text for p in overview if _FORMULA_HINT.search(p.text)]
+    formula_latex = _extract_formula(formula_candidates) if formula_candidates else None
 
     # Real NCERT diagrams, resolved from the "Fig. 7.2" labels the prose itself
     # mentions. Empty until the textbook PDFs are ingested with figure
@@ -189,6 +308,49 @@ def build_scenes(
         "diagram_topic": topic,
         "diagram_chapter": chapter,
         "diagram_subject": subject_title,
+    }
+
+    # Terms the chapter keeps repeating, split between the two panels that use
+    # them. Interleaving rather than slicing means both panels get high-frequency
+    # terms, and neither repeats the other — showing the same four words on two
+    # consecutive slides is exactly the sameness this is meant to break.
+    corpus_terms = _key_terms(overview, topic, limit=8)
+    example_labels, revision_terms = corpus_terms[0::2][:4], corpus_terms[1::2][:4]
+
+    # EXAMPLE panel, in order of how much the panel actually says: a real
+    # textbook figure, then a compact formula, then the topic's drawn diagram,
+    # then a labelled diagram — and that last one only when the labels are real
+    # terms. Selecting on ``formula_candidates`` instead of on the extracted
+    # formula is what left the Chemical Kinetics example slide showing two empty
+    # concentric circles: a retrieved sentence contained '=', so the diagram
+    # fallback was skipped, but _extract_formula then rejected the fragment and
+    # nothing was left to draw.
+    if formula_latex:
+        example_visual, example_data = "formula", {"title": chapter.title()}
+    elif example_labels:
+        example_visual = "diagram"
+        example_data = {"title": chapter.title(), "labels": example_labels}
+    else:
+        example_visual = "checklist"
+        example_data = {"items": example_points or concept_bullets}
+
+    # MEMORY panel: terms to revise, not a third hazard triangle. HOOK, MEMORY
+    # and NEET_ALERT all used to draw the identical alert graphic, which is three
+    # of the five slides in every video. The alert survives here only as a last
+    # resort, when the chapter yielded too few repeated terms to list.
+    if revision_terms:
+        memory_visual = "checklist"
+        memory_data = {"title": "REVISE THESE", "items": revision_terms}
+    else:
+        memory_visual, memory_data = "alert", {"caption": chapter.title()}
+
+    # The scope card doubles as the CONCEPT fallback: when retrieval found no
+    # facts there are no steps to chart either, and an empty panel is worse than
+    # naming the source.
+    scope_card = {
+        "kicker": "SOURCED FROM",
+        "chapter": chapter,
+        "scope": f"Class {class_level} · {subject_title}",
     }
 
     # The caution search runs over the same chapter, so it can return the
@@ -209,23 +371,29 @@ def build_scenes(
         {
             "part": "HOOK",
             "slide_title": topic,
+            # The scope card on this slide already names the chapter, class and
+            # subject, so the bullets say what the lesson does instead of
+            # repeating it back.
             "slide_bullets": [
-                f"From {chapter.title()} — Class {class_level} {subject_title}.",
-                "Grounded entirely in the NCERT textbook.",
+                "Every definition on screen is quoted from the chapter.",
+                "Five parts: concept, example, recall, and the traps.",
             ],
             "narration_text": (
                 f"Today we are studying {topic}, from the NCERT Class {class_level} "
                 f"{subject_title} chapter on {chapter.title()}. Everything in this video "
                 "comes straight from your textbook."
             ),
-            "visual_type": "alert",
-            "visual_data": {"caption": f"Class {class_level} {subject_title}"},
+            # A scope card, not the alert triangle this scene used to share
+            # with MEMORY and NEET_ALERT. It also states the one thing the hook
+            # is actually claiming: which book this lesson comes from.
+            "visual_type": "topic_card",
+            "visual_data": scope_card,
             "animation_type": "fade_in",
             "duration_hint_seconds": 12,
         },
         {
             "part": "CONCEPT",
-            "slide_title": f"What is {topic}?",
+            "slide_title": _title_for("CONCEPT", topic),
             "definition": _tidy(definition.text, limit=300) if definition else "",
             "definition_source": citation if definition else "",
             "slide_bullets": concept_bullets,
@@ -234,52 +402,58 @@ def build_scenes(
                  else f"Let us look at what the NCERT chapter says about {topic}. ")
                 + " ".join(_tidy(p.text, limit=220) for p in concept_facts[:1])
             ),
-            "visual_type": "process" if steps else "alert",
-            "visual_data": {"steps": steps} if steps else {"caption": topic},
+            "visual_type": "process" if steps else "topic_card",
+            # Different kicker from the hook's card: this branch only fires when
+            # retrieval found no chartable facts, and two identically worded
+            # cards in one video is the sameness this is meant to avoid.
+            "visual_data": ({"steps": steps} if steps
+                            else {**scope_card, "kicker": "DEFINED IN"}),
             **({} if steps else diagram_fields),
             "animation_type": "slide_left",
             "duration_hint_seconds": 18,
         },
         {
             "part": "EXAMPLE",
-            "slide_title": "From the Textbook",
+            "slide_title": _title_for("EXAMPLE", topic),
             "slide_bullets": example_points or concept_bullets,
             "narration_text": " ".join(
                 _tidy(p.text, limit=240) for p in example_facts[:2]
             ) or f"Let us apply what the chapter says about {topic}.",
             # A real textbook figure wins over a drawn panel; the renderer
             # ignores visual_type when image_path is set and present.
-            "visual_type": "formula" if formula_candidates else "diagram",
-            "formula_latex": _extract_formula(formula_candidates) if formula_candidates else None,
-            "visual_data": {"title": chapter.title(), "labels": []},
+            "visual_type": example_visual,
+            "formula_latex": formula_latex,
+            "visual_data": example_data,
             "image_path": figures[0].path if figures else None,
             "image_caption": figures[0].caption if figures else None,
-            **({} if (formula_candidates or figures) else diagram_fields),
+            **({} if (figures or formula_latex) else diagram_fields),
             "animation_type": "zoom",
             "duration_hint_seconds": 16,
         },
         {
             "part": "MEMORY",
-            "slide_title": "Points to Remember",
+            "slide_title": _title_for("MEMORY", topic),
             "slide_bullets": memory_bullets or concept_bullets,
             "narration_text": (
                 f"Here is what to carry into the exam about {topic}. "
                 + " ".join(_tidy(p.text, limit=200) for p in memory_facts[:2])
             ),
-            # No labelled diagram here: truncating retrieved sentences to fit
-            # 26-character labels produced "These observations led…", which is
-            # noise. An alert panel with the chapter name is honest instead.
-            "visual_type": "alert",
-            "visual_data": {"caption": chapter.title()},
+            # Labels here are extracted terms, not truncated sentences — the
+            # latter produced "These observations led…", which is what got the
+            # diagram removed from this scene in the first place.
+            "visual_type": memory_visual,
+            "visual_data": memory_data,
             "image_path": figures[1].path if len(figures) > 1 else None,
             "image_caption": figures[1].caption if len(figures) > 1 else None,
-            **({} if len(figures) > 1 else diagram_fields),
+            # Deliberately no diagram_fields: EXAMPLE already carries the topic's
+            # drawn diagram, and stamping the same topic here rendered the
+            # identical picture twice in one video.
             "animation_type": "slide_left",
             "duration_hint_seconds": 14,
         },
         {
             "part": "NEET_ALERT",
-            "slide_title": "Watch Out For This",
+            "slide_title": _title_for("NEET_ALERT", topic),
             "slide_bullets": alert_bullets,
             "narration_text": (
                 "Now the traps. "
