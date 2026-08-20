@@ -634,7 +634,34 @@ class NCERTRetriever:
 # In the meantime, retrieving whole chunks and then re-ranking their *sentences*
 # against the same query recovers the precise passage from inside the blob.
 
-_SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
+# Abbreviations whose full stop is not a sentence end. Without these, "the
+# geometry is shown in Fig. 9.3" split into "... shown in Fig." and "9.3 ...",
+# and the first half reached a slide as a sentence ending in "Fig.". The
+# lookbehinds have to include the dot: at the split point the preceding
+# characters are "Fig.", not "Fig".
+_ABBREVIATIONS = ("Fig", "Figs", "Eq", "Eqs", "Ref", "Refs", "No", "Nos",
+                  "Sec", "Ch", "Vol", "Approx", "cf", "vs", "etc")
+_SENTENCE_END = re.compile(
+    r"(?<=[.!?])"
+    # A lone initial, as in "J. J. Thomson".
+    r"(?<![A-Z]\.)"
+    r"(?<!i\.e\.)(?<!e\.g\.)"
+    + "".join(r"(?<!%s\.)" % abbreviation for abbreviation in _ABBREVIATIONS)
+    + r"\s+"
+)
+
+
+# Characters that only appear when the PDF's encoding was mis-decoded: the
+# angle sign in "∠i = ∠r" extracts as "Ð", the degree sign as "¢". Legitimate
+# scientific symbols (° ± ² ³ µ × ÷ ∝ Δ and the Greek letters) are deliberately
+# not in this set.
+_MOJIBAKE = re.compile(r"[ÐÞðþ¢¤¦§¨©¬®¯´¶¸ºÿ" + "\ufffd]")
+
+# Margin numbering that extraction pulls into the prose: "(9.33)" from a
+# numbered equation, "(iv)" or "(a)" from a list item.
+_LEADING_NUMBERING = re.compile(
+    r"^\s*\(\s*(?:\d+(?:\.\d+)*|[ivxlcIVXLC]+|[a-zA-Z])\s*\)"
+)
 
 # Chapter-opening learning-objective lists, which extract badly from two-column
 # pages and are never usable as narration.
@@ -740,7 +767,11 @@ def split_sentences(text: str) -> list:
     """Split cleaned text into sentences, dropping fragments and stray headers."""
     sentences = []
     for raw in _SENTENCE_END.split(clean_ncert_text(text)):
-        sentence = raw.strip(" -–—•|")
+        # Markdown emphasis survives clean_ncert_text, which only strips runs
+        # of two or more underscores. A single one wrapping a sentence —
+        # "_Can you name some other parts ... may occur?_." — left the checks
+        # below looking at "_" instead of at the first and last real character.
+        sentence = raw.strip(" -–—•|_*")
         if len(sentence.split()) < 6:
             continue
         # Table rows and figure labels are not narratable prose.
@@ -756,6 +787,26 @@ def split_sentences(text: str) -> list:
         # reactions of haloalkanes may be divided into the following categories".
         if re.match(r"^\d+(\.\d+)*\s", sentence):
             continue
+        # Equation and list numbering carried in from the margin: "(9.33) Such a
+        # system of combination of lenses ..." and "(iv) The ray incident at any
+        # angle at the pole." Both reached slides verbatim, numbering and all.
+        if _LEADING_NUMBERING.match(sentence):
+            continue
+        # Rhetorical questions the textbook asks its reader — "Can you name some
+        # other parts where you think photosynthesis may occur?" A bullet that
+        # asks a question the video never answers reads as a mistake.
+        #
+        # Trailing punctuation has to come off first. Ingestion appends a full
+        # stop to any line that does not end in one, and re-joining leaves
+        # "... may occur?." — which endswith("?") does not catch, so the
+        # question reached a slide anyway.
+        if sentence.rstrip(" .;:,_*").endswith("?"):
+            continue
+        # A fragment the splitter cut mid-sentence: real prose opens with a
+        # capital, a digit or a quote. "important features of the Quantum
+        # mechanical model of atom." is the tail of a sentence, not one.
+        if sentence[:1].islower():
+            continue
         # Mostly symbols or digits: an equation line or a stray index entry.
         letters = sum(ch.isalpha() or ch.isspace() for ch in sentence)
         if letters / max(len(sentence), 1) < 0.75:
@@ -766,6 +817,10 @@ def split_sentences(text: str) -> list:
         # study of production of derive relation between ..."), which scores well
         # on similarity while being unreadable.
         if _OBJECTIVE_NOISE.search(sentence) or sentence.count(";") >= 2:
+            continue
+        # Mis-decoded characters: the sentence is readable enough to score well
+        # on similarity but renders as "Ð i = Ð r ¢" on the slide.
+        if _MOJIBAKE.search(sentence):
             continue
         sentences.append(sentence)
     return sentences
