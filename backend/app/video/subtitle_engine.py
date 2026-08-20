@@ -69,38 +69,74 @@ class SubtitleLayout:
             self.lines.append(current_line)
 
         self.line_height = engine.font_size + 8
+
+        # The band used to grow with the narration: every line of a scene's
+        # script was on screen at once, so a long CONCEPT narration produced a
+        # 340 px band that covered the process panel the slide had drawn. The
+        # renderer reserves the bottom ~120 px (slide_generator.CONTENT_BOTTOM)
+        # and nothing here respected it.
+        #
+        # Lines are now paged, ``max_lines`` at a time, and the band is a fixed
+        # height whatever the script length. Paging rather than scrolling
+        # line-by-line keeps the text still while a page is read, instead of
+        # shifting it under the reader on every word.
+        self.max_lines = max(1, engine.max_lines)
         self.band_h = max(
             engine.band_height,
-            len(self.lines) * self.line_height + 2 * engine.band_padding,
+            self.max_lines * self.line_height + 2 * engine.band_padding,
         )
         self.band_y = max(0, self.height - self.band_h - engine.band_margin_bottom)
-        self.start_y = (self.band_h - len(self.lines) * self.line_height) // 2
+
+        self.pages = [self.lines[i:i + self.max_lines]
+                      for i in range(0, len(self.lines), self.max_lines)] or [[]]
+        # Which page each word sits on, so a timestamp resolves to a page.
+        self._page_of_word = {}
+        for page_number, page in enumerate(self.pages):
+            for line in page:
+                for idx, _info, _w in line:
+                    self._page_of_word[idx] = page_number
 
         self.font = font
         self.max_width = engine.max_width
         self.highlight_color = highlight_color
 
-        # Alpha mask, shaped (band_h, width, 1) so it broadcasts over RGB
-        # without the per-frame np.dstack that MoviePy performs.
-        mask_img = Image.new("L", (self.width, self.band_h), 0)
-        mask_draw = ImageDraw.Draw(mask_img)
-        mask_draw.rectangle(
-            [self.width // 2 - self.max_width // 2 - 20, 0,
-             self.width // 2 + self.max_width // 2 + 20, self.band_h],
-            fill=160,  # ~63% opaque backing bar
-        )
-        self._draw_words(mask_draw, lambda i: 255)
-        self.alpha = (np.array(mask_img, dtype=np.float32) / 255.0)[:, :, None]
-        self.inv_alpha = 1.0 - self.alpha
+        # Alpha masks, shaped (band_h, width, 1) so they broadcast over RGB
+        # without the per-frame np.dstack that MoviePy performs. One per page,
+        # because which glyphs are opaque now depends on the page on screen.
+        self._alpha_cache = {}
+        self._inv_alpha_cache = {}
 
         # One band image per highlighted word index (-1 = nothing highlighted).
         # Stored pre-multiplied by alpha so the per-frame blend is one multiply
         # and one add.
         self._band_cache = {}
 
-    def _draw_words(self, draw, colour_for) -> None:
-        y = self.start_y
-        for line in self.lines:
+    def alpha_for(self, page: int) -> np.ndarray:
+        cached = self._alpha_cache.get(page)
+        if cached is None:
+            mask_img = Image.new("L", (self.width, self.band_h), 0)
+            mask_draw = ImageDraw.Draw(mask_img)
+            mask_draw.rectangle(
+                [self.width // 2 - self.max_width // 2 - 20, 0,
+                 self.width // 2 + self.max_width // 2 + 20, self.band_h],
+                fill=160,  # ~63% opaque backing bar
+            )
+            self._draw_words(mask_draw, lambda i: 255, page)
+            cached = (np.array(mask_img, dtype=np.float32) / 255.0)[:, :, None]
+            self._alpha_cache[page] = cached
+        return cached
+
+    def inv_alpha_for(self, page: int) -> np.ndarray:
+        cached = self._inv_alpha_cache.get(page)
+        if cached is None:
+            cached = 1.0 - self.alpha_for(page)
+            self._inv_alpha_cache[page] = cached
+        return cached
+
+    def _draw_words(self, draw, colour_for, page: int) -> None:
+        lines = self.pages[min(page, len(self.pages) - 1)]
+        y = (self.band_h - len(lines) * self.line_height) // 2
+        for line in lines:
             line_w = sum(w[2] for w in line) + (len(line) - 1) * self.space_width
             x = self.width // 2 - line_w // 2
             for idx, info, word_width in line:
@@ -115,25 +151,39 @@ class SubtitleLayout:
             return -1
         return pos if t <= self.word_boundaries[pos]["end"] else -1
 
-    def band_rgb(self, index: int) -> np.ndarray:
+    def resolve(self, t: float) -> tuple:
+        """``(highlighted word index, page on screen)`` at time ``t``.
+
+        Between two words the highlight clears but the page does not: the text
+        would otherwise blink out in every gap between words.
+        """
+        pos = bisect_right(self.starts, t) - 1
+        if pos < 0:
+            return -1, 0
+        active = pos if t <= self.word_boundaries[pos]["end"] else -1
+        return active, self._page_of_word.get(pos, 0)
+
+    def band_rgb(self, index: int, page: int) -> np.ndarray:
         """Rendered band (uint8 RGB) with word ``index`` highlighted."""
-        cached = self._band_cache.get(index)
+        key = (index, page)
+        cached = self._band_cache.get(key)
         if cached is None:
             img = Image.new("RGB", (self.width, self.band_h), (0, 0, 0))
             self._draw_words(
                 ImageDraw.Draw(img),
                 lambda i, active=index: self.highlight_color if i == active else WHITE,
+                page,
             )
             cached = np.array(img)
-            self._band_cache[index] = cached
+            self._band_cache[key] = cached
         return cached
 
-    def band_premultiplied(self, index: int) -> np.ndarray:
+    def band_premultiplied(self, index: int, page: int) -> np.ndarray:
         """Band pre-multiplied by alpha, cached as float32."""
-        key = ("pm", index)
+        key = ("pm", index, page)
         cached = self._band_cache.get(key)
         if cached is None:
-            cached = self.band_rgb(index).astype(np.float32) * self.alpha
+            cached = self.band_rgb(index, page).astype(np.float32) * self.alpha_for(page)
             self._band_cache[key] = cached
         return cached
 
@@ -144,10 +194,15 @@ class SubtitleEngine:
     DEFAULT_BAND_HEIGHT = 100
     BAND_MARGIN_BOTTOM = 20
     BAND_PADDING = 12
+    # Two lines is what the reserved strip below slide_generator.CONTENT_BOTTOM
+    # holds without reaching into the slide's own content.
+    DEFAULT_MAX_LINES = 2
 
-    def __init__(self, font_size: int = 28, max_width: int = 900, band_height: int = None):
+    def __init__(self, font_size: int = 28, max_width: int = 900, band_height: int = None,
+                 max_lines: int = None):
         self.font_size = font_size
         self.max_width = max_width
+        self.max_lines = max_lines or self.DEFAULT_MAX_LINES
         self.band_height = band_height or self.DEFAULT_BAND_HEIGHT
         self.band_margin_bottom = self.BAND_MARGIN_BOTTOM
         self.band_padding = self.BAND_PADDING
@@ -164,13 +219,13 @@ class SubtitleEngine:
                                 highlight_color: tuple = DEFAULT_HIGHLIGHT) -> VideoClip:
         """Transparent karaoke overlay, positioned as a band at the bottom."""
         layout = self.build_layout(word_boundaries, size, highlight_color)
-        mask_2d = layout.alpha[:, :, 0]
 
         def make_frame(t):
-            return layout.band_rgb(layout.active_index(t))
+            return layout.band_rgb(*layout.resolve(t))
 
         def make_mask_frame(t):
-            return mask_2d
+            _active, page = layout.resolve(t)
+            return layout.alpha_for(page)[:, :, 0]
 
         clip = VideoClip(make_frame, duration=duration)
         mask = VideoClip(make_mask_frame, ismask=True, duration=duration)
@@ -199,9 +254,10 @@ class SubtitleEngine:
             frame = base_clip.get_frame(t)
             frame = _fit_center(frame, width, height)
 
-            premultiplied = layout.band_premultiplied(layout.active_index(t))
+            active, page = layout.resolve(t)
+            premultiplied = layout.band_premultiplied(active, page)
             region = frame[y0:y1, 0:width].astype(np.float32)
-            blended = premultiplied + region * layout.inv_alpha
+            blended = premultiplied + region * layout.inv_alpha_for(page)
 
             out = frame.copy()
             out[y0:y1, 0:width] = blended.astype(np.uint8)
