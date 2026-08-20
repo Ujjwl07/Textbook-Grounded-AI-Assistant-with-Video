@@ -16,7 +16,7 @@ from typing import Dict, Any, List, Optional, Literal, Tuple, Union
 from pydantic import BaseModel, Field, ConfigDict, field_validator
 
 from prompt_manager import PromptManager, Prompt
-from script_generator import LLMClient, OpenAIClient, MockLLMClient
+from script_generator import LLMClient, OpenAIClient, GeminiClient, MockLLMClient, get_default_llm_client
 from scene_segmenter import JSONAutoRepairer
 
 # Configure logger
@@ -194,7 +194,7 @@ class QuizGenerator:
         max_retries: int = 3,
     ):
         self.prompt_manager = prompt_manager or PromptManager(prompts_dir="prompts")
-        self.llm_client = llm_client or OpenAIClient()
+        self.llm_client = llm_client or get_default_llm_client()
         self.max_retries = max_retries
 
     async def generate_quiz(
@@ -277,9 +277,9 @@ class QuizGenerator:
                 logger.warning(f"Quiz generation attempt {attempt}/{self.max_retries} failed: {e}")
                 await asyncio.sleep(1.0)
 
-        # Fallback fixture if retries exhausted
-        logger.error(f"Quiz generation failed after {self.max_retries} retries: {last_error}. Returning fallback QuizSet.")
-        return self._generate_fallback_quiz_set(subject, topic, chapter, class_num, retrieved_context)
+        error_msg = f"Quiz generation failed after {self.max_retries} retries: {last_error}"
+        logger.error(error_msg)
+        raise RuntimeError(error_msg)
 
     def _generate_fallback_quiz_set(
         self,
