@@ -551,14 +551,23 @@ class NCERTRetriever:
         subject: Optional[str] = None,
         class_level: Optional[str] = None,
         limit: int = 3,
+        chapter_name: Optional[str] = None,
     ) -> list:
-        """Passages that read as exceptions or cautions, for the NEET-alert scene."""
+        """Passages that read as exceptions or cautions, for the NEET-alert scene.
+
+        Scoped to the topic's own chapter like every other search here. Without
+        ``chapter_name`` this ranged over the whole subject and class, so the
+        alert scene could quote a chapter the lesson never mentions: a lesson
+        resolved to Semiconductor Electronics was warned about "the British
+        physicist Thomas Young", who belongs to Wave Optics.
+        """
         query = (f"common mistakes exceptions and cautions about {topic}; "
                  f"note that, however, do not confuse")
         return self.search_passages(
             query,
             subject=subject,
             class_level=class_level,
+            chapter_name=chapter_name,
             top_k_chunks=8,
             top_k_passages=limit,
             window=1,
@@ -821,6 +830,13 @@ def split_sentences(text: str) -> list:
         # Mis-decoded characters: the sentence is readable enough to score well
         # on similarity but renders as "Ð i = Ð r ¢" on the slide.
         if _MOJIBAKE.search(sentence):
+            continue
+        # A chapter or section heading swept into the prose:
+        # "CELL CYCLE AND CELL DIVISION. - 10.1 Cell Cycle." NCERT sets these in
+        # capitals, and the ratio separates them from a sentence that merely
+        # contains an acronym.
+        letters_only = [ch for ch in sentence if ch.isalpha()]
+        if letters_only and sum(ch.isupper() for ch in letters_only) / len(letters_only) > 0.6:
             continue
         sentences.append(sentence)
     return sentences

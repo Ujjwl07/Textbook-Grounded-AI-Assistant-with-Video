@@ -281,7 +281,8 @@ def build_scenes(
         topic, subject=subject_title, class_level=class_level, chapter_name=chapter
     )
     cautions = retriever.find_cautions(
-        topic, subject=subject_title, class_level=class_level, limit=6
+        topic, subject=subject_title, class_level=class_level,
+        chapter_name=chapter, limit=6,
     )
 
     citation = (definition.citation if definition else overview[0].citation)
@@ -295,13 +296,26 @@ def build_scenes(
 
     # Each scene draws from a distinct slice: reusing the same two sentences on
     # three consecutive slides made the video look like it was repeating itself.
-    def take(count: int) -> list:
-        taken, facts[:] = facts[:count], facts[count:]
-        return taken
+    # Dealt round-robin rather than sliced front-to-back. Slicing starved the
+    # later scenes whenever retrieval returned few usable facts: with three
+    # facts the concept slide took two, the example took one and the memory
+    # slide got none, so it fell back to repeating the concept bullets word for
+    # word. Round-robin gives every scene a fact while any remain.
+    def deal(pool: list, sizes: tuple) -> list:
+        buckets = [[] for _ in sizes]
+        cursor = 0
+        for fact in pool:
+            for _ in range(len(sizes)):
+                index = cursor % len(sizes)
+                cursor += 1
+                if len(buckets[index]) < sizes[index]:
+                    buckets[index].append(fact)
+                    break
+            else:
+                break
+        return buckets
 
-    concept_facts = take(2)
-    example_facts = take(3)
-    memory_facts = take(3)
+    concept_facts, example_facts, memory_facts = deal(facts, (2, 3, 3))
 
     concept_bullets = [_shorten_for_bullet(p.text) for p in concept_facts]
     example_points = [_shorten_for_bullet(p.text) for p in example_facts]
@@ -355,7 +369,7 @@ def build_scenes(
         example_data = {"title": chapter.title(), "labels": example_labels}
     else:
         example_visual = "checklist"
-        example_data = {"items": example_points or concept_bullets}
+        example_data = {"items": example_points}
 
     # MEMORY panel: terms to revise, not a third hazard triangle. HOOK, MEMORY
     # and NEET_ALERT all used to draw the identical alert graphic, which is three
@@ -453,7 +467,7 @@ def build_scenes(
         {
             "part": "EXAMPLE",
             "slide_title": _title_for("EXAMPLE", topic),
-            "slide_bullets": example_points or concept_bullets,
+            "slide_bullets": example_points,
             "narration_text": " ".join(
                 _tidy(p.text, limit=240) for p in example_facts[:2]
             ) or f"Let us apply what the chapter says about {topic}.",
@@ -471,7 +485,7 @@ def build_scenes(
         {
             "part": "MEMORY",
             "slide_title": _title_for("MEMORY", topic),
-            "slide_bullets": memory_bullets or concept_bullets,
+            "slide_bullets": memory_bullets,
             "narration_text": (
                 f"Here is what to carry into the exam about {topic}. "
                 + " ".join(_tidy(p.text, limit=200) for p in memory_facts[:2])
