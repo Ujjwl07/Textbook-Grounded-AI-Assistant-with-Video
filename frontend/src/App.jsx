@@ -5,6 +5,7 @@ import TopicSearch from './pages/TopicSearch'
 import VideoGeneration from './pages/VideoGeneration'
 import VideoPlayer from './pages/VideoPlayer'
 import QuizSession from './pages/QuizSession'
+import QuizPage from './pages/QuizPage'
 import Dashboard from './pages/Dashboard'
 import AdminPanel from './pages/AdminPanel'
 import Login from './pages/Login'
@@ -17,11 +18,14 @@ export default function App() {
   return (
     <div>
       <nav className="navbar">
-        <div style={{ fontWeight: 800, fontSize: '1.25rem', color: '#fff' }}>Textbook<span style={{ color: 'var(--accent-primary)' }}>AI</span></div>
+        <Link to="/" style={{ textDecoration: 'none' }}>
+          <div style={{ fontWeight: 800, fontSize: '1.25rem', color: '#fff' }}>Textbook<span style={{ color: 'var(--accent-primary)' }}>AI</span></div>
+        </Link>
         <div className="nav-links">
           <Link to="/" className="nav-link">Home</Link>
           <Link to="/search" className="nav-link">Search</Link>
           <Link to="/dashboard" className="nav-link">Dashboard</Link>
+          <Link to="/quiz" className="nav-link">Quiz</Link>
           {user?.is_admin && <Link to="/admin" className="nav-link">Admin</Link>}
           {user ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginLeft: '1rem' }}>
@@ -43,6 +47,7 @@ export default function App() {
           <Route path="/generate/:jobId" element={<ProtectedRoute><VideoGeneration /></ProtectedRoute>} />
           <Route path="/watch/:jobId" element={<ProtectedRoute><VideoPlayer /></ProtectedRoute>} />
           <Route path="/quiz/:videoId" element={<ProtectedRoute><QuizSession /></ProtectedRoute>} />
+          <Route path="/quiz" element={<QuizPage />} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute adminOnly={true}><AdminPanel /></ProtectedRoute>} />
           <Route path="/login" element={<Login />} />
