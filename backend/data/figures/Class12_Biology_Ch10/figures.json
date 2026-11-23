@@ -1,0 +1,51 @@
+{
+  "meta": {
+    "pdf_name": "Class12_Biology_Ch10",
+    "chapter_name": "Biotechnology and its Applications",
+    "chapter_number": 10,
+    "subject": "Biology",
+    "class_level": "12"
+  },
+  "figures": [
+    {
+      "label": "10.1",
+      "caption": "Figure 10.1 Cotton boll: (a) destroyed by bollworms; (b) a fully mature",
+      "page": 4,
+      "path": "fig_10_1_p04_x8.png",
+      "width": 305,
+      "height": 203
+    },
+    {
+      "label": "10.1",
+      "caption": "Figure 10.1 Cotton boll: (a) destroyed by bollworms; (b) a fully mature",
+      "page": 4,
+      "path": "fig_10_1_p04_x9.png",
+      "width": 305,
+      "height": 203
+    },
+    {
+      "label": "10.2",
+      "caption": "Figure 10.2 Host plant-generated dsRNA triggers protection against nematode infestation: (a) Roots of a typical control plants; (b) transgenic plant roots 5 days after deliberate infection of nematode but protected through novel mechanism.",
+      "page": 5,
+      "path": "fig_10_2_p05_x12.png",
+      "width": 347,
+      "height": 170
+    },
+    {
+      "label": "10.3",
+      "caption": "Insulin used for diabetes was earlier extracted from pancreas of slaughtered cattle and pigs. Insulin from an animal source, though caused some patients to develop allergy or other types of reactions to the foreign protein. Insulin consists of two short polypeptide chains: chain A and chain B, that are linked together by disulphide bridges (Figure 10.3).",
+      "page": 5,
+      "path": "fig_10_3_p05_x213.png",
+      "width": 464,
+      "height": 464
+    },
+    {
+      "label": "10.3",
+      "caption": "Figure 10.3 Maturation of",
+      "page": 6,
+      "path": "fig_10_3_p06_x15.png",
+      "width": 179,
+      "height": 144
+    }
+  ]
+}

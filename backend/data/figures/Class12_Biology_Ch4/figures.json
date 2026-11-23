@@ -1,0 +1,83 @@
+{
+  "meta": {
+    "pdf_name": "Class12_Biology_Ch4",
+    "chapter_name": "Principles of Inheritance and Variation",
+    "chapter_number": 4,
+    "subject": "Biology",
+    "class_level": "12"
+  },
+  "figures": [
+    {
+      "label": "4.6",
+      "caption": "Figure 4.6 Results of monohybrid cross in the plant Snapdragon, where one allele is incompletely dominant over the other allele",
+      "page": 10,
+      "path": "fig_4_6_p10_x37.png",
+      "width": 155,
+      "height": 113
+    },
+    {
+      "label": "4.7",
+      "caption": "Figure 4.7 Results of a dihybrid cross where the two parents differed in two pairs",
+      "page": 13,
+      "path": "fig_4_7_p13_x568.png",
+      "width": 463,
+      "height": 463
+    },
+    {
+      "label": "4.8",
+      "caption": "Figure 4.8 Meiosis and germ cell formation in a cell with four chromosomes.",
+      "page": 15,
+      "path": "fig_4_8_p15_x532.png",
+      "width": 463,
+      "height": 463
+    },
+    {
+      "label": "4.9",
+      "caption": "Figure 4.9 Independent assortment of chromosomes",
+      "page": 16,
+      "path": "fig_4_9_p16_x514.png",
+      "width": 463,
+      "height": 463
+    },
+    {
+      "label": "4.11",
+      "caption": "Figure 4.11 Linkage: Results of two dihybrid crosses conducted by Morgan. Cross A shows",
+      "page": 18,
+      "path": "fig_4_11_p18_x63.png",
+      "width": 157,
+      "height": 113
+    },
+    {
+      "label": "4.11",
+      "caption": "Figure 4.11 Linkage: Results of two dihybrid crosses conducted by Morgan. Cross A shows",
+      "page": 18,
+      "path": "fig_4_11_p18_x65.png",
+      "width": 157,
+      "height": 113
+    },
+    {
+      "label": "4.11",
+      "caption": "Figure 4.11 Linkage: Results of two dihybrid crosses conducted by Morgan. Cross A shows",
+      "page": 18,
+      "path": "fig_4_11_p18_x478.png",
+      "width": 463,
+      "height": 463
+    },
+    {
+      "label": "4.15",
+      "caption": "Figure 4.15 Micrograph of the red blood cells and the amino acid composition of the relevant",
+      "page": 24,
+      "path": "fig_4_15_p24_x370.png",
+      "width": 463,
+      "height": 463
+    },
+    {
+      "label": "4.16",
+      "caption": "Figure 4.16 A representative figure showing an individual inflicted with Down’s syndrome and the corresponding chromosomes of the individual",
+      "page": 26,
+      "path": "fig_4_16_p26_x143.png",
+      "width": 375,
+      "height": 160
+    }
+  ]
+}

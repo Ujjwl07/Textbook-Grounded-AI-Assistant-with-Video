@@ -1,0 +1,51 @@
+{
+  "meta": {
+    "pdf_name": "Class12_Biology_Ch5",
+    "chapter_name": "Molecular Basis of Inheritance",
+    "chapter_number": 5,
+    "subject": "Biology",
+    "class_level": "12"
+  },
+  "figures": [
+    {
+      "label": "5.1",
+      "caption": "Figure 5.1 A Polynucleotide chain",
+      "page": 2,
+      "path": "fig_5_1_p02_x794.png",
+      "width": 463,
+      "height": 463
+    },
+    {
+      "label": "5.4b",
+      "caption": "Figure 5.4b EM picture - ‘Beads-on-String’",
+      "page": 5,
+      "path": "fig_5_4b_p05_x12.png",
+      "width": 208,
+      "height": 142
+    },
+    {
+      "label": "5.10",
+      "caption": "Figure 5.10 Process of Transcription in Bacteria",
+      "page": 15,
+      "path": "fig_5_10_p15_x560.png",
+      "width": 463,
+      "height": 463
+    },
+    {
+      "label": "5.11",
+      "caption": "Figure 5.11 Process of Transcription in Eukaryotes",
+      "page": 16,
+      "path": "fig_5_11_p16_x542.png",
+      "width": 463,
+      "height": 463
+    },
+    {
+      "label": "5.15",
+      "caption": "Figure 5.15 A representative diagram of human",
+      "page": 25,
+      "path": "fig_5_15_p25_x380.png",
+      "width": 463,
+      "height": 463
+    }
+  ]
+}

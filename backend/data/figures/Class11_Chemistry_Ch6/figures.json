@@ -1,0 +1,59 @@
+{
+  "meta": {
+    "pdf_name": "Class11_Chemistry_Ch6",
+    "chapter_name": "Equilibrium",
+    "chapter_number": 6,
+    "subject": "Chemistry",
+    "class_level": "11"
+  },
+  "figures": [
+    {
+      "label": "6.2",
+      "caption": "With passage of time, there is accumulation of the products C and D and depletion of the reactants A and B (Fig. 6.2). This leads to a decrease in the rate of forward reaction and an increase in the rate of the reverse reaction,",
+      "page": 5,
+      "path": "fig_6_2_p05_x2399.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "6.2",
+      "caption": "With passage of time, there is accumulation of the products C and D and depletion of the reactants A and B (Fig. 6.2). This leads to a decrease in the rate of forward reaction and an increase in the rate of the reverse reaction,",
+      "page": 5,
+      "path": "fig_6_2_p05_x3279.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "6.3",
+      "caption": "Fig.6.3 Demonstrating dynamic nature of equilibrium. (a) initial stage (b) final stage after the equilibrium is attained.",
+      "page": 6,
+      "path": "fig_6_3_p06_x2381.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "6.3",
+      "caption": "Fig.6.3 Demonstrating dynamic nature of equilibrium. (a) initial stage (b) final stage after the equilibrium is attained.",
+      "page": 6,
+      "path": "fig_6_3_p06_x3261.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "6.9",
+      "caption": "Fig. 6.9 Effect of temperature on equilibrium for",
+      "page": 20,
+      "path": "fig_6_9_p20_x2129.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "6.9",
+      "caption": "Fig. 6.9 Effect of temperature on equilibrium for",
+      "page": 20,
+      "path": "fig_6_9_p20_x3009.png",
+      "width": 465,
+      "height": 465
+    }
+  ]
+}

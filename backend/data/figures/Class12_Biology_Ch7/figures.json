@@ -1,0 +1,59 @@
+{
+  "meta": {
+    "pdf_name": "Class12_Biology_Ch7",
+    "chapter_name": "Human Health and Disease",
+    "chapter_number": 7,
+    "subject": "Biology",
+    "class_level": "12"
+  },
+  "figures": [
+    {
+      "label": "7.2",
+      "caption": "Figure 7.2 Diagram showing inflammation in one of the lower limbs due to elephantiasis",
+      "page": 7,
+      "path": "fig_7_2_p07_x136.png",
+      "width": 179,
+      "height": 265
+    },
+    {
+      "label": "7.3",
+      "caption": "Figure 7.3 Diagram showing ringworm",
+      "page": 7,
+      "path": "fig_7_3_p07_x137.png",
+      "width": 233,
+      "height": 111
+    },
+    {
+      "label": "7.4",
+      "caption": "Figure 7.4 Structure of an antibody molecule",
+      "page": 9,
+      "path": "fig_7_4_p09_x208.png",
+      "width": 305,
+      "height": 208
+    },
+    {
+      "label": "7.5",
+      "caption": "Figure 7.5 Diagrammatic representation of Lymph nodes",
+      "page": 12,
+      "path": "fig_7_5_p12_x230.png",
+      "width": 143,
+      "height": 200
+    },
+    {
+      "label": "7.7",
+      "caption": "Figure 7.7 Chemical structure of Morphine Figure 7.8 Opium poppy",
+      "page": 16,
+      "path": "fig_7_7_p16_x1497.png",
+      "width": 462,
+      "height": 462
+    },
+    {
+      "label": "7.9",
+      "caption": "Figure 7.9 Skeletal structure of",
+      "page": 17,
+      "path": "fig_7_9_p17_x339.png",
+      "width": 206,
+      "height": 119
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "meta": {
+    "pdf_name": "Class12_Physics_Ch7",
+    "chapter_name": "Alternating Current",
+    "chapter_number": 7,
+    "subject": "Physics",
+    "class_level": "12"
+  },
+  "figures": [
+    {
+      "label": "7.2",
+      "caption": "FIGURE 7.2 In a pure resistor, the voltage and current are in phase. The minima, zero and maxima",
+      "page": 2,
+      "path": "fig_7_2_p02_x875.png",
+      "width": 464,
+      "height": 464
+    },
+    {
+      "label": "7.6",
+      "caption": "A comparison of Eqs. (7.1) and (7.12) for the source voltage and the current in an inductor shows that the current lags the voltage by p/2 or one-quarter (1/4) cycle. Figure 7.6 (a) shows the voltage and the current phasors in the present case at instant t1. The current phasor I is p/2 behind the voltage phasor V. When rotated with frequency w counter- clockwise, they generate the voltage and current given by Eqs. (7.1) and (7.12), respectively and as shown in Fig. 7.6(b).",
+      "page": 6,
+      "path": "fig_7_6_p06_x815.png",
+      "width": 464,
+      "height": 464
+    },
+    {
+      "label": "7.10",
+      "caption": "FIGURE 7.10 A series LCR circuit",
+      "page": 10,
+      "path": "fig_7_10_p10_x755.png",
+      "width": 464,
+      "height": 464
+    },
+    {
+      "label": "7.15",
+      "caption": "We can improve the power factor (tending to 1) by making Z tend to R. Let us understand, with the help of a phasor diagram (Fig. 7.15)",
+      "page": 15,
+      "path": "fig_7_15_p15_x680.png",
+      "width": 464,
+      "height": 464
+    }
+  ]
+}

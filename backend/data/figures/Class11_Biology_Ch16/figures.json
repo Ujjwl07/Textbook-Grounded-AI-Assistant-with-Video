@@ -1,0 +1,35 @@
+{
+  "meta": {
+    "pdf_name": "Class11_Biology_Ch16",
+    "chapter_name": "Excretory Products and their Elimination",
+    "chapter_number": 16,
+    "subject": "Biology",
+    "class_level": "11"
+  },
+  "figures": [
+    {
+      "label": "16.1",
+      "caption": "Figure 16.1 Human Urinary system",
+      "page": 2,
+      "path": "fig_16_1_p02_x281.png",
+      "width": 466,
+      "height": 466
+    },
+    {
+      "label": "16.3",
+      "caption": "Figure 16.3 A diagrammatic representation of a nephron showing blood vessels, duct and tubule",
+      "page": 3,
+      "path": "fig_16_3_p03_x266.png",
+      "width": 466,
+      "height": 466
+    },
+    {
+      "label": "16.6",
+      "caption": "Figure 16.6 Diagrammatic representation of a nephron and vasa recta showing",
+      "page": 7,
+      "path": "fig_16_6_p07_x194.png",
+      "width": 466,
+      "height": 466
+    }
+  ]
+}

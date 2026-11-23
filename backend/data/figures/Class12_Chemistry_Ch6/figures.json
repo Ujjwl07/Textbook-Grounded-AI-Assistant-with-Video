@@ -1,0 +1,27 @@
+{
+  "meta": {
+    "pdf_name": "Class12_Chemistry_Ch6",
+    "chapter_name": "Haloalkanes and Haloarenes",
+    "chapter_number": 6,
+    "subject": "Chemistry",
+    "class_level": "12"
+  },
+  "figures": [
+    {
+      "label": "6.1",
+      "caption": "Fig. 6.1: Comparison of boiling points of some alkyl halides",
+      "page": 10,
+      "path": "fig_6_1_p10_x173.png",
+      "width": 253,
+      "height": 139
+    },
+    {
+      "label": "6.4",
+      "caption": "Fig 6.4: Some common examples of chiral and achiral objects a single asymmetric carbon atom. Let us consider two simple molecules propan-2-ol (Fig.6.5) and butan-2-ol (Fig.6.6) and their mirror images.",
+      "page": 18,
+      "path": "fig_6_4_p18_x477.png",
+      "width": 233,
+      "height": 217
+    }
+  ]
+}

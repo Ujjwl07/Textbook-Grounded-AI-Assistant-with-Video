@@ -1,0 +1,91 @@
+{
+  "meta": {
+    "pdf_name": "Class12_Biology_Ch2",
+    "chapter_name": "Human Reproduction",
+    "chapter_number": 2,
+    "subject": "Biology",
+    "class_level": "12"
+  },
+  "figures": [
+    {
+      "label": "2.1a",
+      "caption": "The male reproductive system is located in the pelvis region (Figure 2.1a). It includes a pair of testes alongwith accessory ducts, glands and the external genitalia.",
+      "page": 1,
+      "path": "fig_2_1a_p01_x1602.png",
+      "width": 463,
+      "height": 463
+    },
+    {
+      "label": "2.3",
+      "caption": "Figure 2.3 (b) Diagrammatic sectional view of the female reproductive system",
+      "page": 4,
+      "path": "fig_2_3_p04_x508.png",
+      "width": 119,
+      "height": 133
+    },
+    {
+      "label": "2.3",
+      "caption": "Figure 2.3 (b) Diagrammatic sectional view of the female reproductive system",
+      "page": 4,
+      "path": "fig_2_3_p04_x509.png",
+      "width": 119,
+      "height": 125
+    },
+    {
+      "label": "2.3",
+      "caption": "Figure 2.3 (a) Diagrammatic sectional view of female pelvis showing",
+      "page": 4,
+      "path": "fig_2_3_p04_x511.png",
+      "width": 138,
+      "height": 185
+    },
+    {
+      "label": "2.3",
+      "caption": "Figure 2.3 (a) Diagrammatic sectional view of female pelvis showing",
+      "page": 4,
+      "path": "fig_2_3_p04_x512.png",
+      "width": 186,
+      "height": 192
+    },
+    {
+      "label": "2.3",
+      "caption": "Figure 2.3 (b) Diagrammatic sectional view of the female reproductive system",
+      "page": 4,
+      "path": "fig_2_3_p04_x1548.png",
+      "width": 463,
+      "height": 463
+    },
+    {
+      "label": "2.4",
+      "caption": "Figure 2.4 A diagrammatic sectional view of Mammary gland",
+      "page": 5,
+      "path": "fig_2_4_p05_x1530.png",
+      "width": 463,
+      "height": 463
+    },
+    {
+      "label": "2.7",
+      "caption": "Figure 2.7 Diagrammatic Section view of ovary",
+      "page": 8,
+      "path": "fig_2_7_p08_x780.png",
+      "width": 241,
+      "height": 130
+    },
+    {
+      "label": "2.11",
+      "caption": "Figure 2.11 Transport of ovum, fertilisation and passage of growing embryo through fallopian tube",
+      "page": 11,
+      "path": "fig_2_11_p11_x1422.png",
+      "width": 463,
+      "height": 463
+    },
+    {
+      "label": "2.12",
+      "caption": "Immediately after implantation, the inner cell mass (embryo) differentiates Figure 2.12 The human foetus within the uterus",
+      "page": 12,
+      "path": "fig_2_12_p12_x1404.png",
+      "width": 463,
+      "height": 463
+    }
+  ]
+}

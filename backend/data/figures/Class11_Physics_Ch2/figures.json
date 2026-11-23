@@ -1,0 +1,27 @@
+{
+  "meta": {
+    "pdf_name": "Class11_Physics_Ch2",
+    "chapter_name": "Motion in a Straight Line",
+    "chapter_number": 2,
+    "subject": "Physics",
+    "class_level": "11"
+  },
+  "figures": [
+    {
+      "label": "2.8",
+      "caption": "Fig. 2.8 Measuring the reaction time.",
+      "page": 9,
+      "path": "fig_2_8_p09_x70.png",
+      "width": 123,
+      "height": 194
+    },
+    {
+      "label": "2.15",
+      "caption": "Fig. 2.15",
+      "page": 14,
+      "path": "fig_2_15_p14_x269.png",
+      "width": 465,
+      "height": 465
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "meta": {
+    "pdf_name": "Class11_Biology_Ch2",
+    "chapter_name": "Biological Classification",
+    "chapter_number": 2,
+    "subject": "Biology",
+    "class_level": "11"
+  },
+  "figures": [
+    {
+      "label": "2.1",
+      "caption": "Figure 2.1 Bacteria of different shapes",
+      "page": 3,
+      "path": "fig_2_1_p03_x1447.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "2.2",
+      "caption": "Figure 2.2 A filamentous blue-green",
+      "page": 4,
+      "path": "fig_2_2_p04_x1432.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "2.4",
+      "caption": "Figure 2.4 (a) Dinoflagellates",
+      "page": 6,
+      "path": "fig_2_4_p06_x1390.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "2.5",
+      "caption": "Figure 2.5 Fungi: (a) Mucor",
+      "page": 8,
+      "path": "fig_2_5_p08_x999.png",
+      "width": 142,
+      "height": 160
+    },
+    {
+      "label": "2.5",
+      "caption": "Figure 2.5 Fungi: (a) Mucor",
+      "page": 8,
+      "path": "fig_2_5_p08_x1360.png",
+      "width": 465,
+      "height": 465
+    }
+  ]
+}

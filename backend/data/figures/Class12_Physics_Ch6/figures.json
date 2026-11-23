@@ -1,0 +1,67 @@
+{
+  "meta": {
+    "pdf_name": "Class12_Physics_Ch6",
+    "chapter_name": "Electromagnetic Induction",
+    "chapter_number": 6,
+    "subject": "Physics",
+    "class_level": "12"
+  },
+  "figures": [
+    {
+      "label": "6.2",
+      "caption": "In Fig. 6.2 the bar magnet is replaced by a second coil C2 connected to a battery. The steady current in the coil C2 produces a steady magnetic field. As coil C2 is",
+      "page": 2,
+      "path": "fig_6_2_p02_x802.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "6.6",
+      "caption": "FIGURE 6.6 Illustration of",
+      "page": 7,
+      "path": "fig_6_6_p07_x727.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "6.8",
+      "caption": "magnetic field region (Fig. 6.8) to a field-free region with a constant velocity v. In which loop do you expect the induced emf to be constant during the passage out of the field region? The field is normal to the loops.",
+      "page": 8,
+      "path": "fig_6_8_p08_x712.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "6.10",
+      "caption": "FIGURE 6.10 The arm PQ is moved to the left",
+      "page": 9,
+      "path": "fig_6_10_p09_x697.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "6.11",
+      "caption": "Example 6.6 A metallic rod of 1 m length is rotated with a frequency of 50 rev/s, with one end hinged at the centre and the other end at the circumference of a circular metallic ring of radius 1 m, about an axis passing through the centre and perpendicular to the plane of the ring (Fig. 6.11). A constant and uniform magnetic field of 1 T parallel to the axis is present everywhere. What is the emf between the centre and the metallic ring?",
+      "page": 10,
+      "path": "fig_6_11_p10_x682.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "6.12",
+      "caption": "Consider Fig. 6.12 which shows two long co-axial solenoids each of length l. We denote the radius of the inner solenoid S1",
+      "page": 12,
+      "path": "fig_6_12_p12_x652.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "6.13",
+      "caption": "FIGURE 6.13 AC Generator",
+      "page": 17,
+      "path": "fig_6_13_p17_x577.png",
+      "width": 465,
+      "height": 465
+    }
+  ]
+}

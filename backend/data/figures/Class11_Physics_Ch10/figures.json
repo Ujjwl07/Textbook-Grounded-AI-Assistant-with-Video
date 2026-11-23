@@ -1,0 +1,51 @@
+{
+  "meta": {
+    "pdf_name": "Class11_Physics_Ch10",
+    "chapter_name": "Thermal Properties of Matter",
+    "chapter_number": 10,
+    "subject": "Physics",
+    "class_level": "11"
+  },
+  "figures": [
+    {
+      "label": "10.7",
+      "caption": "Temperature (°C) Temperature (°C) (a) (b) Fig. 10.7 Thermal expansion of water.",
+      "page": 5,
+      "path": "fig_10_7_p05_x611.png",
+      "width": 464,
+      "height": 464
+    },
+    {
+      "label": "10.12",
+      "caption": "Fig. 10.12 Temperature versus heat for water at",
+      "page": 12,
+      "path": "fig_10_12_p12_x506.png",
+      "width": 464,
+      "height": 464
+    },
+    {
+      "label": "10.16",
+      "caption": "Fig 10.16",
+      "page": 15,
+      "path": "fig_10_16_p15_x461.png",
+      "width": 464,
+      "height": 464
+    },
+    {
+      "label": "10.17",
+      "caption": "Fig. 10.17 Convection cycles.",
+      "page": 16,
+      "path": "fig_10_17_p16_x446.png",
+      "width": 464,
+      "height": 464
+    },
+    {
+      "label": "10.18",
+      "caption": "Fig. 10.18: Energy emitted versus wavelength",
+      "page": 17,
+      "path": "fig_10_18_p17_x97.png",
+      "width": 192,
+      "height": 157
+    }
+  ]
+}

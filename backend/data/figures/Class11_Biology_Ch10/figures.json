@@ -1,0 +1,35 @@
+{
+  "meta": {
+    "pdf_name": "Class11_Biology_Ch10",
+    "chapter_name": "Cell Cycle and Cell Division",
+    "chapter_number": 10,
+    "subject": "Biology",
+    "class_level": "11"
+  },
+  "figures": [
+    {
+      "label": "10.1",
+      "caption": "Figure 10.1 A diagrammatic view of cell cycle",
+      "page": 2,
+      "path": "fig_10_1_p02_x3.png",
+      "width": 177,
+      "height": 195
+    },
+    {
+      "label": "10.2",
+      "caption": "Figure 10.2 a and b : A diagrammatic view of stages in mitosis",
+      "page": 4,
+      "path": "fig_10_2_p04_x570.png",
+      "width": 463,
+      "height": 463
+    },
+    {
+      "label": "10.4",
+      "caption": "Anaphase II: It begins with the simultaneous splitting of the centromere of each chromosome (which was holding the sister chromatids together), allowing them to move toward opposite poles of the cell (Figure 10.4) by shortening of microtubules attached to kinetochores.",
+      "page": 8,
+      "path": "fig_10_4_p08_x498.png",
+      "width": 463,
+      "height": 463
+    }
+  ]
+}

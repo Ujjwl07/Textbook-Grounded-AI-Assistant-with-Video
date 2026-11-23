@@ -1,0 +1,91 @@
+{
+  "meta": {
+    "pdf_name": "Class11_Chemistry_Ch4",
+    "chapter_name": "Chemical Bonding and Molecular Structure",
+    "chapter_number": 4,
+    "subject": "Chemistry",
+    "class_level": "11"
+  },
+  "figures": [
+    {
+      "label": "4.2",
+      "caption": "Fig. 4.2 Covalent and van der Waals radii in a chlorine molecule. The inner circles correspond to the size of the chlorine atom (rvdw and rc are van der Waals and covalent radii respectively).",
+      "page": 8,
+      "path": "fig_4_2_p08_x1084.png",
+      "width": 466,
+      "height": 466
+    },
+    {
+      "label": "4.2",
+      "caption": "Fig. 4.2 Covalent and van der Waals radii in a chlorine molecule. The inner circles correspond to the size of the chlorine atom (rvdw and rc are van der Waals and covalent radii respectively).",
+      "page": 8,
+      "path": "fig_4_2_p08_x1731.png",
+      "width": 466,
+      "height": 466
+    },
+    {
+      "label": "4.11",
+      "caption": "Fig.4.11 Formation of sp2 hybrids and the BCl3 molecule",
+      "page": 22,
+      "path": "fig_4_11_p22_x830.png",
+      "width": 466,
+      "height": 466
+    },
+    {
+      "label": "4.11",
+      "caption": "Fig.4.11 Formation of sp2 hybrids and the BCl3 molecule",
+      "page": 22,
+      "path": "fig_4_11_p22_x1476.png",
+      "width": 466,
+      "height": 466
+    },
+    {
+      "label": "4.14",
+      "caption": "Fig.4.14 Formation of H2O molecule",
+      "page": 23,
+      "path": "fig_4_14_p23_x815.png",
+      "width": 466,
+      "height": 466
+    },
+    {
+      "label": "4.14",
+      "caption": "Fig.4.14 Formation of H2O molecule",
+      "page": 23,
+      "path": "fig_4_14_p23_x1461.png",
+      "width": 466,
+      "height": 466
+    },
+    {
+      "label": "4.15",
+      "caption": "Fig. 4.15 Formation of sigma and pi bonds in ethene",
+      "page": 24,
+      "path": "fig_4_15_p24_x800.png",
+      "width": 466,
+      "height": 466
+    },
+    {
+      "label": "4.15",
+      "caption": "Fig. 4.15 Formation of sigma and pi bonds in ethene",
+      "page": 24,
+      "path": "fig_4_15_p24_x1446.png",
+      "width": 466,
+      "height": 466
+    },
+    {
+      "label": "4.16",
+      "caption": "Fig.4.16 Formation of sigma and pi bonds in ethyne",
+      "page": 25,
+      "path": "fig_4_16_p25_x785.png",
+      "width": 466,
+      "height": 466
+    },
+    {
+      "label": "4.16",
+      "caption": "Fig.4.16 Formation of sigma and pi bonds in ethyne",
+      "page": 25,
+      "path": "fig_4_16_p25_x1431.png",
+      "width": 466,
+      "height": 466
+    }
+  ]
+}

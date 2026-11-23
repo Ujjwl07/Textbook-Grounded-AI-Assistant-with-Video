@@ -1,0 +1,107 @@
+{
+  "meta": {
+    "pdf_name": "Class11_Chemistry_Ch1",
+    "chapter_name": "Some Basic Concepts of Chemistry",
+    "chapter_number": 1,
+    "subject": "Chemistry",
+    "class_level": "11"
+  },
+  "figures": [
+    {
+      "label": "1.2",
+      "caption": "Fig. 1.2 Classification of matter Fig. 1.1 Arrangement of particles in solid, liquid and gaseous state",
+      "page": 5,
+      "path": "fig_1_2_p05_x10.png",
+      "width": 230,
+      "height": 119
+    },
+    {
+      "label": "1.5",
+      "caption": "Fig. 1.5 Analytical balance",
+      "page": 9,
+      "path": "fig_1_5_p09_x223.png",
+      "width": 185,
+      "height": 176
+    },
+    {
+      "label": "1.6",
+      "caption": "Fig. 1.6 Different units used to express volume",
+      "page": 9,
+      "path": "fig_1_6_p09_x224.png",
+      "width": 187,
+      "height": 167
+    },
+    {
+      "label": "1.6",
+      "caption": "Fig. 1.6 Different units used to express volume",
+      "page": 9,
+      "path": "fig_1_6_p09_x2016.png",
+      "width": 454,
+      "height": 454
+    },
+    {
+      "label": "1.6",
+      "caption": "Fig. 1.6 Different units used to express volume",
+      "page": 9,
+      "path": "fig_1_6_p09_x2547.png",
+      "width": 454,
+      "height": 454
+    },
+    {
+      "label": "1.7",
+      "caption": "Fig. 1.7 Some volume measuring devices",
+      "page": 10,
+      "path": "fig_1_7_p10_x447.png",
+      "width": 209,
+      "height": 169
+    },
+    {
+      "label": "1.8",
+      "caption": "Fig. 1.8 Thermometers using different temperature scales",
+      "page": 10,
+      "path": "fig_1_8_p10_x449.png",
+      "width": 206,
+      "height": 216
+    },
+    {
+      "label": "1.9",
+      "caption": "Fig. 1.9 Two volumes of hydrogen react with one volume of oxygen to give two volumes of water vapour",
+      "page": 16,
+      "path": "fig_1_9_p16_x477.png",
+      "width": 471,
+      "height": 120
+    },
+    {
+      "label": "1.10",
+      "caption": "Fig. 1.10 Packing of Na+ and Cl– ions",
+      "page": 17,
+      "path": "fig_1_10_p17_x495.png",
+      "width": 113,
+      "height": 115
+    },
+    {
+      "label": "1.11",
+      "caption": "Fig. 1.11 One mole of various substances",
+      "page": 18,
+      "path": "fig_1_11_p18_x770.png",
+      "width": 227,
+      "height": 152
+    },
+    {
+      "label": "1.11",
+      "caption": "Fig. 1.11 One mole of various substances",
+      "page": 18,
+      "path": "fig_1_11_p18_x1856.png",
+      "width": 454,
+      "height": 454
+    },
+    {
+      "label": "1.11",
+      "caption": "Fig. 1.11 One mole of various substances",
+      "page": 18,
+      "path": "fig_1_11_p18_x2385.png",
+      "width": 454,
+      "height": 454
+    }
+  ]
+}

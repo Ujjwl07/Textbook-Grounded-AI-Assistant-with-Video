@@ -1,0 +1,67 @@
+{
+  "meta": {
+    "pdf_name": "Class12_Physics_Ch3",
+    "chapter_name": "Current Electricity",
+    "chapter_number": 3,
+    "subject": "Physics",
+    "class_level": "12"
+  },
+  "figures": [
+    {
+      "label": "3.2",
+      "caption": "Consider a conductor satisfying Eq. (3.3) to be in the form of a slab of length l and cross sectional area A [Fig. 3.2(a)]. Imagine placing two such identical slabs side by side [Fig. 3.2(b)], so that the length of the combination is 2l. The current flowing through the combination is the same as that flowing through either of the slabs. If V is the potential difference across the ends of the first slab, then V is also the potential difference across the ends of the second slab since the second slab is",
+      "page": 3,
+      "path": "fig_3_2_p03_x822.png",
+      "width": 470,
+      "height": 470
+    },
+    {
+      "label": "3.9",
+      "caption": "Some materials like Nichrome (which is an alloy of nickel, iron and chromium) exhibit a very weak dependence of resistivity with temperature (Fig. 3.9). Manganin and constantan have similar properties. These materials are thus widely used in wire bound standard resistors since their resistance values would change very little with temperatures.",
+      "page": 10,
+      "path": "fig_3_9_p10_x717.png",
+      "width": 470,
+      "height": 470
+    },
+    {
+      "label": "3.13",
+      "caption": "and req = r1 + r2 (3.46) In Fig.3.13, we had connected the negative electrode of the first to the positive electrode of the second. If instead we connect the two negatives,",
+      "page": 15,
+      "path": "fig_3_13_p15_x642.png",
+      "width": 470,
+      "height": 470
+    },
+    {
+      "label": "3.15",
+      "caption": "Having clarified labelling, we now state the rules and the proof: (a) Junction rule: At any junction, the sum of the currents entering the junction is equal to the sum of currents leaving the junction (Fig. 3.15).",
+      "page": 17,
+      "path": "fig_3_15_p17_x612.png",
+      "width": 470,
+      "height": 470
+    },
+    {
+      "label": "3.16",
+      "caption": "FIGURE 3.16",
+      "page": 18,
+      "path": "fig_3_16_p18_x597.png",
+      "width": 470,
+      "height": 470
+    },
+    {
+      "label": "3.17",
+      "caption": "FIGURE 3.17",
+      "page": 19,
+      "path": "fig_3_17_p19_x582.png",
+      "width": 470,
+      "height": 470
+    },
+    {
+      "label": "3.19",
+      "caption": "FIGURE 3.19",
+      "page": 21,
+      "path": "fig_3_19_p21_x552.png",
+      "width": 470,
+      "height": 470
+    }
+  ]
+}

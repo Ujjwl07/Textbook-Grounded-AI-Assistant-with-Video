@@ -1,0 +1,27 @@
+{
+  "meta": {
+    "pdf_name": "Class11_Biology_Ch15",
+    "chapter_name": "Body Fluids and Circulation",
+    "chapter_number": 15,
+    "subject": "Biology",
+    "class_level": "11"
+  },
+  "figures": [
+    {
+      "label": "15.1",
+      "caption": "Figure 15.1 Diagrammatic representation of formed elements in blood",
+      "page": 2,
+      "path": "fig_15_1_p02_x436.png",
+      "width": 464,
+      "height": 464
+    },
+    {
+      "label": "15.2",
+      "caption": "Figure 15.2 Section of a human heart",
+      "page": 6,
+      "path": "fig_15_2_p06_x364.png",
+      "width": 464,
+      "height": 464
+    }
+  ]
+}

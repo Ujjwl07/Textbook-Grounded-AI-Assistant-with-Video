@@ -1,0 +1,27 @@
+{
+  "meta": {
+    "pdf_name": "Class11_Biology_Ch14",
+    "chapter_name": "Breathing and Exchange of Gases",
+    "chapter_number": 14,
+    "subject": "Biology",
+    "class_level": "11"
+  },
+  "figures": [
+    {
+      "label": "14.1",
+      "caption": "Figure 14.1 Diagrammatic view of human respiratory system (sectional view of the left lung is also shown)",
+      "page": 4,
+      "path": "fig_14_1_p04_x251.png",
+      "width": 468,
+      "height": 468
+    },
+    {
+      "label": "14.4",
+      "caption": "Figure 14.4 A Diagram of a section of an alveolus with a pulmonary capillary.",
+      "page": 8,
+      "path": "fig_14_4_p08_x179.png",
+      "width": 468,
+      "height": 468
+    }
+  ]
+}

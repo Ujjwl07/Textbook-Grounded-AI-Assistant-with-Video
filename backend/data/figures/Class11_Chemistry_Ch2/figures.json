@@ -1,0 +1,155 @@
+{
+  "meta": {
+    "pdf_name": "Class11_Chemistry_Ch2",
+    "chapter_name": "Structure of Atom",
+    "chapter_number": 2,
+    "subject": "Chemistry",
+    "class_level": "11"
+  },
+  "figures": [
+    {
+      "label": "2.2",
+      "caption": "Fig. 2.2 The apparatus to determine the charge to the mass ratio of electron",
+      "page": 3,
+      "path": "fig_2_2_p03_x2266.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "2.2",
+      "caption": "Fig. 2.2 The apparatus to determine the charge to the mass ratio of electron",
+      "page": 3,
+      "path": "fig_2_2_p03_x3076.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "2.5",
+      "caption": "Fig. 2.5 Schematic view of Rutherford’s scattering experiment. When a beam of alpha () particles is “shot” at a thin gold foil, most of them pass through without much effect. Some, however, are deflected.",
+      "page": 6,
+      "path": "fig_2_5_p06_x2208.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "2.5",
+      "caption": "Fig. 2.5 Schematic view of Rutherford’s scattering experiment. When a beam of alpha () particles is “shot” at a thin gold foil, most of them pass through without much effect. Some, however, are deflected.",
+      "page": 6,
+      "path": "fig_2_5_p06_x3016.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "2.7",
+      "caption": "Fig. 2.7 (a) The spectrum of electromagnetic radiation. (b) Visible spectrum. The visible region is only a small part of the entire spectrum.",
+      "page": 10,
+      "path": "fig_2_7_p10_x2148.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "2.7",
+      "caption": "Fig. 2.7 (a) The spectrum of electromagnetic radiation. (b) Visible spectrum. The visible region is only a small part of the entire spectrum.",
+      "page": 10,
+      "path": "fig_2_7_p10_x2956.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "2.8",
+      "caption": "Fig. 2.8(a) Black body",
+      "page": 12,
+      "path": "fig_2_8_p12_x2104.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "2.8",
+      "caption": "Fig. 2.8(a) Black body",
+      "page": 12,
+      "path": "fig_2_8_p12_x2911.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "2.9",
+      "caption": "Fig.2.9 Equipment for studying the photoelectric effect. Light of a particular frequency strikes a clean metal surface inside a vacuum chamber. Electrons are ejected from the metal and are counted by a detector that measures their kinetic energy.",
+      "page": 13,
+      "path": "fig_2_9_p13_x2089.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "2.9",
+      "caption": "Fig.2.9 Equipment for studying the photoelectric effect. Light of a particular frequency strikes a clean metal surface inside a vacuum chamber. Electrons are ejected from the metal and are counted by a detector that measures their kinetic energy.",
+      "page": 13,
+      "path": "fig_2_9_p13_x2896.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "2.13",
+      "caption": "These probability density variation can be visualised in terms of charge cloud diagrams [Fig. 2.13(a)]. In these diagrams, the density",
+      "page": 29,
+      "path": "fig_2_13_p29_x1806.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "2.13",
+      "caption": "These probability density variation can be visualised in terms of charge cloud diagrams [Fig. 2.13(a)]. In these diagrams, the density",
+      "page": 29,
+      "path": "fig_2_13_p29_x2611.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "2.14",
+      "caption": "Boundary surface diagrams for three 2p orbitals (l = 1) are shown in Fig. 2.14. In",
+      "page": 30,
+      "path": "fig_2_14_p30_x1791.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "2.14",
+      "caption": "Boundary surface diagrams for three 2p orbitals (l = 1) are shown in Fig. 2.14. In",
+      "page": 30,
+      "path": "fig_2_14_p30_x2596.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "2.15",
+      "caption": "The energy of an electron in a hydrogen atom is determined solely by the principal quantum Fig. 2.15 Boundary surface diagrams of the five",
+      "page": 31,
+      "path": "fig_2_15_p31_x1763.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "2.15",
+      "caption": "The energy of an electron in a hydrogen atom is determined solely by the principal quantum Fig. 2.15 Boundary surface diagrams of the five",
+      "page": 31,
+      "path": "fig_2_15_p31_x2566.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "2.17",
+      "caption": "Hund’s Rule of Maximum Multiplicity This rule deals with the filling of electrons into the orbitals belonging to the same subshell (that is, orbitals of equal energy, called degenerate orbitals). It states : pairing of Fig.2.17 Order of filling of orbitals",
+      "page": 34,
+      "path": "fig_2_17_p34_x1718.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "2.17",
+      "caption": "Hund’s Rule of Maximum Multiplicity This rule deals with the filling of electrons into the orbitals belonging to the same subshell (that is, orbitals of equal energy, called degenerate orbitals). It states : pairing of Fig.2.17 Order of filling of orbitals",
+      "page": 34,
+      "path": "fig_2_17_p34_x2521.png",
+      "width": 465,
+      "height": 465
+    }
+  ]
+}
