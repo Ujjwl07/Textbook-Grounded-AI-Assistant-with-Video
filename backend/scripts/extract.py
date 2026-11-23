@@ -64,12 +64,15 @@ def ensure_collection(client: QdrantClient):
             vectors_config=VectorParams(size=EMBEDDING_DIM, distance=Distance.COSINE),
         )
         print(f"[qdrant] Created collection: {QDRANT_COLLECTION}")
-    # Indexes for every field the retriever filters on (Qdrant Cloud requires them).
+    # Indexes for every field the retrievers filter on (Qdrant Cloud refuses to
+    # filter on an unindexed field: "Index required but not found").
     for field, schema in [
         ("pdf_name", PayloadSchemaType.KEYWORD),
         ("subject", PayloadSchemaType.KEYWORD),
         ("class_level", PayloadSchemaType.KEYWORD),
         ("chapter_number", PayloadSchemaType.INTEGER),
+        ("chapter_name", PayloadSchemaType.KEYWORD),
+        ("chunk_type", PayloadSchemaType.KEYWORD),
     ]:
         client.create_payload_index(
             collection_name=QDRANT_COLLECTION, field_name=field, field_schema=schema,
