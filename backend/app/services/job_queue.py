@@ -6,8 +6,9 @@ from pathlib import Path
 from typing import Dict, Optional
 
 from app.models.schemas import GenerateRequest, JobState, JobStatus
+from app.rag.scene_builder import build_scenes
 from app.rag.retriever import retriever
-from app.llm.gemini_service import gemini_service
+from app.llm.gemini_service import GeminiUnavailable, gemini_service
 from app.services.database import database
 from app.services.storage import video_storage
 from app.services.websocket_manager import websocket_manager
@@ -16,6 +17,24 @@ from app.video.slide_generator import SlideRenderer
 from app.video.video_assembler import VideoAssembler
 
 logger = logging.getLogger(__name__)
+
+
+class TopicNotInCorpus(Exception):
+    """The requested topic is not in the indexed textbooks.
+
+    Distinct from a generation failure: nothing is broken, the corpus simply
+    does not cover what was asked for, and the student needs different wording
+    rather than a retry.
+    """
+
+
+def _not_found_message(topic: str) -> str:
+    return (
+        f"“{topic}” was not found in the indexed NCERT textbooks. "
+        "Try a Class 11 or 12 Physics, Chemistry or Biology topic — for "
+        "example “Photosynthesis”, “Ray Optics” or "
+        "“Chemical Kinetics”."
+    )
 
 GENERATION_STAGES = [
     (5, "initializing", "Starting generation"),
@@ -63,6 +82,7 @@ class JobQueue:
             "video_url": job.video_url,
             "local_video_path": job.local_video_path,
             "local_filename": Path(job.local_video_path).name if job.local_video_path else None,
+            "scene_source": job.scene_source,
             "status": job.status.value,
             "progress": job.progress,
             "stage": job.stage,
@@ -88,6 +108,54 @@ class JobQueue:
         await database.save_video_record(self._record_from_job(job))
         await websocket_manager.broadcast(job.job_id, job.model_dump(mode="json"))
 
+    async def _build_scenes(self, job: JobState, subject, class_level, context) -> tuple:
+        """Scenes for ``job``, and the name of the stage that produced them.
+
+        Gemini writes the script when it can. When it is overloaded — the API
+        answers 503 for minutes at a time under load, and generate_text already
+        retries with backoff before giving up — the video is still assembled,
+        from passages retrieved out of the textbook rather than from nothing.
+
+        That fallback is quoted NCERT prose, so it is grounded; what it is not
+        is a written script. The distinction is recorded on the job and returned
+        by the status endpoint, because a fallback nobody can see is exactly the
+        silent fallback this pipeline removed.
+        """
+        try:
+            scenes = await gemini_service.generate_educational_scenes(
+                topic=job.topic,
+                subject=subject,
+                class_level=class_level,
+                retrieved_context=context,
+            )
+            return scenes, "gemini"
+        except GeminiUnavailable as exc:
+            logger.warning(
+                "Job %s: Gemini unavailable (%s); assembling scenes from retrieval instead",
+                job.job_id, exc,
+            )
+        except Exception:
+            # A bad key or a malformed prompt is a real defect. Retrieval can
+            # still carry this one video, but the traceback must be recorded.
+            logger.exception("Job %s: Gemini scene generation failed", job.job_id)
+
+        try:
+            scenes = build_scenes(job.topic, subject, class_level)
+        except Exception:
+            logger.exception("Job %s: retrieval-grounded scene build failed", job.job_id)
+            scenes = None
+        if scenes:
+            return scenes, "retrieval"
+
+        # No hand-written presets here any more. They exist to exercise the
+        # renderer, and their content is generic physics: a Biology topic that
+        # reached them was taught "F = ma" under a heading claiming to quote
+        # NCERT. Failing is the honest outcome, and the caller turns this into
+        # a message the student can act on.
+        raise TopicNotInCorpus(
+            f"No usable textbook passages were found for '{job.topic}'."
+        )
+
     async def run_generation(self, job_id: str) -> None:
         job = self.jobs[job_id]
         try:
@@ -109,19 +177,45 @@ class JobQueue:
                 f"Job {job.job_id}: Extracted {retrieval_res.total_chunks} chunks for topic '{job.topic}' "
                 f"(logged to {retrieval_res.log_file_path})"
             )
-            await asyncio.sleep(0.3)
-            
+
+            # Subject and class may have been left out by the client or set
+            # wrongly; retrieval resolves them against the corpus. Both the
+            # prompt and the narration voice need the resolved values, not the
+            # requested ones.
+            applied = retrieval_res.filters_applied
+            subject = applied.get("resolved_subject") or job.subject
+            class_level = applied.get("resolved_class_level") or job.class_level
+
+            # Checked before the LLM, not after: the retrieved chunks are always
+            # *something*, and Gemini would write a confident lesson out of a
+            # chapter that has nothing to do with the question.
+            if not applied.get("topic_matched", True):
+                logger.info(
+                    "Job %s: %r did not match the corpus (best score %.3f)",
+                    job.job_id, job.topic, applied.get("match_score", 0.0),
+                )
+                job.scene_source = "none"
+                job.error = _not_found_message(job.topic)
+                await self._set_progress(
+                    job, job.progress, "topic_not_found", job.error, JobStatus.failed
+                )
+                return
+
             # 3. Scripting stage (30%)
             await self._set_progress(job, 30, "scripting", "Generating curriculum-grounded script via Gemini")
             
             # 4. Segmentation stage (45%)
             await self._set_progress(job, 45, "segmenting", "Segmenting script into educational scenes")
-            scenes = await gemini_service.generate_educational_scenes(
-                topic=job.topic,
-                subject=job.subject,
-                class_level=job.class_level,
-                retrieved_context=retrieved_context,
+            scenes, job.scene_source = await self._build_scenes(
+                job, subject, class_level, retrieved_context
             )
+
+            # Stamp the resolved scope on every scene. The renderer tints
+            # backgrounds by subject and the assembler picks the narration voice
+            # from it, and the model is not asked to echo it back.
+            for scene in scenes:
+                scene.setdefault("subject", (subject or "physics").lower())
+                scene.setdefault("class_level", class_level or "")
 
             # 5. Audio and Video Assembly stages (60% to 92%)
             await self._set_progress(job, 60, "audio", "Synthesizing vocal narration and rendering slide templates")
@@ -129,7 +223,10 @@ class JobQueue:
             local_path = str(video_storage.settings.video_output_dir / f"{job.job_id}.mp4")
             
             # Generate the video (takes care of TTS, slide drawing, Ken Burns, Karaoke subtitles)
-            await self.assembler.assemble_full_video(scenes, job.subject, local_path)
+            # Narrate in the voice of the subject the topic actually belongs to,
+            # which may have been inferred rather than supplied by the client.
+            voice_subject = (subject or "physics").lower()
+            await self.assembler.assemble_full_video(scenes, voice_subject, local_path)
             
             # 6. Upload stage (92%)
             await self._set_progress(job, 92, "uploading", "Uploading final video clip to storage")
@@ -139,6 +236,13 @@ class JobQueue:
             job.local_video_path = local_path
 
             await self._set_progress(job, 100, "complete", "Video is ready", JobStatus.completed)
+        except TopicNotInCorpus:
+            logger.info("Job %s: no usable passages for %r", job.job_id, job.topic)
+            job.scene_source = "none"
+            job.error = _not_found_message(job.topic)
+            await self._set_progress(
+                job, job.progress, "topic_not_found", job.error, JobStatus.failed
+            )
         except Exception as exc:
             logger.exception("Video generation job failed")
             job.error = str(exc)

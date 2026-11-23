@@ -1,0 +1,3433 @@
+<!DOCTYPE html>
+<html><head><meta charset='utf-8'><title>CPG-92 Mid Semester Report</title><style>
+@page { size: A4; margin: 2.5cm 2.5cm 2.5cm 3cm; }
+body {
+    font-family: "Times New Roman", Times, serif;
+    font-size: 12pt;
+    line-height: 1.5;
+    text-align: justify;
+    color: #000;
+}
+h1 {
+    font-family: "Times New Roman", Times, serif;
+    font-size: 16pt; font-weight: bold;
+    text-align: right;
+    border-bottom: 3px solid #000;
+    padding-bottom: 4pt;
+    margin-top: 24pt; margin-bottom: 14pt;
+    page-break-before: always;
+}
+/* The cover is a centred title page, not a chapter heading.
+   The page break goes on the last paragraph, not on the wrapper: Word's HTML
+   engine propagates page-break-after from a container down to its descendants,
+   which turned every <br/> on the cover into a page break. */
+.cover { text-align: center; }
+.cover p { text-align: center; }
+.cover-title {
+    font-size: 22pt; font-weight: bold;
+    margin-top: 48pt; margin-bottom: 30pt;
+    line-height: 1.3;
+}
+.cover-h1 { font-size: 15pt; font-weight: bold; margin: 14pt 0; }
+.cover-h2 { font-size: 13pt; font-weight: bold; margin: 12pt 0; }
+.cover-names { font-size: 12.5pt; font-weight: bold; line-height: 1.7; margin: 12pt 0; }
+.cover-line { font-size: 12pt; margin: 6pt 0; }
+.cover-dept { font-size: 12pt; font-weight: bold; margin-top: 40pt; line-height: 1.6; }
+/* An empty paragraph carries the break so no <br/> inherits it. */
+.cover-break { page-break-after: always; margin: 0; height: 0; }
+
+/* The first real chapter heading follows the cover, which already broke. */
+h1:first-of-type { page-break-before: avoid; }
+h2 { font-size: 14pt; font-weight: bold; margin-top: 16pt; margin-bottom: 8pt; text-align: left; }
+h3 { font-size: 12.5pt; font-weight: bold; margin-top: 12pt; margin-bottom: 6pt; text-align: left; }
+h4 { font-size: 12pt; font-weight: bold; font-style: italic; margin-top: 10pt; text-align: left; }
+p  { margin: 6pt 0; }
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 10pt 0;
+    font-size: 10pt;
+    page-break-inside: avoid;
+}
+th, td { border: 1px solid #000; padding: 4pt 6pt; text-align: left; vertical-align: top; }
+th { background-color: #e8e8e8; font-weight: bold; }
+pre {
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 8pt;
+    line-height: 1.15;
+    border: 1px solid #999;
+    padding: 8pt;
+    background: #f7f7f7;
+    page-break-inside: avoid;
+    white-space: pre;
+}
+code { font-family: Consolas, "Courier New", monospace; font-size: 10pt; }
+blockquote {
+    border-left: 3px solid #666;
+    margin-left: 0; padding-left: 12pt;
+    font-size: 11pt;
+}
+img { max-width: 100%; height: auto; }
+hr { border: none; border-top: 1px solid #bbb; margin: 14pt 0; }
+strong { font-weight: bold; }
+ul, ol { margin: 6pt 0 6pt 18pt; }
+</style></head><body>
+<div class="cover"><p class="cover-title">TEXTBOOK-GROUNDED AI ASSISTANT<br/>WITH VIDEO GENERATION FOR NEET</p><p class="cover-h1">Capstone Project Report</p><p class="cover-h2">MID SEMESTER EVALUATION</p><p class="cover-h2">Submitted by:</p><p class="cover-names">(102303093) UJJWAL DALAL<br/>(102303412) PURNIKA MALHOTRA<br/>(102313055) PALLIKA MALHOTRA<br/>(102316042) UJJWAL THAPA<br/>(102316044) SHUBHAM</p><p class="cover-line">BE Third Year, CoE/CoSE</p><p class="cover-h2">CPG No: 92</p><p class="cover-line">Under the Mentorship of</p><p class="cover-h2">Dr. Chinmaya Panigrahy</p><p class="cover-line">Assistant Professor - III</p><p class="cover-dept">Computer Science and Engineering Department</p><p class="cover-line">Thapar Institute of Engineering and Technology, Patiala</p><p class="cover-h2">August 2026</p><p class="cover-break"></p></div>
+
+<h1>ABSTRACT</h1>
+<p>School students increasingly prefer to learn from short instructional videos, but the AI tools
+available to them are not built for classroom learning. They generate answers from open-web
+knowledge rather than from the prescribed textbook, they cannot verify whether a student has
+understood a lesson, and they require a teacher or developer to prepare a script before any video
+can be produced. The result is content that is often unaligned with the syllabus, occasionally
+incorrect, and impossible to personalise at scale.</p>
+<p>This project implements an end-to-end system that converts a student's topic query into a narrated
+instructional video whose every factual claim is drawn from the NCERT textbook corpus, followed
+by an adaptive assessment that updates a per-student mastery model. The system is targeted at NEET
+aspirants studying Physics, Chemistry and Biology at the Class 11 and 12 level.</p>
+<p>The implemented pipeline has five stages. A custom ingestion engine parses NCERT chapter PDFs into
+markdown, splits them into retrieval units with table rows separated from prose, embeds them with a
+sentence-transformer model and stores them in a Qdrant vector database with class, subject and
+chapter metadata; 2,876 chunks across 60 chapters are currently indexed. A metadata-filtered
+retrieval engine constrains search to the correct book and performs a second, sentence-level
+re-ranking pass inside the retrieved chunks, which raised top-1 correct-book accuracy from 62% to
+100% on an eight-query NEET-style benchmark. A scene builder assembles a five-part lesson
+storyboard — Hook, Concept, Example, Memory and NEET Alert — from the retrieved passages, with the
+on-screen definition carrying its chapter citation. A text-to-speech pipeline normalises
+subject-specific notation before synthesis, produces word-level timestamps and normalises loudness
+to a common target. A video assembly engine renders themed slides pixel-by-pixel with PIL, draws
+topic-matched concept diagrams, burns in karaoke-style subtitles aligned to the speech timestamps,
+and encodes a 1280x720 H.264 MP4. A FastAPI backend with WebSocket progress reporting, MongoDB
+persistence and a React front end exposes the pipeline to students, and an Item Response Theory
+model updates each student's ability estimate from quiz responses.</p>
+<p>Measured results at mid-semester: retrieval top-1 accuracy of 8/8 on the benchmark after filtering,
+end-to-end video generation reduced from 585 s to 125 s (4.7x) through a frame-compositing
+optimisation identified by profiling, and a working prototype that produces a complete narrated
+video with cited textbook definitions for any topic present in the indexed corpus.</p>
+<hr />
+<h1>DECLARATION</h1>
+<p>We hereby declare that the design principles and working prototype model of the project entitled
+<strong>Textbook-Grounded AI Assistant with Video Generation for NEET</strong> is an authentic record of our own
+work carried out in the Computer Science and Engineering Department, TIET, Patiala, under the
+guidance of <strong>Dr. Chinmaya Panigrahy</strong> during 6th semester (2026).</p>
+<p>Date: <strong><em>_</em></strong><strong><em>_</em></strong></p>
+<table>
+<thead>
+<tr>
+<th>Roll No.</th>
+<th>Name</th>
+<th>Signature</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>102303093</td>
+<td>Ujjwal Dalal</td>
+<td>----</td>
+</tr>
+<tr>
+<td>102303412</td>
+<td>Purnika Malhotra</td>
+<td>----</td>
+</tr>
+<tr>
+<td>102313055</td>
+<td>Pallika Malhotra</td>
+<td>----</td>
+</tr>
+<tr>
+<td>102316042</td>
+<td>Ujjwal Thapa</td>
+<td>----</td>
+</tr>
+<tr>
+<td>102316044</td>
+<td>Shubham</td>
+<td>----</td>
+</tr>
+</tbody>
+</table>
+<p><em>Counter Signed By:</em></p>
+<p><strong>Faculty Mentor:</strong></p>
+<p>Dr. Chinmaya Panigrahy
+Assistant Professor - III
+CSED, TIET, Patiala</p>
+<hr />
+<h1>ACKNOWLEDGEMENT</h1>
+<p>We would like to express our thanks to our mentor Dr. Chinmaya Panigrahy. He has been of great help
+in our venture and an indispensable resource of technical knowledge. He is truly an amazing mentor
+to have.</p>
+<p>We are also thankful to the Head, Computer Science and Engineering Department, the entire faculty
+and staff of the Computer Science and Engineering Department, and also our friends who devoted
+their valuable time and helped us in all possible ways towards successful completion of this
+project. We thank all those who have contributed either directly or indirectly towards this project.</p>
+<p>Lastly, we would also like to thank our families for their unyielding love and encouragement. They
+always wanted the best for us and we admire their determination and sacrifice.</p>
+<p>Date: <strong><em>_</em></strong><strong><em>_</em></strong></p>
+<table>
+<thead>
+<tr>
+<th>Roll No.</th>
+<th>Name</th>
+<th>Signature</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>102303093</td>
+<td>Ujjwal Dalal</td>
+<td>----</td>
+</tr>
+<tr>
+<td>102303412</td>
+<td>Purnika Malhotra</td>
+<td>----</td>
+</tr>
+<tr>
+<td>102313055</td>
+<td>Pallika Malhotra</td>
+<td>----</td>
+</tr>
+<tr>
+<td>102316042</td>
+<td>Ujjwal Thapa</td>
+<td>----</td>
+</tr>
+<tr>
+<td>102316044</td>
+<td>Shubham</td>
+<td>----</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1>TABLE OF CONTENTS</h1>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Page No.</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ABSTRACT</td>
+<td>ii</td>
+</tr>
+<tr>
+<td>DECLARATION</td>
+<td>iii</td>
+</tr>
+<tr>
+<td>ACKNOWLEDGEMENT</td>
+<td>iv</td>
+</tr>
+<tr>
+<td>LIST OF FIGURES</td>
+<td>v</td>
+</tr>
+<tr>
+<td>LIST OF TABLES</td>
+<td>vi</td>
+</tr>
+<tr>
+<td>LIST OF ABBREVIATIONS</td>
+<td>vii</td>
+</tr>
+<tr>
+<td><strong>1. Introduction</strong></td>
+<td>1</td>
+</tr>
+<tr>
+<td>1.1 Project Overview</td>
+<td>1</td>
+</tr>
+<tr>
+<td>1.2 Need Analysis</td>
+<td>5</td>
+</tr>
+<tr>
+<td>1.3 Research Gaps</td>
+<td>6</td>
+</tr>
+<tr>
+<td>1.4 Problem Definition and Scope</td>
+<td>8</td>
+</tr>
+<tr>
+<td>1.5 Assumptions and Constraints</td>
+<td>10</td>
+</tr>
+<tr>
+<td>1.6 Standards</td>
+<td>11</td>
+</tr>
+<tr>
+<td>1.7 Approved Objectives</td>
+<td>12</td>
+</tr>
+<tr>
+<td>1.8 Methodology</td>
+<td>13</td>
+</tr>
+<tr>
+<td>1.9 Project Outcomes and Deliverables</td>
+<td>15</td>
+</tr>
+<tr>
+<td>1.10 Novelty of Work</td>
+<td>16</td>
+</tr>
+<tr>
+<td><strong>2. Requirement Analysis</strong></td>
+<td>18</td>
+</tr>
+<tr>
+<td>2.1 Literature Survey</td>
+<td>18</td>
+</tr>
+<tr>
+<td>2.2 Software Requirement Specification</td>
+<td>24</td>
+</tr>
+<tr>
+<td>2.3 Cost Analysis</td>
+<td>31</td>
+</tr>
+<tr>
+<td>2.4 Risk Analysis</td>
+<td>32</td>
+</tr>
+<tr>
+<td><strong>3. Methodology Adopted</strong></td>
+<td>34</td>
+</tr>
+<tr>
+<td>3.1 Investigative Techniques</td>
+<td>34</td>
+</tr>
+<tr>
+<td>3.2 Proposed Solution</td>
+<td>37</td>
+</tr>
+<tr>
+<td>3.3 Work Breakdown Structure</td>
+<td>41</td>
+</tr>
+<tr>
+<td>3.4 Tools and Technology</td>
+<td>44</td>
+</tr>
+<tr>
+<td><strong>4. Design Specifications</strong></td>
+<td>46</td>
+</tr>
+<tr>
+<td>4.1 System Architecture</td>
+<td>46</td>
+</tr>
+<tr>
+<td>4.2 Design Level Diagrams</td>
+<td>49</td>
+</tr>
+<tr>
+<td>4.3 User Interface Diagrams</td>
+<td>54</td>
+</tr>
+<tr>
+<td>4.4 Snapshots of Working Prototype</td>
+<td>56</td>
+</tr>
+<tr>
+<td><strong>5. Conclusions and Future Scope</strong></td>
+<td>62</td>
+</tr>
+<tr>
+<td>5.1 Work Accomplished</td>
+<td>62</td>
+</tr>
+<tr>
+<td>5.2 Conclusions</td>
+<td>65</td>
+</tr>
+<tr>
+<td>5.3 Environmental, Economic and Social Benefits</td>
+<td>66</td>
+</tr>
+<tr>
+<td>5.4 Future Work Plan</td>
+<td>67</td>
+</tr>
+<tr>
+<td>APPENDIX A: References</td>
+<td>69</td>
+</tr>
+<tr>
+<td>APPENDIX B: Plagiarism Report</td>
+<td>71</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1>LIST OF FIGURES</h1>
+<table>
+<thead>
+<tr>
+<th>Figure No.</th>
+<th>Caption</th>
+<th>Page No.</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Figure 1</td>
+<td>Five-phase processing pipeline of the proposed system</td>
+<td>2</td>
+</tr>
+<tr>
+<td>Figure 2</td>
+<td>Work breakdown structure by module and owner</td>
+<td>41</td>
+</tr>
+<tr>
+<td>Figure 3</td>
+<td>Three-tier system architecture</td>
+<td>46</td>
+</tr>
+<tr>
+<td>Figure 4</td>
+<td>Data flow of the NCERT ingestion and indexing engine</td>
+<td>49</td>
+</tr>
+<tr>
+<td>Figure 5</td>
+<td>Two-stage retrieval with sentence-window re-ranking</td>
+<td>50</td>
+</tr>
+<tr>
+<td>Figure 6</td>
+<td>Video assembly pipeline from scene JSON to MP4</td>
+<td>52</td>
+</tr>
+<tr>
+<td>Figure 7</td>
+<td>Front-end navigation flow</td>
+<td>54</td>
+</tr>
+<tr>
+<td>Figure 8</td>
+<td>Slide layout template with title-safe area</td>
+<td>55</td>
+</tr>
+<tr>
+<td>Figure 9</td>
+<td>Prototype snapshot: CONCEPT slide with cited definition</td>
+<td>57</td>
+</tr>
+<tr>
+<td>Figure 10</td>
+<td>Prototype snapshot: EXAMPLE slide with generated concept diagram</td>
+<td>58</td>
+</tr>
+<tr>
+<td>Figure 11</td>
+<td>Prototype snapshot: complete video timeline, all five scenes</td>
+<td>59</td>
+</tr>
+<tr>
+<td>Figure 12</td>
+<td>Frame-generation cost by pipeline stage</td>
+<td>60</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1>LIST OF TABLES</h1>
+<table>
+<thead>
+<tr>
+<th>Table No.</th>
+<th>Caption</th>
+<th>Page No.</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Table 1</td>
+<td>Technology stack: components built versus libraries used</td>
+<td>3</td>
+</tr>
+<tr>
+<td>Table 2</td>
+<td>Assumptions</td>
+<td>10</td>
+</tr>
+<tr>
+<td>Table 3</td>
+<td>Constraints</td>
+<td>10</td>
+</tr>
+<tr>
+<td>Table 4</td>
+<td>Approved objectives and their mapping to implemented modules</td>
+<td>12</td>
+</tr>
+<tr>
+<td>Table 5</td>
+<td>Literature survey, distributed by team member</td>
+<td>21</td>
+</tr>
+<tr>
+<td>Table 6</td>
+<td>Functional requirements</td>
+<td>26</td>
+</tr>
+<tr>
+<td>Table 7</td>
+<td>API endpoints exposed by the backend</td>
+<td>28</td>
+</tr>
+<tr>
+<td>Table 8</td>
+<td>MongoDB collections and indexes</td>
+<td>29</td>
+</tr>
+<tr>
+<td>Table 9</td>
+<td>Non-functional requirements and measured status</td>
+<td>30</td>
+</tr>
+<tr>
+<td>Table 10</td>
+<td>Cost analysis</td>
+<td>31</td>
+</tr>
+<tr>
+<td>Table 11</td>
+<td>Risk analysis</td>
+<td>32</td>
+</tr>
+<tr>
+<td>Table 12</td>
+<td>Investigative techniques considered</td>
+<td>35</td>
+</tr>
+<tr>
+<td>Table 13</td>
+<td>Module ownership and deliverable status</td>
+<td>42</td>
+</tr>
+<tr>
+<td>Table 14</td>
+<td>Tools and technologies used</td>
+<td>44</td>
+</tr>
+<tr>
+<td>Table 15</td>
+<td>Scene JSON contract between the LLM and video stages</td>
+<td>51</td>
+</tr>
+<tr>
+<td>Table 16</td>
+<td>Corpus composition of the indexed NCERT collection</td>
+<td>56</td>
+</tr>
+<tr>
+<td>Table 17</td>
+<td>Retrieval accuracy before and after metadata filtering</td>
+<td>57</td>
+</tr>
+<tr>
+<td>Table 18</td>
+<td>Subject-specific text normalisation examples</td>
+<td>58</td>
+</tr>
+<tr>
+<td>Table 19</td>
+<td>TTS engine comparison</td>
+<td>59</td>
+</tr>
+<tr>
+<td>Table 20</td>
+<td>Output video specifications</td>
+<td>59</td>
+</tr>
+<tr>
+<td>Table 21</td>
+<td>Frame pipeline profile: cost per rendering feature</td>
+<td>60</td>
+</tr>
+<tr>
+<td>Table 22</td>
+<td>End-to-end generation time before and after optimisation</td>
+<td>61</td>
+</tr>
+<tr>
+<td>Table 23</td>
+<td>Objective-wise work accomplished</td>
+<td>62</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1>LIST OF ABBREVIATIONS</h1>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>AAC</td>
+<td>Advanced Audio Coding</td>
+</tr>
+<tr>
+<td>API</td>
+<td>Application Programming Interface</td>
+</tr>
+<tr>
+<td>ASR</td>
+<td>Automatic Speech Recognition</td>
+</tr>
+<tr>
+<td>BM25</td>
+<td>Best Matching 25 (sparse ranking function)</td>
+</tr>
+<tr>
+<td>CRUD</td>
+<td>Create, Read, Update, Delete</td>
+</tr>
+<tr>
+<td>DPI</td>
+<td>Dots Per Inch</td>
+</tr>
+<tr>
+<td>FPS</td>
+<td>Frames Per Second</td>
+</tr>
+<tr>
+<td>HTTP</td>
+<td>HyperText Transfer Protocol</td>
+</tr>
+<tr>
+<td>IRT</td>
+<td>Item Response Theory</td>
+</tr>
+<tr>
+<td>JWT</td>
+<td>JSON Web Token</td>
+</tr>
+<tr>
+<td>LLM</td>
+<td>Large Language Model</td>
+</tr>
+<tr>
+<td>LUFS</td>
+<td>Loudness Units relative to Full Scale</td>
+</tr>
+<tr>
+<td>MOS</td>
+<td>Mean Opinion Score</td>
+</tr>
+<tr>
+<td>MRR</td>
+<td>Mean Reciprocal Rank</td>
+</tr>
+<tr>
+<td>NCERT</td>
+<td>National Council of Educational Research and Training</td>
+</tr>
+<tr>
+<td>NEET</td>
+<td>National Eligibility cum Entrance Test</td>
+</tr>
+<tr>
+<td>OCR</td>
+<td>Optical Character Recognition</td>
+</tr>
+<tr>
+<td>PIL</td>
+<td>Python Imaging Library</td>
+</tr>
+<tr>
+<td>PPA</td>
+<td>Persona-Purpose-Action (prompt framework)</td>
+</tr>
+<tr>
+<td>RAG</td>
+<td>Retrieval-Augmented Generation</td>
+</tr>
+<tr>
+<td>REST</td>
+<td>Representational State Transfer</td>
+</tr>
+<tr>
+<td>RTF</td>
+<td>Real-Time Factor</td>
+</tr>
+<tr>
+<td>SRS</td>
+<td>Software Requirement Specification</td>
+</tr>
+<tr>
+<td>TTL</td>
+<td>Time To Live</td>
+</tr>
+<tr>
+<td>TTS</td>
+<td>Text-To-Speech</td>
+</tr>
+<tr>
+<td>WBS</td>
+<td>Work Breakdown Structure</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1>CHAPTER 1: INTRODUCTION</h1>
+<h2>1.1 Project Overview</h2>
+<h3>1.1.1 What the system does</h3>
+<p>This project implements a system that takes a single topic query from a school student — for
+example, "Gravitation" — and returns a narrated instructional video in which every factual claim is
+taken from the student's own NCERT textbook, followed by an assessment that adapts to how the
+student performs.</p>
+<p>The student does not upload anything, does not write a script, and does not select a template. The
+entire path from query to video is automatic: the system decides which textbook chapter the topic
+belongs to, extracts the passages that define and explain it, arranges them into a five-part lesson,
+speaks the lesson aloud in an Indian-English voice, renders a themed slide for each part with a
+matching diagram, aligns subtitles to the spoken words, and encodes the result as an MP4. A
+progress bar driven by a WebSocket connection reports each stage while this happens.</p>
+<p>The target audience is NEET aspirants studying Physics, Chemistry and Biology in Classes 11 and 12.
+This scope was chosen deliberately. NEET is an examination in which the prescribed NCERT text is not
+merely a recommended reference but effectively the syllabus itself; a large fraction of questions
+are answerable directly from NCERT wording. A system whose defining property is that it never
+departs from the textbook is therefore of maximum value in exactly this setting.</p>
+<h3>1.1.2 Why textbook grounding is the central design decision</h3>
+<p>A general-purpose AI assistant answers from the knowledge encoded in its parameters. That knowledge
+is broad but unattributable: the assistant cannot say which page its answer came from, and it cannot
+guarantee that the answer matches the syllabus the student is being examined on. For a student who
+is being marked against a specific textbook, a plausible-sounding answer that goes beyond or
+contradicts that textbook is worse than no answer at all, because the student has no way to detect
+the discrepancy.</p>
+<p>Retrieval-Augmented Generation (RAG) addresses this by constraining the generator to a supplied
+document context [1]. The present system takes that constraint further than a typical RAG chatbot:
+the on-screen definition in the CONCEPT scene is not a paraphrase but the retrieved sentence itself,
+displayed with its chapter citation beneath it. A student watching the video can therefore open the
+named chapter and find the same sentence. This is the property from which the project's title —
+<em>textbook-grounded</em> — is drawn, and it is enforced structurally rather than by instruction.</p>
+<h3>1.1.3 Structure of the pipeline</h3>
+<p>The system is organised as five sequential phases, shown in Figure 1.</p>
+<pre><code>  PHASE 1            PHASE 2           PHASE 3          PHASE 4          PHASE 5
+┌───────────┐     ┌───────────┐     ┌───────────┐    ┌───────────┐    ┌───────────┐
+│  NCERT    │     │ Retrieval │     │  Script   │    │   TTS +   │    │ Adaptive  │
+│ Ingestion │ ──▶ │  Engine   │ ──▶ │   Scene   │──▶ │   Video   │──▶ │   Quiz    │
+│ &amp; Indexing│     │ (filtered │     │ Assembly  │    │ Assembly  │    │&amp; Analytics│
+│           │     │  + rerank)│     │           │    │           │    │           │
+└───────────┘     └───────────┘     └───────────┘    └───────────┘    └───────────┘
+   PDF →            query →           passages →        scenes →         answers →
+   chunks           passages          storyboard        MP4              mastery
+</code></pre>
+<p><strong>FIGURE 1: Five-phase processing pipeline of the proposed system</strong></p>
+<p><strong>Phase 1 — Ingestion and indexing.</strong> NCERT chapter PDFs are converted to markdown with a
+layout-aware extractor, with an OCR fallback for pages whose text layer is poor. The markdown is
+split at section headers and then into retrieval units, with markdown tables decomposed so that each
+data row becomes its own unit rather than being buried inside a large text block. Each unit is
+embedded with a sentence-transformer model and written to a Qdrant vector collection together with
+metadata identifying its class, subject, chapter number, chapter name and content type.</p>
+<p><strong>Phase 2 — Retrieval.</strong> A student query is embedded and searched against the collection under
+filters that restrict results to the correct class and subject and to prose rather than table rows.
+Because the ingested chunks are large, a second pass splits the retrieved chunks into sentences,
+re-embeds them, and re-ranks them against the query, so the precise defining sentence is recovered
+from inside a multi-page section.</p>
+<p><strong>Phase 3 — Script and scene assembly.</strong> The retrieved passages are arranged into a five-part
+pedagogical structure — Hook, Concept, Example, Memory, NEET Alert — and emitted as a scene JSON
+array. Each scene carries its narration text, slide title, bullet points, a visual specification and
+an animation type. A prompt architecture built on the Persona-Purpose-Action framework, together
+with subject-specific addenda and a three-version prompt repository, has been implemented for the
+language-model path that will replace the current retrieval-only assembler.</p>
+<p><strong>Phase 4 — Speech and video.</strong> The narration for each scene is normalised for speech — units,
+Greek letters, chemical formulae and mathematical operators are expanded into spoken form — and
+synthesised with a neural Indian-English voice that returns word-level timestamps. The audio is
+high-pass filtered, silence-trimmed and loudness-normalised, and the timestamps are corrected by the
+amount of leading silence removed. Each scene's slide is rendered pixel-by-pixel with PIL, a
+topic-matched concept diagram is drawn, an animation is applied, and karaoke subtitles are burned in
+using the corrected timestamps. The scenes are concatenated with an intro and outro card and encoded
+to H.264/AAC MP4.</p>
+<p><strong>Phase 5 — Assessment.</strong> After the video, multiple-choice questions are presented. Each response
+updates the student's ability estimate under a one-parameter Item Response Theory model and updates
+a per-topic mastery score, from which weak topics and a recommended next topic are derived.</p>
+<h3>1.1.4 What is built rather than called</h3>
+<p>A distinguishing characteristic of this project is that the components which determine output
+quality are implemented rather than consumed as services. Table 1 separates the two.</p>
+<p><strong>TABLE 1: Technology stack: components built versus libraries used</strong></p>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Built from scratch in this project</th>
+<th>Libraries used</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PDF ingestion</td>
+<td>Layout-aware parser, OCR fallback policy, table-row decomposition, metadata derivation from directory structure, syllabus-scope filtering</td>
+<td>PyMuPDF, pymupdf4llm, PaddleOCR</td>
+</tr>
+<tr>
+<td>Vector indexing</td>
+<td>Embedding pipeline, payload schema, payload index management, de-duplicated re-ingestion</td>
+<td>sentence-transformers, Qdrant</td>
+</tr>
+<tr>
+<td>Retrieval</td>
+<td>Metadata filter composition, two-stage chapter selection, sentence-window re-ranking, definition detection with quality gate, context assembly with citations</td>
+<td>Qdrant client</td>
+</tr>
+<tr>
+<td>Prompt architecture</td>
+<td>PPA framework, five prompt templates, three subject addenda, prompt versioning and comparison, hallucination detector, ablation harness</td>
+<td>—</td>
+</tr>
+<tr>
+<td>TTS pipeline</td>
+<td>Subject-aware text normaliser, prosody injection, loudness normalisation, silence trimming, word-timestamp correction</td>
+<td>edge-tts, pydub</td>
+</tr>
+<tr>
+<td>Video assembly</td>
+<td>Slide renderer, pixel-accurate text layout, glyph-coverage font resolution, concept diagram library, animation dispatcher, karaoke subtitle compositor, assembly orchestrator</td>
+<td>PIL, matplotlib, MoviePy, FFmpeg</td>
+</tr>
+<tr>
+<td>Quiz engine</td>
+<td>1PL IRT ability update, mastery tracking, weak-topic selection</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Web platform</td>
+<td>REST API, async job queue, WebSocket progress broadcast, JWT authentication, React client</td>
+<td>FastAPI, MongoDB, React</td>
+</tr>
+</tbody>
+</table>
+<p>The distinction matters for a capstone assessment. Calling a video-generation API is a single
+function call; deciding what the video should contain, proving that the content came from the
+textbook, laying out a readable slide, keeping subtitles synchronised with speech after audio
+processing has shifted the timeline, and making the whole thing render in a usable amount of time
+are the engineering problems this project actually solves.</p>
+<h3>1.1.5 Current state of the prototype</h3>
+<p>At mid-semester the pipeline runs end to end. A corpus of 2,876 retrieval units spanning
+approximately 60 NCERT chapters is indexed. A topic query produces a five-scene video of
+approximately 75-85 seconds with a cited definition on screen and synchronised karaoke subtitles.
+The backend exposes the pipeline over REST and WebSocket, and a React client covering seven pages
+has been developed. The two components not yet exercised end to end are the language-model script
+generation stage, which is implemented against a mock provider pending an API key, and the
+extraction of original NCERT figures, which requires the source PDF collection to be added to the
+repository. Both are addressed in Section 5.4.</p>
+<h2>1.2 Need Analysis</h2>
+<p>The need for this system arises from the convergence of four separate deficiencies in the tools
+currently available to school students, each of which is individually documented in the literature.</p>
+<p><strong>Content that is not answerable to a syllabus.</strong> Generative assistants answer from parametric
+knowledge. Where a student is examined against a specific prescribed text, an answer that is correct
+in general but phrased differently, scoped more broadly, or drawn from a different curriculum is not
+usable, and the student cannot detect the mismatch. Retrieval grounding has been shown to
+substantially improve factual accuracy over unconstrained generation [1], and self-reflective
+retrieval further reduces hallucination [3], but these systems produce text and were not designed
+for curriculum alignment.</p>
+<p><strong>A delivery format students do not prefer.</strong> Learners increasingly favour short, visual
+instruction. Controlled studies show that AI-generated instructional video produces learning
+outcomes statistically indistinguishable from video recorded by a human instructor, across 76
+students [4] and independently across 83 adult learners [5]. This decouples instructional quality
+from teacher availability — but both studies required a human to prepare the script or slides
+beforehand, which is precisely the bottleneck that prevents such systems from responding to a
+student's question on demand.</p>
+<p><strong>No verification that learning occurred.</strong> Most content-generation systems terminate at delivery.
+They do not ask whether the student understood, and therefore cannot adapt. Retrieval-grounded
+question generation has been shown to produce higher-quality questions from school textbooks than
+generation without retrieval [6], and to improve the usefulness of hints given to students who
+answer incorrectly [7], yet neither system delivers content as video or adjusts subsequent
+instruction.</p>
+<p><strong>Fragmentation across the required capabilities.</strong> Multimodal retrieval systems [8][9][10][11][12]
+have advanced substantially, but each addresses retrieval or reasoning as an end in itself rather
+than as a stage in a teaching pipeline. The individual capabilities needed for a grounded, video-
+delivered, adaptive tutor exist in the literature; they have not been assembled into a single
+student-facing system.</p>
+<p>The significance of this work is therefore integrative as much as technical. It demonstrates that a
+retrieval-grounded pipeline can carry a claim from a textbook page, through a spoken narration and a
+rendered slide, to a student's screen with the citation intact — and that this can be done in
+approximately two minutes on commodity hardware, with no human in the loop.</p>
+<h2>1.3 Research Gaps</h2>
+<p>Five gaps were identified from the literature reviewed in Chapter 2, each of which this project
+addresses directly.</p>
+<p><strong>Gap 1 — Retrieval-augmented generation has not been applied to curriculum-bound delivery.</strong>
+The foundational RAG work [1] and the subsequent survey [2] establish that grounding a generator in
+retrieved documents improves factual accuracy, and Self-RAG [3] adds learned control over when to
+retrieve and self-critique of the output. All three, however, evaluate on open-domain question
+answering and produce free text. None constrains its corpus to a single prescribed curriculum, and
+none carries source attribution through to the artefact the end user consumes. The specific problem
+of ensuring that a school student sees the sentence from their own textbook, attributed to its
+chapter, is not addressed. This project closes the gap by treating the retrieved sentence as the
+displayed artefact rather than as hidden context, and by rendering its citation on the slide.</p>
+<p><strong>Gap 2 — Automated instructional video generation still requires human-authored input.</strong>
+Both controlled studies establishing the educational equivalence of AI-generated video [4][5] begin
+from a manually prepared script or slide deck. The generation is automated; the <em>authoring</em> is not.
+Consequently these systems cannot answer a query that was not anticipated, which rules out the
+on-demand, per-student use case entirely. This project removes the authoring step: the storyboard is
+assembled from retrieved passages at request time, so any topic present in the indexed corpus can be
+turned into a video without prior preparation.</p>
+<p><strong>Gap 3 — Multimodal retrieval systems retrieve but do not teach.</strong>
+BLIP-2 [8] and Video-LLaMA [9] enable vision- and audio-language reasoning; VideoRAG [10], Video-RAG
+[11] and Multi-RAG [12] retrieve across text, audio and video corpora. Each of these produces an
+answer or a retrieved segment. None imposes pedagogical structure on its output — there is no notion
+of a hook, a worked example, a mnemonic or an examination-specific warning, and no notion of pacing a
+lesson. This project imposes a five-part instructional structure on the retrieved material, so the
+output is a lesson rather than an answer.</p>
+<p><strong>Gap 4 — Assessment is decoupled from the content that was actually delivered.</strong>
+Retrieval-augmented question generation [6] and retrieval-augmented mathematics tutoring [7] both
+demonstrate that grounding improves question quality, but they treat question generation as a
+standalone task. In neither case do the questions derive from the specific passage a student was
+just shown, and in neither case does the student's performance feed back into what is delivered
+next. This project generates assessment from the same retrieved context that produced the video and
+routes the response into an ability model that selects the next topic.</p>
+<p><strong>Gap 5 — End-to-end latency is not treated as a research variable.</strong>
+The video-generation literature reports learning outcomes but not generation time [4][5], and the
+retrieval literature reports accuracy but not the cost of assembling a multimodal artefact
+[10][11][12]. For a system intended to answer a student's question while they are studying, latency
+is a functional requirement, not an implementation detail: a lesson that arrives ten minutes later
+has lost its occasion. This project treats generation latency as a measured quantity, profiles the
+pipeline to locate its cost, and reports a 4.7x reduction obtained by replacing a
+general-purpose compositing path with a purpose-built one (Section 4.4).</p>
+<h2>1.4 Problem Definition and Scope</h2>
+<h3>1.4.1 Problem definition</h3>
+<p>Given a topic query <em>q</em> from a student, a class level <em>c</em> and a subject <em>s</em>, construct an
+instructional artefact <em>V</em> such that:</p>
+<ol>
+<li>every factual assertion in <em>V</em> is traceable to a passage in the NCERT corpus for (<em>c</em>, <em>s</em>);</li>
+<li><em>V</em> is delivered as narrated video with synchronised visual and textual reinforcement;</li>
+<li><em>V</em> is structured pedagogically rather than presented as a flat answer;</li>
+<li>an assessment <em>A</em> derived from the same source passages measures whether the student
+   understood <em>V</em>, and the response updates a persistent model of that student's ability;</li>
+<li>the construction of <em>V</em> requires no human authoring and completes within an interactive
+   time budget.</li>
+</ol>
+<h3>1.4.2 In scope</h3>
+<ul>
+<li>NCERT textbooks for Physics, Chemistry and Biology, Classes 11 and 12.</li>
+<li>English-language content and English-language narration in an Indian accent.</li>
+<li>Topic-level queries — a chapter, a concept or a named law — rather than arbitrary
+  free-form conversational questions.</li>
+<li>Slide-based instructional video with narration, concept diagrams and karaoke subtitles.</li>
+<li>Multiple-choice assessment with a one-parameter ability model.</li>
+<li>A web client for query submission, video playback, quiz attempt and progress review.</li>
+</ul>
+<h3>1.4.3 Out of scope</h3>
+<ul>
+<li>Languages other than English, in both corpus and narration.</li>
+<li>Photorealistic or lip-synchronised avatar presenters. The project proposal listed
+  avatar-based video among the deliverables; the implementation guide that governs this
+  report specifies slide-based assembly with MoviePy and PIL, and the implemented system
+  follows the latter. The rationale is recorded in Section 5.1.</li>
+<li>Subjects outside Physics, Chemistry and Biology, and classes outside 11 and 12. Class 9
+  and 10 Science material present in the source dataset is explicitly excluded from
+  retrieval (Section 4.4).</li>
+<li>Handwriting recognition, diagram-based queries, or ingestion of student-supplied notes.</li>
+<li>Live classroom features such as doubt sessions, chat or peer interaction.</li>
+</ul>
+<h2>1.5 Assumptions and Constraints</h2>
+<p><strong>TABLE 2: Assumptions</strong></p>
+<table>
+<thead>
+<tr>
+<th>S. No.</th>
+<th>Assumption</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>The NCERT chapter PDFs supplied to the ingestion engine are digitally generated documents with a recoverable text layer. Where the text layer is degraded, the ingestion engine detects low extraction yield and falls back to OCR; a scanned-only corpus would rely entirely on this path and would extract more slowly and less accurately.</td>
+</tr>
+<tr>
+<td>2</td>
+<td>The source PDF collection is organised in a directory structure of the form <code>Class &lt;n&gt; &lt;Subject&gt; [part &lt;k&gt;]/&lt;chapter number&gt;. &lt;Chapter Name&gt;.pdf</code>, from which class, subject, part, chapter number and chapter name metadata are derived. Files that do not follow this convention will be indexed with incomplete metadata and will not be reachable by filtered retrieval.</td>
+</tr>
+<tr>
+<td>3</td>
+<td>The student has a browser and a working internet connection. Speech synthesis and vector search are both network services, so the system is not usable offline in its present form.</td>
+</tr>
+<tr>
+<td>4</td>
+<td>A topic queried by the student exists in the indexed corpus. When retrieval finds no matching chapter the system falls back to a hand-written storyboard so that a video is still produced, but such a video is not textbook-grounded and is labelled as such internally.</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Students are assumed to attempt the assessment honestly and without external assistance, since the ability estimate produced by the IRT model is only meaningful under that assumption.</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Generated videos are consumed on a display of at least 1280x720, which is the render resolution. Playback on smaller displays will scale but subtitle legibility has not been evaluated below this resolution.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>TABLE 3: Constraints</strong></p>
+<table>
+<thead>
+<tr>
+<th>S. No.</th>
+<th>Constraint</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Speech synthesis depends on an external neural TTS service; no offline voice of comparable quality with word-level timestamps is currently configured.</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Video encoding is CPU-bound. On the development machine, encoding accounts for approximately 90% of generation time and scales linearly with video duration.</td>
+</tr>
+<tr>
+<td>3</td>
+<td>The vector database is a hosted free-tier cluster shared by the team, which bounds corpus size and query throughput.</td>
+</tr>
+<tr>
+<td>4</td>
+<td>The language-model stage requires a paid API key which has not yet been provisioned; the prompt architecture is therefore exercised against a mock provider.</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Copyright in the NCERT text and figures rests with NCERT. The system reproduces short passages with attribution for educational use and does not redistribute the source PDFs.</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Development is on Windows; the code is written to be portable, and font and path handling in particular were made platform-independent (Section 4.4), but deployment on Linux has not yet been validated.</td>
+</tr>
+</tbody>
+</table>
+<h2>1.6 Standards</h2>
+<p>The following standards and conventions are observed in the implementation.</p>
+<p><strong>Media and encoding.</strong> Video is encoded as H.264 (ITU-T H.264 / MPEG-4 Part 10) in an MP4
+container, at 1280x720 with progressive scan and 4:2:0 chroma subsampling, at 24 frames per second.
+Audio is AAC-LC at 44.1 kHz stereo. Narration loudness is normalised toward −16 LUFS, the accepted
+target for spoken-word programme material; where the true ITU-R BS.1770 integrated loudness meter is
+unavailable the module falls back to an RMS dBFS approximation and records which metric was used, so
+that no measurement is reported with more precision than it possesses.</p>
+<p><strong>Web and API.</strong> The backend exposes a REST interface over HTTP/1.1 with JSON payloads, documented
+automatically through the OpenAPI 3 schema generated by FastAPI. Real-time progress uses the
+WebSocket protocol (RFC 6455). Authentication uses JSON Web Tokens (RFC 7519) signed with HS256, and
+passwords are stored as bcrypt hashes.</p>
+<p><strong>Text and typography.</strong> All text handling is Unicode (UTF-8). Slide rendering selects a typeface by
+verified glyph coverage of the scientific character set required by the corpus — subscripts,
+superscripts, Greek letters and mathematical operators — rather than by name, so that characters such
+as m₁ and kg⁻² are never rendered as missing-glyph boxes.</p>
+<p><strong>Software engineering.</strong> The project follows an Agile increment-based lifecycle with version
+control in Git, one module per team member, and code review before merge to the integration branch.
+Python code follows PEP 8. Dependencies are pinned in a requirements file, with the video library
+pinned to a specific major version because its successor renames the public API.</p>
+<p><strong>Accessibility.</strong> Every video carries burned-in subtitles synchronised at word level, which serves
+both accessibility and comprehension. Slide colour pairs are chosen for contrast against their
+backgrounds, and label colours are selected automatically by luminance so that text on a coloured
+chip remains readable.</p>
+<h2>1.7 Approved Objectives</h2>
+<p>The following four objectives were approved at proposal evaluation. Table 4 maps each to the modules
+that implement it; Section 5.1 discusses the extent to which each has been met.</p>
+<p><strong>TABLE 4: Approved objectives and their mapping to implemented modules</strong></p>
+<table>
+<thead>
+<tr>
+<th>No.</th>
+<th>Approved objective</th>
+<th>Implementing modules</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><strong>Build a textbook-grounded RAG pipeline</strong> — extract and chunk school textbook content, retrieve the most relevant passages for a given student query, and use them as the sole source for answer generation, ensuring curriculum-aligned and factually accurate responses.</td>
+<td><code>scripts/extract.py</code>, <code>app/rag/retriever.py</code>, <code>app/rag/scene_builder.py</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>Automate end-to-end educational video generation</strong> — convert a retrieved textbook answer into a structured script, synthesise voice narration using TTS, and produce a short instructional video with synchronised audio and visual slides, requiring no manual input.</td>
+<td><code>app/tts/*</code>, <code>app/video/*</code>, <code>app/services/job_queue.py</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>Deliver a focused and functional student-facing interface</strong> — a responsive web application through which students submit queries, watch the generated lesson, and track progress.</td>
+<td><code>app/api/routes/*</code>, <code>app/services/websocket_manager.py</code>, React client</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>Optimise system performance and response time</strong> — minimise end-to-end latency to enable near real-time generation.</td>
+<td><code>app/video/subtitle_engine.py</code>, <code>scripts/profile_frame_pipeline.py</code>, <code>scripts/benchmark_video.py</code></td>
+</tr>
+</tbody>
+</table>
+<h2>1.8 Methodology</h2>
+<p>The project follows an Agile, increment-based methodology in which each phase produces an
+independently demonstrable module. The five phases below correspond to those approved in the
+proposal; the activity within each has been refined as implementation revealed the actual
+difficulties.</p>
+<p><strong>Phase 1 — Requirement analysis and system design.</strong> Existing learning platforms were analysed for
+the four deficiencies set out in Section 1.2. The technology stack was selected against explicit
+criteria: a vector store with metadata filtering, a speech engine returning word-level timestamps, a
+video library permitting frame-level control, and an asynchronous web framework with WebSocket
+support. The five-phase architecture and the data contracts between phases were fixed at this stage,
+in particular the scene JSON schema (Table 15), which is the interface between the content and media
+halves of the system and which allowed the two halves to be developed in parallel.</p>
+<p><strong>Phase 2 — Ingestion and retrieval.</strong> The ingestion engine was built to convert chapter PDFs into
+metadata-tagged retrieval units. The retrieval engine was then built on top of it and evaluated
+against a benchmark of NEET-style queries, an evaluation that revealed the corpus-mixing and
+chunk-size defects described in Section 4.4 and drove two rounds of correction.</p>
+<p><strong>Phase 3 — Prompt architecture and scene assembly.</strong> The PPA prompt framework, subject addenda,
+scene segmentation and quiz generation templates were implemented with version control across three
+template generations, together with a hallucination detector and an ablation harness that compares
+prompt variants. In parallel, a retrieval-only scene assembler was built so that the media pipeline
+could be developed and demonstrated before a language-model key was available.</p>
+<p><strong>Phase 4 — Speech and video.</strong> The TTS pipeline and the video assembly engine were developed
+against the scene JSON contract. This phase produced the largest number of defects visible in the
+output — text rendered as missing-glyph boxes, content clipped by the zoom animation, placeholder
+graphics carrying no information — each of which was located by inspecting rendered frames rather
+than by reading code, and each of which is documented with its fix in Section 4.4.</p>
+<p><strong>Phase 5 — Integration, optimisation and evaluation.</strong> The modules were integrated behind the
+asynchronous job queue and the REST/WebSocket API. Performance was then measured rather than
+assumed: profiling identified that a general-purpose compositing routine, not the video encoder,
+dominated generation time, and replacing it reduced end-to-end generation by a factor of 4.7.</p>
+<h2>1.9 Project Outcomes and Deliverables</h2>
+<p><strong>Delivered at mid-semester:</strong></p>
+<ol>
+<li><strong>An NCERT ingestion and indexing engine</strong> that converts chapter PDFs into metadata-tagged
+   retrieval units with OCR fallback, table-row decomposition, syllabus-scope filtering and
+   idempotent re-ingestion. A corpus of 2,876 units across approximately 60 chapters is indexed.</li>
+<li><strong>A metadata-filtered retrieval engine</strong> with two-stage chapter selection, sentence-window
+   re-ranking, definition detection with a quality gate, and citation-carrying context assembly,
+   evaluated on an eight-query benchmark.</li>
+<li><strong>A prompt architecture</strong> comprising five templates across three versions, three subject
+   addenda, a prompt manager with versioning, a hallucination detector, an ablation harness and
+   a thirty-topic evaluation runner, with unit tests.</li>
+<li><strong>A TTS pipeline</strong> with subject-aware notation expansion, prosody injection, loudness
+   normalisation, silence trimming and word-timestamp correction, plus an engine comparison
+   harness and a blinded listening-test harness.</li>
+<li><strong>A video assembly engine</strong> producing 1280x720 H.264 video from scene JSON, with a themed
+   slide renderer, a concept diagram library, an animation dispatcher, a karaoke subtitle
+   compositor and intro/outro cards.</li>
+<li><strong>A backend service</strong> exposing generation, status, streaming progress, video retrieval, quiz
+   submission, dashboard and authentication endpoints over REST and WebSocket, with MongoDB
+   persistence and Cloudinary media storage.</li>
+<li><strong>An adaptive quiz engine</strong> implementing a one-parameter IRT ability update with per-topic
+   mastery tracking and next-topic selection.</li>
+<li><strong>A React front end</strong> covering landing, search, generation progress, playback, quiz,
+   dashboard and administration.</li>
+<li><strong>A measurement suite</strong> — retrieval evaluation, frame-pipeline profiler, video benchmark, TTS
+   engine comparison and notation-expansion demonstrator — that regenerates every quantitative
+   claim in this report.</li>
+</ol>
+<p><strong>Remaining for end-semester:</strong> language-model script generation against a live provider,
+extraction of original NCERT figures, collection of Mean Opinion Score ratings, and the user study.
+These are scheduled in Section 5.4.</p>
+<h2>1.10 Novelty of Work</h2>
+<p>The novelty of this project lies in four specific choices, each of which is a departure from what the
+reviewed literature does.</p>
+<p><strong>1. The retrieved sentence is the displayed artefact, not hidden context.</strong> In a conventional RAG
+system the retrieved passage is consumed by the generator and discarded; the user sees only the
+generated text. Here the defining sentence retrieved from the textbook is rendered verbatim on the
+CONCEPT slide inside a quotation card, with its chapter citation beneath it. Grounding therefore
+becomes visible and checkable by the student, rather than being a property claimed by the system
+about itself.</p>
+<p><strong>2. Sentence-window re-ranking recovers precision from a coarse index without re-ingestion.</strong> The
+ingested chunks average 4,797 characters, which makes a chunk embedding an average over an entire
+section. Measurement showed the consequence concretely: the statement of the universal law of
+gravitation sits at character 2,951 of its chunk, and a query quoting the law almost verbatim failed
+to retrieve that chunk in its top three. Rather than re-ingesting the corpus, the retriever fetches
+whole chunks and then splits, re-embeds and re-ranks their sentences against the same query,
+recovering the precise passage. This is a practical contribution: it decouples retrieval precision
+from the chunk size chosen at ingestion time.</p>
+<p><strong>3. Two-stage chapter-scoped definition search handles the lexical-mismatch case.</strong> A defining
+sentence frequently does not contain the term it defines — "Every body in the universe attracts every
+other body…" never contains the word <em>gravitation</em> — so it loses on embedding similarity to weaker
+sentences that repeat the query term. Unscoped search for "Gravitation" returned a sentence from the
+chapter on Laws of Motion. The retriever therefore first selects the chapter by score-weighted vote,
+then searches only within it, and rewards definitional phrasing while enforcing a quality gate that
+returns nothing rather than a section heading. Measured effect: top-1 correct-book accuracy rose from
+62% to 100% on the benchmark.</p>
+<p><strong>4. Rendering cost is treated as a measured engineering variable.</strong> Generation time was profiled
+rather than estimated. The profile showed that the video encoder was not the bottleneck — changing
+the encoder preset had no measurable effect — and that a general-purpose alpha-compositing routine
+consumed over 90% of frame-generation time while operating on the bottom eighth of the frame.
+Replacing it with a purpose-built float32 band compositor reduced full generation from 585 s to
+125 s. The profiling harness is retained as a deliverable so the measurement is reproducible.</p>
+<p>Taken together, these produce a system that does something none of the reviewed works does: it
+carries a claim from a textbook page, with its citation intact, through retrieval, narration and
+rendering, into a video a student watches — and does so in approximately two minutes on a laptop,
+with no human authoring step.</p>
+<hr />
+<h1>CHAPTER 2: REQUIREMENT ANALYSIS</h1>
+<h2>2.1 Literature Survey</h2>
+<h3>2.1.1 Theory Associated With Problem Area</h3>
+<p>Four bodies of theory underpin this project.</p>
+<p><strong>Retrieval-augmented generation.</strong> A language model generates from a distribution learned during
+training. That distribution encodes a great deal, but it cannot be audited and cannot be updated for
+a particular curriculum. Retrieval-augmented generation restructures the problem: a retriever selects
+passages from an external corpus, and the generator is conditioned on those passages [1]. The
+theoretical benefit is that the factual content of the output becomes a property of the corpus rather
+than of the model weights, which makes it inspectable and replaceable. The subsequent survey [2]
+formalises the design space — what to retrieve, when to retrieve, how to fuse — and identifies
+domain-specific deployment as an open problem. Self-RAG [3] adds a learned control signal that
+decides when retrieval is necessary and critiques the generated span against the retrieved evidence.</p>
+<p><strong>Dense retrieval and the granularity problem.</strong> Dense retrieval embeds queries and documents into a
+shared vector space and ranks by cosine similarity. Its accuracy depends critically on the granularity
+of the indexed unit. A unit that is too small loses the context needed to disambiguate; a unit that is
+too large produces an embedding that is an average over several topics, so a query matching one
+sentence within it competes against the aggregate. This project encountered the second failure mode
+directly and addresses it with a second re-ranking pass at sentence granularity, described in
+Section 3.2.</p>
+<p><strong>Instructional design and multimedia learning.</strong> Cognitive theories of multimedia learning hold that
+information presented simultaneously through narration and complementary visuals is retained better
+than the same information presented through either channel alone, provided the two channels are
+coordinated and not redundant. This motivates the design of the slide: the narration speaks the
+explanation, the slide carries the definition and a diagram, and the subtitle band reinforces the
+spoken word without competing with the visual panel. The five-part lesson structure — hook, concept,
+worked example, memory aid, examination warning — follows conventional instructional sequencing.</p>
+<p><strong>Item Response Theory.</strong> Classical scoring treats all questions as equal. IRT models the probability
+that a student answers an item correctly as a function of the difference between the student's latent
+ability theta and the item's difficulty b. In the one-parameter (Rasch) model this probability is
+sigmoid(theta - b). Each observed response therefore yields an update to theta proportional to the
+difference between the observed outcome and the predicted probability, which is the estimator this
+project implements.</p>
+<h3>2.1.2 Existing Systems and Solutions</h3>
+<p><strong>General-purpose AI assistants</strong> answer school questions fluently but from parametric knowledge.
+They cannot cite a textbook page, cannot be constrained to a syllabus, and produce text rather than
+instruction.</p>
+<p><strong>Commercial AI video platforms</strong> convert a supplied script into presenter-led video. They solve
+rendering well but require the script as input, so they cannot respond to a query.</p>
+<p><strong>Established e-learning libraries</strong> offer high-quality video but the content is pre-produced. A
+student whose question is not covered by an existing video is not served, and the content follows the
+platform's own sequence rather than the student's textbook.</p>
+<p><strong>Academic pipelines.</strong> The system in [4] chains a language model, TTS and lip synthesis to generate
+video from lecture slides, and [5] uses a commercial synthetic-instructor platform; both begin from
+prepared material. VideoRAG [10], Video-RAG [11] and Multi-RAG [12] retrieve over multimodal corpora
+and return segments or answers rather than lessons.</p>
+<p>None of these systems performs all four of: constraining content to a prescribed textbook, generating
+the lesson without human authoring, delivering it as structured instructional video, and adapting
+subsequent instruction to measured understanding.</p>
+<h3>2.1.3 Research Findings for Existing Literature</h3>
+<p><strong>TABLE 5: Literature survey, distributed by team member</strong></p>
+<table>
+<thead>
+<tr>
+<th>S. No.</th>
+<th>Roll Number</th>
+<th>Name</th>
+<th>Paper Title</th>
+<th>Tools / Technology</th>
+<th>Findings</th>
+<th>Citation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>102316044</td>
+<td>Shubham</td>
+<td>Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks</td>
+<td>Dense passage retriever, BART generator, Wikipedia index</td>
+<td>Conditioning generation on retrieved passages substantially improves factual accuracy over parametric generation alone; establishes the RAG architecture this project's Phase 2 is built on. Output is free text with no source attribution surfaced to the user.</td>
+<td>[1]</td>
+</tr>
+<tr>
+<td>2</td>
+<td>102316044</td>
+<td>Shubham</td>
+<td>Retrieval-Augmented Generation for Large Language Models: A Survey</td>
+<td>Survey of naive, advanced and modular RAG</td>
+<td>Formalises the design space of retrieval strategies and identifies domain-specific deployment as an open challenge; motivates the metadata-filtered, curriculum-scoped retriever implemented here.</td>
+<td>[2]</td>
+</tr>
+<tr>
+<td>3</td>
+<td>102316044</td>
+<td>Shubham</td>
+<td>Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection</td>
+<td>Reflection tokens, critic-trained LM</td>
+<td>A model trained to decide when to retrieve and to critique its own spans reduces hallucination significantly; informs the quality gate applied to definition selection, which returns nothing rather than a low-confidence passage.</td>
+<td>[3]</td>
+</tr>
+<tr>
+<td>4</td>
+<td>102316042</td>
+<td>Ujjwal Thapa</td>
+<td>Leveraging In-Context Learning and Retrieval-Augmented Generation for Automatic Question Generation in Educational Domains</td>
+<td>In-context learning, RAG, school textbooks</td>
+<td>Questions generated from retrieved textbook context are of higher quality than those generated without retrieval; directly supports grounding the quiz generator in the same passages that produced the video.</td>
+<td>[6]</td>
+</tr>
+<tr>
+<td>5</td>
+<td>102316042</td>
+<td>Ujjwal Thapa</td>
+<td>Retrieval-Augmented Generation to Improve Math Question-Answering: Trade-offs Between Groundedness and Human Preference</td>
+<td>RAG, mathematics QA, hint generation</td>
+<td>Retrieval improves both answer correctness and the usefulness of hints given after an incorrect response, but a groundedness/preference trade-off exists; motivates the explanation field returned with each quiz result.</td>
+<td>[7]</td>
+</tr>
+<tr>
+<td>6</td>
+<td>102303412</td>
+<td>Purnika Malhotra</td>
+<td>From Recorded to AI-Generated Instructional Videos: A Comparison of Learning Performance and Experience</td>
+<td>LLM + TTS + lip synthesis, 76-student study</td>
+<td>No significant difference in learning outcomes between AI-generated and human-recorded instructional video; establishes that synthetic delivery is pedagogically acceptable, which is the premise of the video module. Requires manually prepared slides as input.</td>
+<td>[4]</td>
+</tr>
+<tr>
+<td>7</td>
+<td>102303412</td>
+<td>Purnika Malhotra</td>
+<td>Generative AI for Learning: Investigating the Potential of Learning Videos with Synthetic Virtual Instructors</td>
+<td>Commercial AI video platform, 83 adult learners</td>
+<td>Independently replicates the equivalence finding; confirms the result is not an artefact of one pipeline. Again requires an authored script, which is the gap Phase 3 of this project removes.</td>
+<td>[5]</td>
+</tr>
+<tr>
+<td>8</td>
+<td>102303412</td>
+<td>Purnika Malhotra</td>
+<td>VideoRAG: Retrieval-Augmented Generation over Video Corpus</td>
+<td>Query-driven video retrieval</td>
+<td>Demonstrates retrieval over a video corpus rather than a text corpus; useful as a contrast, since this project generates video from retrieved text instead of retrieving pre-existing video.</td>
+<td>[10]</td>
+</tr>
+<tr>
+<td>9</td>
+<td>102313055</td>
+<td>Pallika Malhotra</td>
+<td>Video-LLaMA: An Instruction-tuned Audio-Visual Language Model for Video Understanding</td>
+<td>Audio-visual encoders, instruction tuning</td>
+<td>Extends vision-language reasoning to the audio channel, establishing audio as a first-class modality; supports treating narration quality and timing as engineering concerns rather than incidental output.</td>
+<td>[9]</td>
+</tr>
+<tr>
+<td>10</td>
+<td>102313055</td>
+<td>Pallika Malhotra</td>
+<td>Video-RAG: Visually-Aligned Retrieval-Augmented Long Video Comprehension</td>
+<td>Audio transcription, object detection, alignment</td>
+<td>Uses transcription to align audio content with queries, showing that word-level temporal information carries retrievable meaning; parallels this project's use of word-boundary timestamps to align subtitles with speech.</td>
+<td>[11]</td>
+</tr>
+<tr>
+<td>11</td>
+<td>102303093</td>
+<td>Ujjwal Dalal</td>
+<td>BLIP-2: Bootstrapping Language-Image Pre-training with Frozen Image Encoders and Large Language Models</td>
+<td>Q-Former, frozen encoders</td>
+<td>Shows that a lightweight bridging module can connect frozen encoders efficiently; the architectural lesson — thin adapters between independently developed components — is applied in the scene JSON contract between content and media subsystems.</td>
+<td>[8]</td>
+</tr>
+<tr>
+<td>12</td>
+<td>102303093</td>
+<td>Ujjwal Dalal</td>
+<td>Multi-RAG: Multimodal Retrieval-Augmented Generation System</td>
+<td>Unified text, audio, video retrieval</td>
+<td>Unifies three modalities in one retrieval pipeline; confirms that multimodal RAG is feasible end to end, while remaining an information-retrieval system rather than a lesson-delivery system.</td>
+<td>[12]</td>
+</tr>
+</tbody>
+</table>
+<h3>2.1.4 Problem Identified</h3>
+<p>The literature establishes each necessary capability independently: grounding improves factual
+accuracy [1][2][3]; synthetic video teaches as effectively as recorded video [4][5]; grounded
+question generation improves assessment quality [6][7]; multimodal retrieval is feasible at scale
+[8][9][10][11][12]. What no reviewed system does is compose them. Specifically, no system takes a
+student's topic query, constrains the answer to that student's prescribed textbook, structures it as
+a lesson, delivers it as narrated video with the source citation visible, assesses understanding from
+the same source, and adapts what comes next — all without a human authoring step, and all within an
+interactive time budget. That composition is the problem this project addresses.</p>
+<h3>2.1.5 Survey of Tools and Technologies Used</h3>
+<p><strong>Vector database.</strong> Qdrant was selected over FAISS because the retrieval design depends on payload
+filtering — restricting a search to a class, a subject and a chapter — which Qdrant supports natively
+with indexed payload fields, whereas FAISS would require maintaining a parallel metadata store and
+post-filtering. The hosted free tier removes operational burden during development.</p>
+<p><strong>Embedding model.</strong> all-MiniLM-L6-v2 (384 dimensions) was chosen for its speed and small footprint,
+which matter because the sentence-window re-ranking pass embeds several hundred candidate windows per
+request. Larger models were considered; the evaluation of alternatives is scheduled in Section 5.4.</p>
+<p><strong>PDF extraction.</strong> pymupdf4llm produces markdown that preserves heading structure and tables, which
+the chunking strategy depends on. PaddleOCR's structure model serves as a fallback when the text layer
+yields too little content.</p>
+<p><strong>Speech synthesis.</strong> Edge-TTS was selected over gTTS and Coqui-TTS. The deciding factor was not
+latency but word-boundary timestamps, which neither alternative provides and without which the
+karaoke subtitle engine would have to estimate word timings from character counts and would drift
+across a scene. Edge-TTS also offers distinct Indian-English neural voices per subject. The comparison
+is reported in Table 19.</p>
+<p><strong>Video assembly.</strong> MoviePy provides clip composition over FFmpeg; PIL performs all slide drawing;
+matplotlib renders both LaTeX formulae and the concept diagram library. MoviePy is pinned to 1.0.3
+because version 2 renames the public API.</p>
+<p><strong>Backend.</strong> FastAPI provides asynchronous request handling, native WebSocket support and automatic
+OpenAPI documentation. MongoDB, accessed asynchronously through Motor, stores users, video records,
+quiz questions and attempts. Cloudinary hosts the rendered MP4 files.</p>
+<p><strong>Front end.</strong> React with Vite, using a WebSocket hook for live progress and a context provider for
+authentication state.</p>
+<h2>2.2 Software Requirement Specification</h2>
+<h3>2.2.1 Introduction</h3>
+<h4>2.2.1.1 Purpose</h4>
+<p>This specification defines the functional and non-functional requirements of the Textbook-Grounded AI
+Assistant with Video Generation. It covers the ingestion and retrieval subsystem, the content
+assembly subsystem, the speech and video subsystem, the assessment subsystem and the web application
+through which students interact with them. It is the reference against which the implementation is
+evaluated in Chapter 5.</p>
+<h4>2.2.1.2 Intended Audience and Reading Suggestions</h4>
+<p>The document is written for the project mentor and evaluation panel, for the five developers who own
+the individual modules, and for any future contributor extending the system. Evaluators are directed
+to Sections 2.2.2 and 2.2.4 for scope and measurable requirements, and to Chapter 5 for attainment
+against them. Developers taking over a module should read Section 2.2.3.3 for the interfaces between
+subsystems, then Chapter 4 for the design. Readers interested only in what the prototype currently
+does should read Section 4.4.</p>
+<h4>2.2.1.3 Project Scope</h4>
+<p>The product converts a topic query into a textbook-grounded instructional video and an adaptive
+assessment, for NCERT Physics, Chemistry and Biology at Classes 11 and 12. It does not cover other
+subjects or classes, other languages, avatar-based presentation, or ingestion of student-supplied
+material. The full scope boundary is stated in Section 1.4.</p>
+<h3>2.2.2 Overall Description</h3>
+<h4>2.2.2.1 Product Perspective</h4>
+<p>The product is a new, self-contained system rather than a component of an existing one. It is
+organised in three tiers: a React client, a FastAPI application server, and a data tier comprising a
+Qdrant vector collection, a MongoDB document store and a Cloudinary media store. It depends on two
+external services at run time — the Edge-TTS speech endpoint and the hosted vector database — and on
+a language-model provider once the generation stage is activated. The architecture is shown in
+Figure 3.</p>
+<h4>2.2.2.2 Product Features</h4>
+<p><strong>TABLE 6: Functional requirements</strong></p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Priority</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FR-1</td>
+<td>The system shall ingest NCERT chapter PDFs and index them as metadata-tagged retrieval units.</td>
+<td>High</td>
+<td>Implemented</td>
+</tr>
+<tr>
+<td>FR-2</td>
+<td>The system shall exclude material outside the Class 11-12 NEET syllabus from retrieval.</td>
+<td>High</td>
+<td>Implemented</td>
+</tr>
+<tr>
+<td>FR-3</td>
+<td>The system shall retrieve passages restricted to the class and subject of the query.</td>
+<td>High</td>
+<td>Implemented</td>
+</tr>
+<tr>
+<td>FR-4</td>
+<td>The system shall identify a definitional passage for a topic and reject non-definitional candidates.</td>
+<td>High</td>
+<td>Implemented</td>
+</tr>
+<tr>
+<td>FR-5</td>
+<td>The system shall assemble a five-part lesson storyboard from retrieved passages.</td>
+<td>High</td>
+<td>Implemented</td>
+</tr>
+<tr>
+<td>FR-6</td>
+<td>The system shall generate the storyboard through a language model constrained to the retrieved context.</td>
+<td>High</td>
+<td>Prompt architecture implemented; provider pending</td>
+</tr>
+<tr>
+<td>FR-7</td>
+<td>The system shall synthesise narration with word-level timestamps.</td>
+<td>High</td>
+<td>Implemented</td>
+</tr>
+<tr>
+<td>FR-8</td>
+<td>The system shall normalise subject-specific notation before synthesis.</td>
+<td>Medium</td>
+<td>Implemented</td>
+</tr>
+<tr>
+<td>FR-9</td>
+<td>The system shall normalise narration loudness and trim silence without desynchronising timestamps.</td>
+<td>Medium</td>
+<td>Implemented</td>
+</tr>
+<tr>
+<td>FR-10</td>
+<td>The system shall render a themed slide per scene, displaying the definition with its citation.</td>
+<td>High</td>
+<td>Implemented</td>
+</tr>
+<tr>
+<td>FR-11</td>
+<td>The system shall render a topic-appropriate diagram, or omit the visual if none applies.</td>
+<td>Medium</td>
+<td>Implemented</td>
+</tr>
+<tr>
+<td>FR-12</td>
+<td>The system shall display original textbook figures where available.</td>
+<td>Medium</td>
+<td>Renderer implemented; source PDFs pending</td>
+</tr>
+<tr>
+<td>FR-13</td>
+<td>The system shall burn word-synchronised subtitles into the video.</td>
+<td>High</td>
+<td>Implemented</td>
+</tr>
+<tr>
+<td>FR-14</td>
+<td>The system shall encode the lesson as an MP4 with intro and outro cards.</td>
+<td>High</td>
+<td>Implemented</td>
+</tr>
+<tr>
+<td>FR-15</td>
+<td>The system shall report generation progress to the client in real time.</td>
+<td>High</td>
+<td>Implemented</td>
+</tr>
+<tr>
+<td>FR-16</td>
+<td>The system shall authenticate users and isolate each user's jobs and records.</td>
+<td>High</td>
+<td>Implemented</td>
+</tr>
+<tr>
+<td>FR-17</td>
+<td>The system shall present multiple-choice questions and evaluate responses.</td>
+<td>High</td>
+<td>Implemented</td>
+</tr>
+<tr>
+<td>FR-18</td>
+<td>The system shall update a per-student ability estimate and per-topic mastery from each response.</td>
+<td>High</td>
+<td>Implemented</td>
+</tr>
+<tr>
+<td>FR-19</td>
+<td>The system shall recommend the next topic from the student's weakest mastery score.</td>
+<td>Medium</td>
+<td>Implemented</td>
+</tr>
+<tr>
+<td>FR-20</td>
+<td>The system shall present a dashboard of mastery, weak areas and history.</td>
+<td>Medium</td>
+<td>Implemented</td>
+</tr>
+<tr>
+<td>FR-21</td>
+<td>The system shall cache generated lessons so that a repeated topic is served without regeneration.</td>
+<td>Medium</td>
+<td>Deferred - see Section 5.4</td>
+</tr>
+</tbody>
+</table>
+<h3>2.2.3 External Interface Requirements</h3>
+<h4>2.2.3.1 User Interfaces</h4>
+<p>The client provides seven pages: a landing page with subject and class selection; a topic search page;
+a generation page showing a live progress ring driven by WebSocket events; a video player with the
+scene list; a quiz session; a student dashboard; and an administration panel for corpus and queue
+monitoring. Authentication is provided by login and registration pages, with protected routes
+redirecting unauthenticated users. The navigation flow is shown in Figure 7.</p>
+<h4>2.2.3.2 Hardware Interfaces</h4>
+<p>The server requires a multi-core x86-64 CPU, since video encoding is CPU-bound and is the dominant
+cost of a request; at least 8 GB of RAM to hold the embedding model, the decoded frame buffers and
+the encoder simultaneously; and disk for intermediate audio, slide and video artefacts, which are
+removed after each job. No GPU is required. The client requires only a browser capable of HTML5 video
+playback and WebSocket connections.</p>
+<h4>2.2.3.3 Software Interfaces</h4>
+<table>
+<thead>
+<tr>
+<th>Interface</th>
+<th>Direction</th>
+<th>Protocol / format</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Qdrant vector collection</td>
+<td>Backend to service</td>
+<td>HTTPS, 384-dimensional cosine search with payload filters</td>
+</tr>
+<tr>
+<td>Edge-TTS endpoint</td>
+<td>Backend to service</td>
+<td>WebSocket stream of audio chunks and WordBoundary events</td>
+</tr>
+<tr>
+<td>Cloudinary</td>
+<td>Backend to service</td>
+<td>HTTPS upload, returns a public media URL</td>
+</tr>
+<tr>
+<td>MongoDB</td>
+<td>Backend to database</td>
+<td>Async driver over the MongoDB wire protocol</td>
+</tr>
+<tr>
+<td>Language-model provider</td>
+<td>Backend to service</td>
+<td>HTTPS JSON (pending activation)</td>
+</tr>
+<tr>
+<td>Client to backend</td>
+<td>Client to server</td>
+<td>REST over HTTP/1.1 with JSON; JWT bearer authentication</td>
+</tr>
+<tr>
+<td>Backend to client</td>
+<td>Server to client</td>
+<td>WebSocket JSON progress events</td>
+</tr>
+</tbody>
+</table>
+<p>The internal interface between the content subsystem and the media subsystem is the <strong>scene JSON
+contract</strong> (Table 15). Because it was fixed early, the two halves of the system were developed and
+tested independently, and the language-model stage can replace the retrieval-only assembler without
+any change to the video code.</p>
+<p><strong>TABLE 7: API endpoints exposed by the backend</strong></p>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>Method</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>/api/health</td>
+<td>GET</td>
+<td>Service liveness</td>
+</tr>
+<tr>
+<td>/api/register</td>
+<td>POST</td>
+<td>Create an account, return a token</td>
+</tr>
+<tr>
+<td>/api/login</td>
+<td>POST</td>
+<td>Authenticate, return a token</td>
+</tr>
+<tr>
+<td>/api/me</td>
+<td>GET</td>
+<td>Current user profile</td>
+</tr>
+<tr>
+<td>/api/admins</td>
+<td>POST</td>
+<td>Grant administrator rights</td>
+</tr>
+<tr>
+<td>/api/generate</td>
+<td>POST</td>
+<td>Queue a generation job, return a job id</td>
+</tr>
+<tr>
+<td>/api/status/{job_id}</td>
+<td>GET</td>
+<td>Poll job status and progress</td>
+</tr>
+<tr>
+<td>/api/ws/{job_id}</td>
+<td>WebSocket</td>
+<td>Stream stage-by-stage progress</td>
+</tr>
+<tr>
+<td>/api/video/{job_id}</td>
+<td>GET</td>
+<td>Retrieve the finished video record</td>
+</tr>
+<tr>
+<td>/api/videos</td>
+<td>GET</td>
+<td>List the user's generated videos</td>
+</tr>
+<tr>
+<td>/api/video-file/{filename}</td>
+<td>GET</td>
+<td>Stream a locally stored video file</td>
+</tr>
+<tr>
+<td>/api/quiz/submit</td>
+<td>POST</td>
+<td>Submit an answer; returns correctness, explanation, updated mastery and next topic</td>
+</tr>
+<tr>
+<td>/api/quiz/history/{user_id}</td>
+<td>GET</td>
+<td>Attempt history</td>
+</tr>
+<tr>
+<td>/api/users/{user_id}/dashboard</td>
+<td>GET</td>
+<td>Mastery, weak and strong areas, videos watched</td>
+</tr>
+</tbody>
+</table>
+<p><strong>TABLE 8: MongoDB collections and indexes</strong></p>
+<table>
+<thead>
+<tr>
+<th>Collection</th>
+<th>Purpose</th>
+<th>Indexes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>users</td>
+<td>Accounts, ability estimate, topic mastery, response history</td>
+<td>email (unique)</td>
+</tr>
+<tr>
+<td>videos</td>
+<td>Job and video records, status, progress, media URL</td>
+<td>job_id (unique); (user_id, created_at)</td>
+</tr>
+<tr>
+<td>quiz_questions</td>
+<td>Generated question bank with options, answer and explanation</td>
+<td>question_id (unique)</td>
+</tr>
+<tr>
+<td>quiz_attempts</td>
+<td>Per-response record with updated ability and mastery</td>
+<td>(user_id, created_at)</td>
+</tr>
+<tr>
+<td>admins</td>
+<td>Administrator allow-list</td>
+<td>email (unique)</td>
+</tr>
+</tbody>
+</table>
+<h3>2.2.4 Other Non-functional Requirements</h3>
+<h4>2.2.4.1 Performance Requirements</h4>
+<p><strong>TABLE 9: Non-functional requirements and measured status</strong></p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Target</th>
+<th>Measured</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>NFR-1</td>
+<td>End-to-end generation latency, cold</td>
+<td>&lt; 90 s</td>
+<td>125 s for an 82 s video (see Section 4.4)</td>
+</tr>
+<tr>
+<td>NFR-2</td>
+<td>Retrieval latency, including sentence re-ranking</td>
+<td>&lt; 30 s</td>
+<td>19-23 s</td>
+</tr>
+<tr>
+<td>NFR-3</td>
+<td>Slide rendering, per slide</td>
+<td>&lt; 0.5 s</td>
+<td>0.10 s mean across the five themes</td>
+</tr>
+<tr>
+<td>NFR-4</td>
+<td>Top-1 retrieval of the correct book</td>
+<td>&gt; 90%</td>
+<td>100% (8/8 benchmark queries)</td>
+</tr>
+<tr>
+<td>NFR-5</td>
+<td>Output resolution and frame rate</td>
+<td>1280x720 @ 24 fps</td>
+<td>Met</td>
+</tr>
+<tr>
+<td>NFR-6</td>
+<td>Progress events delivered to the client</td>
+<td>Every pipeline stage</td>
+<td>Met (8 stages)</td>
+</tr>
+</tbody>
+</table>
+<p>NFR-1 is not yet met and is analysed in Section 4.4; the identified remedy is parallel per-scene
+rendering, which is scheduled in Section 5.4.</p>
+<h4>2.2.4.2 Safety Requirements</h4>
+<p>The system is educational and carries no physical safety risk. The relevant safety property is
+informational: a student must not be shown an incorrect statement presented as textbook fact. Three
+mechanisms enforce this. First, displayed definitions are verbatim retrieved sentences, not
+paraphrases. Second, the definition selector applies a quality gate and returns nothing rather than a
+low-confidence candidate, so the slide omits the definition card rather than showing a wrong one.
+Third, generated diagrams are labelled as the system's own illustrations and are never captioned as
+textbook figures, so a student cannot mistake an illustration for the NCERT original. Where retrieval
+finds no matching chapter, the system falls back to a hand-written storyboard and records internally
+that the lesson is not textbook-grounded.</p>
+<h4>2.2.4.3 Security Requirements</h4>
+<p>Passwords are stored as bcrypt hashes and never returned by any endpoint. Authentication uses
+HS256-signed JSON Web Tokens; the signing secret is required to be at least 32 characters and the
+application refuses to start otherwise. Every job, video record, quiz history and dashboard endpoint
+verifies that the requesting user owns the resource and returns HTTP 403 otherwise; the WebSocket
+endpoint performs the same check before accepting the connection and closes with a policy-violation
+code if it fails. All credentials — database URIs, vector-store keys, media-store secrets and the JWT
+secret — are supplied through environment variables and excluded from version control. A credential
+was found committed to an early revision during this work; the remediation is recorded in
+Section 2.4.</p>
+<h2>2.3 Cost Analysis</h2>
+<p>The project is developed on existing student hardware and free service tiers, so direct development
+cost is negligible. The table below separates development from the projected cost of operating the
+system for a modest pilot deployment.</p>
+<p><strong>TABLE 10: Cost analysis</strong></p>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Basis</th>
+<th>Development cost (INR)</th>
+<th>Projected monthly at pilot scale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Vector database (Qdrant Cloud)</td>
+<td>Free tier, 1 GB; sufficient for the current 2,876 vectors and roughly 100k at 384 dimensions</td>
+<td>0</td>
+<td>~2,000 for a paid cluster if the corpus grows beyond the free tier</td>
+</tr>
+<tr>
+<td>Document database (MongoDB Atlas)</td>
+<td>Free M0 shared cluster</td>
+<td>0</td>
+<td>~1,600 for M10 if concurrent users exceed the free tier</td>
+</tr>
+<tr>
+<td>Media storage and delivery (Cloudinary)</td>
+<td>Free tier, 25 credits</td>
+<td>0</td>
+<td>~2,500 depending on video volume and bandwidth</td>
+</tr>
+<tr>
+<td>Speech synthesis (Edge-TTS)</td>
+<td>No charge</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr>
+<td>Language-model API</td>
+<td>Not yet provisioned; approx. 4,000 input and 1,200 output tokens per lesson across two calls</td>
+<td>0</td>
+<td>~1,500 at 1,000 lessons/month on a mid-tier model</td>
+</tr>
+<tr>
+<td>Compute for rendering</td>
+<td>Development laptops; encoding is CPU-bound</td>
+<td>0</td>
+<td>~3,000 for a 4-vCPU cloud instance</td>
+</tr>
+<tr>
+<td>Development tooling</td>
+<td>Python, FastAPI, React, MoviePy, PIL - all open source</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr>
+<td>Developer effort</td>
+<td>5 members, one semester</td>
+<td>Not costed (academic)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td></td>
+<td><strong>0</strong></td>
+<td><strong>~10,600</strong></td>
+</tr>
+</tbody>
+</table>
+<p>The dominant recurring cost at scale is compute for video encoding, not the language model. This
+reinforces the priority given to the rendering optimisation described in Section 4.4: a 4.7x
+reduction in generation time is also, approximately, a 4.7x reduction in the compute bill.</p>
+<h2>2.4 Risk Analysis</h2>
+<p><strong>TABLE 11: Risk analysis</strong></p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Risk</th>
+<th>Likelihood</th>
+<th>Impact</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>R-1</td>
+<td>Source PDF collection unavailable, preventing figure extraction and re-chunking at the smaller unit size</td>
+<td>High - currently realised</td>
+<td>Medium</td>
+<td>Figure extraction, the manifest format and the slide photo panel are implemented and unit-tested against a synthetic PDF, so only the data is missing; the generated concept-diagram library provides visuals in the interim</td>
+</tr>
+<tr>
+<td>R-2</td>
+<td>Language-model API key not provisioned before end-semester</td>
+<td>Medium</td>
+<td>High</td>
+<td>Prompt architecture is complete and exercised against a mock provider; the retrieval-only scene assembler keeps the pipeline demonstrable; the scene JSON contract means substitution requires no change to downstream code</td>
+</tr>
+<tr>
+<td>R-3</td>
+<td>End-to-end latency remains above the 90 s target</td>
+<td>Medium</td>
+<td>Medium</td>
+<td>Bottleneck already located by profiling; per-scene parallel rendering with container-level concatenation is the identified fix and is scheduled</td>
+</tr>
+<tr>
+<td>R-4</td>
+<td>External TTS service becomes unavailable or rate-limits</td>
+<td>Low</td>
+<td>High</td>
+<td>Engine comparison harness already abstracts the provider; gTTS is integrated as a fallback, and an offline Coqui adapter is written and requires only installation</td>
+</tr>
+<tr>
+<td>R-5</td>
+<td>Retrieval returns a plausible but incorrect passage</td>
+<td>Medium</td>
+<td>High</td>
+<td>Class, subject and chapter filters; definitional quality gate that returns nothing rather than a weak candidate; verbatim display with citation so a reader can verify</td>
+</tr>
+<tr>
+<td>R-6</td>
+<td>Credential exposure in version control</td>
+<td>Low - one instance occurred</td>
+<td>High</td>
+<td>An environment file containing a vector-store key was found in an early commit; the key is being rotated, the file is now excluded by .gitignore, and a scan of tracked files for credential patterns has been added to the team workflow</td>
+</tr>
+<tr>
+<td>R-7</td>
+<td>Work fragmented across branches, causing integration failure late in the semester</td>
+<td>Medium</td>
+<td>High</td>
+<td>Observed during this phase: the language-model module and the front end were developed on separate branches. Integration onto the shared branch is scheduled as the first activity of the next increment</td>
+</tr>
+<tr>
+<td>R-8</td>
+<td>Ingestion quality varies across chapters, with some yielding very few units</td>
+<td>Medium</td>
+<td>Medium</td>
+<td>Low-yield detection with OCR fallback is implemented; per-chapter unit counts are reported by the corpus audit script so weak chapters can be re-ingested selectively</td>
+</tr>
+<tr>
+<td>R-9</td>
+<td>Copyright concerns over reproduction of textbook material</td>
+<td>Low</td>
+<td>Medium</td>
+<td>Only short passages are reproduced, always with attribution, for non-commercial educational use; source PDFs are not redistributed with the repository</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1>CHAPTER 3: METHODOLOGY ADOPTED</h1>
+<h2>3.1 Investigative Techniques</h2>
+<h3>3.1.1 The three candidate techniques</h3>
+<p>Capstone projects are conventionally classified under one of three investigative techniques. Table 12
+summarises them and records how each relates to the present work.</p>
+<p><strong>TABLE 12: Investigative techniques considered</strong></p>
+<table>
+<thead>
+<tr>
+<th>S. No.</th>
+<th>Investigative technique</th>
+<th>Description</th>
+<th>Typical project examples</th>
+<th>Relation to this project</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Descriptive</td>
+<td>An investigation in which scientific questions are investigated and observations of a phenomenon are recorded and catalogued.</td>
+<td>Projects designing new system models, concepts or algorithms.</td>
+<td>Partially applicable: the system architecture and the sentence-window retrieval strategy are new designs that had to be specified before they could be measured.</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Comparative</td>
+<td>Investigations in which observations are made that compare two objects or phenomena.</td>
+<td>Algorithm-comparison and system-comparison projects.</td>
+<td>Directly applicable: several design decisions were settled by measuring competing alternatives against one another under identical conditions.</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Experimental</td>
+<td>An organised investigation that includes a control condition, is designed to test a hypothesis, and has independent and dependent variables.</td>
+<td>Machine learning, deep learning and artificial-intelligence projects.</td>
+<td>Directly applicable: the principal engineering findings of this phase were obtained by holding a pipeline fixed, varying one component, and measuring the effect.</td>
+</tr>
+</tbody>
+</table>
+<h3>3.1.2 Selected technique and its justification</h3>
+<p>This project adopts a <strong>combined experimental and comparative technique, with a descriptive
+component for the system design</strong>. The justification is that the project's central claims are
+quantitative claims about a system, and quantitative claims require a control.</p>
+<p>The descriptive component is unavoidable and comes first: a pipeline that does not exist cannot be
+measured. The architecture, the five-phase decomposition and the scene JSON contract were specified
+and built as a designed artefact. That work is descriptive in the sense of Table 12 — it catalogues
+and specifies a system rather than testing a hypothesis.</p>
+<p>But the questions that actually determined the quality of the result were not design questions; they
+were empirical ones, and each was resolved experimentally.</p>
+<p><strong>Example 1 — an experiment with a control condition.</strong> The hypothesis was that unfiltered vector
+search over a mixed-curriculum corpus returns material from the wrong book. The independent variable
+was the presence or absence of metadata filters; the dependent variable was whether the top-ranked
+result came from the class, subject and chapter a NEET student requires. The same eight NEET-style
+queries were issued under both conditions against the same corpus and the same embedding model, so
+nothing but the filter differed. The control condition scored 5/8; the treatment condition scored
+8/8. Because the control was run rather than assumed, the improvement is attributable to the filter
+and not to any other change made in the same period.</p>
+<p><strong>Example 2 — an experiment that falsified the initial hypothesis.</strong> Generation was slow, and the
+initial hypothesis was that video encoding was responsible. The experiment varied the x264 encoder
+preset while holding the pipeline fixed. Total generation time moved from 585 s to 625 s — that is,
+within run-to-run noise and in the wrong direction. The hypothesis was rejected. A second experiment
+then isolated each rendering feature by encoding the same ten-second clip six ways: with and without
+the zoom animation, with subtitles composited through the general-purpose library path, with
+subtitles composited through a purpose-built path, and in combination. The static clip established
+the encoder-only floor at 136 fps. Subtitle compositing alone reduced throughput to 11 fps, a 1132%
+overhead relative to the floor, while the zoom animation cost only 73%. The bottleneck was thereby
+located to a single component, and the design of the replacement followed from the measurement
+rather than from intuition.</p>
+<p><strong>Example 3 — comparison between interchangeable components.</strong> Three speech engines were driven with
+identical preprocessed text over the same three subject scripts, and latency, real-time factor,
+sample rate and the availability of word-level timestamps were recorded for each. The comparison
+determined the choice, and — importantly — the deciding attribute was not the one that had been
+expected. Latency differences were modest and partly attributable to connection warm-up, whereas the
+presence or absence of word-boundary timestamps determined whether the karaoke subtitle engine could
+work at all. Running the comparison changed the decision criterion.</p>
+<h3>3.1.3 Why this technique suits the problem</h3>
+<p>Three properties of the problem make an experimental approach appropriate rather than optional.</p>
+<p>First, <strong>the failure modes are invisible without measurement.</strong> An unfiltered retriever does not
+raise an error when it answers a Class 11 Physics query from a Class 9 Science book; it returns a
+confident, topically related passage. A slide renderer does not raise an error when a zoom animation
+crops the badge off the left edge; it produces a video that plays. Both defects were found by
+inspecting output — ranked lists and extracted frames — against an expectation, which is an
+experimental act.</p>
+<p>Second, <strong>the system has many interacting components, so attribution requires isolation.</strong> Between
+two benchmark runs the team changed the retriever, the slide layout, the fonts and the animation
+dispatcher. Without holding all but one variable fixed, no improvement could be attributed to any
+particular change. The profiling harness exists precisely to provide that isolation, and it is
+retained as a deliverable so the measurement can be repeated.</p>
+<p>Third, <strong>the project's objectives are stated numerically.</strong> Objective 4 sets a latency target;
+Objective 1 implies a retrieval-accuracy target. Claims against numeric objectives can only be
+supported by measurement under a stated protocol, which is what Chapter 4 reports.</p>
+<h3>3.1.4 Measurement protocol</h3>
+<p>To keep results comparable across the semester, the following protocol is used. All timings are
+wall-clock, measured on the same development machine, with the same corpus and the same model
+weights. Each measurement script writes a machine-readable JSON record alongside its console output,
+so that a later run can be compared against an earlier one rather than against a recollection. Where
+a measurement depends on a network service — speech synthesis, vector search — the first invocation
+of a run is treated as a warm-up and is reported separately rather than averaged in, because
+connection establishment otherwise dominates. Every quantitative claim in Chapter 4 names the script
+that produces it.</p>
+<h2>3.2 Proposed Solution</h2>
+<h3>3.2.1 Overall shape of the solution</h3>
+<p>The solution is a five-stage pipeline in which each stage transforms a well-defined artefact into the
+next: PDF into indexed retrieval units, query into ranked passages, passages into a scene storyboard,
+storyboard into a rendered video, and student responses into an updated ability model. The stages
+communicate through data contracts rather than through shared state, which is what allowed five
+developers to work on them concurrently.</p>
+<h3>3.2.2 Stage 1 — Ingestion and indexing</h3>
+<p>Chapter PDFs are converted to markdown by a layout-aware extractor that preserves heading hierarchy
+and table structure. If the extracted text falls below a threshold — indicating a page image without
+a usable text layer — the engine falls back to an OCR structure model.</p>
+<p>The markdown is then split in two passes. The first splits at section headings, preserving the
+heading as metadata. The second walks each section and separates prose from tables: prose accumulates
+into text units, while a markdown table is decomposed so that <strong>each data row becomes its own
+retrieval unit</strong>, with the column headers prepended to each cell value so the row remains meaningful
+in isolation. This decision was made because a periodic-trends table buried inside a large prose
+block is unreachable by search, whereas as individual rows it is directly retrievable.</p>
+<p>Each unit carries the preceding unit's tail as a context field, and metadata derived from the file
+path: class level, subject, part, chapter number, chapter name and source file. Units are embedded
+with a 384-dimensional sentence-transformer model and written to a Qdrant collection under cosine
+distance, with payload indexes created on every field the retriever filters by. Re-ingestion is
+idempotent: a chapter already present is skipped unless a force flag is supplied.</p>
+<p>Two policy decisions were added after the corpus audit described in Section 4.4. Ingestion now skips
+books outside the Class 11-12 NEET syllabus by default, and the target unit size was reduced from
+5,000 to 1,200 characters, roughly a paragraph, so that a unit embedding represents one idea rather
+than an average over a section.</p>
+<h3>3.2.3 Stage 2 — Retrieval</h3>
+<p>Retrieval proceeds in two stages, and this is the part of the solution that differs most from a
+conventional RAG implementation.</p>
+<p><strong>Stage 2a — chapter selection.</strong> The query is first searched under class and subject filters, and
+the chapter of each returned unit is accumulated with its similarity score. The highest-scoring
+chapter wins. This step exists because the sentence that defines a concept frequently does not
+contain the concept's name. The defining sentence for gravitation begins "Every body in the universe
+attracts every other body…" and never contains the word <em>gravitation</em>, so it loses on embedding
+similarity to weaker sentences elsewhere in the corpus that do repeat the query term. Scoping the
+subsequent search to the correct chapter removes that competition.</p>
+<p><strong>Stage 2b — sentence-window re-ranking.</strong> Within the selected chapter, whole units are retrieved,
+cleaned of markdown and print artefacts, split into sentences, formed into overlapping windows,
+embedded in a single batch and re-ranked against the query. This recovers precision that the coarse
+unit size destroys: for one measured example the target sentence lies at character 2,951 of a 5,176
+character unit, and is unreachable by unit-level similarity alone.</p>
+<p>A definition-specific variant of this search adds two refinements. Candidate sentences are scored
+with a bonus for definitional phrasing — "is defined as", "states that", "is the study of", and the
+copula pattern — and a minimum length is enforced so that a summary fragment cannot outrank the
+definition. A <strong>quality gate</strong> then requires that the returned passage actually match a definitional
+pattern; if none does, the function returns nothing and the slide omits the definition card. Showing
+no definition is treated as strictly better than showing a section heading in the place where a
+student expects the definition to be.</p>
+<p>Text hygiene filters were added as defects were observed: numbered section headings, equation-only
+lines, table rows and the chapter-opening learning-objectives lists — which on two-column pages
+extract as interleaved and unreadable text — are all excluded from candidate sentences.</p>
+<h3>3.2.4 Stage 3 — Scene assembly</h3>
+<p>The scene builder converts retrieved passages into a five-part storyboard. Sentences that open with a
+discourse marker or a bare pronoun are rejected, because such a sentence refers to something the
+slide will not show and reads as a non-sequitur when displayed alone. Each of the five scenes draws
+from a disjoint slice of the ranked passages so that consecutive slides do not repeat, and passages
+already displayed are excluded from the closing warning scene.</p>
+<p>The output is the scene JSON contract of Table 15. The retrieval-only assembler is deliberately not a
+script writer: it selects and formats real textbook sentences and never paraphrases, so nothing that
+reaches the screen is ungrounded. The language-model stage — for which the PPA prompt framework,
+subject addenda, scene segmentation and quiz templates are implemented — consumes the same retrieved
+context and emits the same contract, so it substitutes without any change to the media pipeline.</p>
+<h3>3.2.5 Stage 4 — Speech and video</h3>
+<p>Narration text is normalised before synthesis by a subject-aware preprocessor: LaTeX fragments, Greek
+letters and mathematical operators are expanded for all subjects, while Physics additionally expands
+SI units and separates glued variable products, Chemistry expands named compounds, state symbols,
+ionic charges and mechanism names, and Biology expands ribosome sizes, nucleic-acid abbreviations and
+prime notation. Prosody is shaped by inserting comma pauses before subject-specific emphasis words,
+since the speech engine accepts plain text only and offers no markup control.</p>
+<p>Synthesis returns audio together with word-boundary events. The audio is then high-pass filtered,
+silence-trimmed and loudness-normalised — and <strong>the word timestamps are shifted by the amount of
+leading silence removed</strong>. Without that correction every subtitle would fire early by the length of
+the trimmed lead-in, a defect invisible in the audio and visible only in the finished video.</p>
+<p>Slides are drawn pixel-by-pixel. Text is wrapped by measured pixel width rather than by character
+count, titles auto-shrink through a size ladder to fit their box, and the typeface is selected by
+verified glyph coverage of the scientific character set. All content is placed inside a title-safe
+margin so that zoom animations cannot crop it. A concept-diagram library draws a topic-matched
+illustration, or nothing when no diagram fits.</p>
+<p>Subtitles are composited by a purpose-built routine rather than by the general-purpose library path,
+for the reason established in Section 3.1.2: the alpha mask is precomputed once, the band images are
+cached per highlighted word and pre-multiplied by alpha, and only the subtitle band is touched. Scenes
+are concatenated with intro and outro cards and encoded to H.264/AAC.</p>
+<h3>3.2.6 Stage 5 — Assessment</h3>
+<p>Each response updates the student's latent ability under the one-parameter IRT model. Item difficulty
+is mapped from the question's declared level, the probability of a correct response is computed as
+the sigmoid of the difference between ability and difficulty, and ability is updated by a learning
+rate times the difference between the observed outcome and that probability, clipped to a bounded
+range. A per-topic mastery score is updated by exponential smoothing toward the observed outcome.
+Topics below a mastery threshold are reported as weak, and the weakest is recommended as the next
+topic.</p>
+<h2>3.3 Work Breakdown Structure</h2>
+<pre><code>                     Textbook-Grounded AI Assistant with Video Generation
+                                            │
+        ┌───────────────┬───────────────┬───┴───────────┬───────────────┬───────────────┐
+        │               │               │               │               │               │
+   1. RAG &amp;        2. LLM &amp;       3. TTS &amp;         4. Video &amp;      5. Full Stack   6. Integration
+   Pipeline        Prompts        Audio            Media                              &amp; Evaluation
+   (Shubham)       (U. Thapa)     (Pallika)        (Purnika)       (U. Dalal)       (All)
+        │               │               │               │               │               │
+   1.1 PDF parser  2.1 PPA        3.1 Voice map    4.1 Slide       5.1 REST API    6.1 Branch
+   1.2 Chunking        framework  3.2 TTS gen          renderer     5.2 Job queue       integration
+   1.3 Embedding + 2.2 Subject        + timestamps 4.2 Formula     5.3 WebSocket   6.2 Benchmarks
+       indexing        addenda    3.3 Text            renderer         progress    6.3 User study
+   1.4 Metadata    2.3 Scene          preprocessor 4.3 Concept     5.4 MongoDB     6.4 Report
+       filtering       segmenter  3.4 Audio            diagrams        layer
+   1.5 Sentence-   2.4 Quiz           processor    4.4 Animation   5.5 IRT quiz
+       window          generator  3.5 Engine           engine          engine
+       re-ranking  2.5 Prompt         comparison   4.5 Subtitle    5.6 Auth + JWT
+   1.6 Definition      versioning 3.6 MOS              compositor  5.7 React client
+       detection   2.6 Ablation       listening    4.6 Assembly
+   1.7 Figure          study          test             orchestrator
+       extraction                                  4.7 Figure store
+</code></pre>
+<p><strong>FIGURE 2: Work breakdown structure by module and owner</strong></p>
+<h3>3.3.1 Workable modules and their status</h3>
+<p>Each branch of the structure is an independently demonstrable module: it can be run, tested and shown
+to the mentor without the rest of the system being present. This was a deliberate design property, and
+it is what allowed the media pipeline to be completed and measured while the language-model stage was
+still awaiting a provider.</p>
+<p><strong>TABLE 13: Module ownership and deliverable status</strong></p>
+<table>
+<thead>
+<tr>
+<th>Module</th>
+<th>Owner</th>
+<th>Principal artefacts</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ingestion and indexing</td>
+<td>Shubham</td>
+<td>extract.py — layout-aware parsing, OCR fallback, table-row decomposition, metadata derivation, syllabus filtering, payload indexes</td>
+<td>Working; corpus of 2,876 units indexed</td>
+</tr>
+<tr>
+<td>Retrieval</td>
+<td>Shubham</td>
+<td>retriever.py — filter composition, chapter selection, sentence-window re-ranking, definition detection, context assembly</td>
+<td>Working; 8/8 on benchmark</td>
+</tr>
+<tr>
+<td>Prompt architecture</td>
+<td>Ujjwal Thapa</td>
+<td>prompt_manager, script_generator, scene_segmenter, quiz_generator, hallucination_detector, ablation_study, 5 templates x 3 versions, unit tests</td>
+<td>Working against a mock provider; live provider pending</td>
+</tr>
+<tr>
+<td>Scene assembly</td>
+<td>Shubham / Ujjwal Thapa</td>
+<td>scene_builder.py — retrieval-grounded storyboard assembly</td>
+<td>Working; substitutable by the LLM stage</td>
+</tr>
+<tr>
+<td>TTS and audio</td>
+<td>Pallika</td>
+<td>tts_config, tts_generator, text_preprocessor, audio_processor, multi_voice_test, voice_eval</td>
+<td>Working; MOS ratings pending collection</td>
+</tr>
+<tr>
+<td>Slide rendering</td>
+<td>Purnika</td>
+<td>slide_generator, layout, visuals, fonts, formula_renderer, diagrams</td>
+<td>Working; 0.10 s mean per slide</td>
+</tr>
+<tr>
+<td>Video assembly</td>
+<td>Purnika</td>
+<td>video_assembler, animation_engine, subtitle_engine, vmake_integration, figures store</td>
+<td>Working; 125 s for an 82 s lesson</td>
+</tr>
+<tr>
+<td>Backend services</td>
+<td>Ujjwal Dalal</td>
+<td>main, job_queue, websocket_manager, database, storage, auth_service, adaptive_engine</td>
+<td>Working</td>
+</tr>
+<tr>
+<td>Front end</td>
+<td>Ujjwal Dalal</td>
+<td>7 pages, progress ring, subject badge, protected routes, WebSocket hook</td>
+<td>Developed on a separate branch; integration scheduled</td>
+</tr>
+<tr>
+<td>Measurement suite</td>
+<td>All</td>
+<td>eval_retrieval_filters, benchmark_video, profile_frame_pipeline, demo_text_preprocessor, test_video_pipeline, test_figure_extraction</td>
+<td>Working; regenerates every figure in this report</td>
+</tr>
+</tbody>
+</table>
+<h3>3.3.2 Integration approach</h3>
+<p>Integration is continuous rather than deferred to the end. The scene JSON contract is the primary
+integration seam and was fixed before either side was built. The job queue is the runtime seam: it
+calls retrieval, falls back to hand-written storyboards if retrieval yields nothing, and drives the
+media pipeline, so a failure in one stage degrades the output rather than failing the request.</p>
+<p>One integration risk has already materialised and is recorded honestly here: during this phase the
+language-model module and the React front end were developed on separate branches and are not yet
+merged into the integration branch. Consolidating them is the first scheduled activity of the next
+increment (Section 5.4).</p>
+<h2>3.4 Tools and Technology</h2>
+<p><strong>TABLE 14: Tools and technologies used</strong></p>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Tool / technology</th>
+<th>Version</th>
+<th>Role in the project</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Language</td>
+<td>Python</td>
+<td>3.12</td>
+<td>Backend, ingestion, retrieval, media pipeline</td>
+</tr>
+<tr>
+<td>Language</td>
+<td>JavaScript (ES2022)</td>
+<td>—</td>
+<td>React front end</td>
+</tr>
+<tr>
+<td>Web framework</td>
+<td>FastAPI</td>
+<td>&gt;= 0.111</td>
+<td>REST API, WebSocket, OpenAPI schema</td>
+</tr>
+<tr>
+<td>ASGI server</td>
+<td>Uvicorn</td>
+<td>&gt;= 0.30</td>
+<td>Application server</td>
+</tr>
+<tr>
+<td>Vector database</td>
+<td>Qdrant Cloud</td>
+<td>client &gt;= 1.9</td>
+<td>Embedding storage, filtered similarity search</td>
+</tr>
+<tr>
+<td>Embeddings</td>
+<td>sentence-transformers, all-MiniLM-L6-v2</td>
+<td>&gt;= 3.0</td>
+<td>384-dimensional text embeddings</td>
+</tr>
+<tr>
+<td>Document database</td>
+<td>MongoDB Atlas via Motor</td>
+<td>&gt;= 3.5</td>
+<td>Users, videos, quiz questions and attempts</td>
+</tr>
+<tr>
+<td>Media storage</td>
+<td>Cloudinary</td>
+<td>&gt;= 1.40</td>
+<td>Hosting and delivery of rendered MP4 files</td>
+</tr>
+<tr>
+<td>PDF extraction</td>
+<td>pymupdf4llm, PyMuPDF</td>
+<td>&gt;= 0.0.17, &gt;= 1.24</td>
+<td>Markdown extraction, figure extraction</td>
+</tr>
+<tr>
+<td>OCR</td>
+<td>PaddleOCR PP-StructureV3</td>
+<td>&gt;= 2.8</td>
+<td>Fallback extraction for poor text layers</td>
+</tr>
+<tr>
+<td>Chunking</td>
+<td>langchain-text-splitters</td>
+<td>&gt;= 0.2</td>
+<td>Markdown header splitting</td>
+</tr>
+<tr>
+<td>Speech synthesis</td>
+<td>edge-tts</td>
+<td>&gt;= 7.0</td>
+<td>Neural Indian-English narration with word timestamps</td>
+</tr>
+<tr>
+<td>Audio processing</td>
+<td>pydub with bundled FFmpeg</td>
+<td>&gt;= 0.25</td>
+<td>High-pass filter, silence trim, loudness normalisation</td>
+</tr>
+<tr>
+<td>Speech comparison</td>
+<td>gTTS</td>
+<td>&gt;= 2.5</td>
+<td>Baseline engine for the comparison harness</td>
+</tr>
+<tr>
+<td>Image rendering</td>
+<td>Pillow (PIL)</td>
+<td>&gt;= 10.0</td>
+<td>All slide drawing, subtitle band rendering</td>
+</tr>
+<tr>
+<td>Plotting</td>
+<td>matplotlib</td>
+<td>&gt;= 3.8</td>
+<td>LaTeX formula rendering, concept diagram library</td>
+</tr>
+<tr>
+<td>Video assembly</td>
+<td>MoviePy</td>
+<td>1.0.3 (pinned)</td>
+<td>Clip composition, concatenation, encoding</td>
+</tr>
+<tr>
+<td>Encoding</td>
+<td>FFmpeg via imageio-ffmpeg</td>
+<td>&gt;= 0.5</td>
+<td>H.264 / AAC encoding</td>
+</tr>
+<tr>
+<td>Numerics</td>
+<td>NumPy</td>
+<td>&gt;= 1.26</td>
+<td>Frame compositing, IRT computation</td>
+</tr>
+<tr>
+<td>Authentication</td>
+<td>python-jose, passlib[bcrypt]</td>
+<td>&gt;= 3.3, &gt;= 1.7</td>
+<td>JWT signing, password hashing</td>
+</tr>
+<tr>
+<td>Front end</td>
+<td>React + Vite</td>
+<td>18.x</td>
+<td>Student-facing client</td>
+</tr>
+<tr>
+<td>Version control</td>
+<td>Git, GitHub</td>
+<td>—</td>
+<td>Branch-per-module workflow</td>
+</tr>
+</tbody>
+</table>
+<p>Selection rationale for the decisions that were not obvious is recorded in Section 2.1.5: Qdrant over
+FAISS for native payload filtering, Edge-TTS over gTTS and Coqui for word-boundary timestamps, and
+MoviePy pinned to 1.0.3 because the successor version renames the public API.</p>
+<hr />
+<h1>CHAPTER 4: DESIGN SPECIFICATIONS</h1>
+<h2>4.1 System Architecture</h2>
+<p>The system follows a three-tier architecture. The presentation tier is a React single-page
+application; the application tier is a FastAPI service containing the five pipeline stages and an
+asynchronous job queue; the data tier comprises a vector collection for textbook content, a document
+store for user and job state, and an object store for rendered media. Figure 3 shows the arrangement
+and the direction of every interaction.</p>
+<pre><code>┌──────────────────────────── PRESENTATION TIER ────────────────────────────┐
+│  React SPA (Vite)                                                          │
+│  Landing · TopicSearch · VideoGeneration · VideoPlayer · QuizSession        │
+│  Dashboard · AdminPanel        [AuthContext · ProtectedRoute · useWebSocket]│
+└───────────────┬───────────────────────────────────────┬────────────────────┘
+      REST/JSON │ (JWT bearer)                WebSocket │ (progress events)
+                ▼                                       ▼
+┌──────────────────────────── APPLICATION TIER ─────────────────────────────┐
+│  FastAPI                                                                   │
+│  ┌──────────┬───────────┬──────────┬──────────┬───────────┐               │
+│  │  auth    │ generation│  videos  │   quiz   │ dashboard │  routers      │
+│  └────┬─────┴─────┬─────┴────┬─────┴────┬─────┴─────┬─────┘               │
+│       │           │          │          │           │                      │
+│  auth_service  job_queue  storage  adaptive_engine  database  websocket_mgr│
+│                    │                                                       │
+│   ┌────────────────┴──────────────────────────────────────────┐            │
+│   │            F I V E - S T A G E   P I P E L I N E           │            │
+│   │  ①ingestion → ②retriever → ③scene_builder → ④tts+video → ⑤IRT │        │
+│   │  (offline)     app/rag/      app/rag/       app/tts/        │            │
+│   │                                             app/video/      │            │
+│   └────────────────────────────────────────────────────────────┘            │
+└───────┬────────────────┬─────────────────┬───────────────┬─────────────────┘
+        │                │                 │               │
+        ▼                ▼                 ▼               ▼
+   ┌─────────┐    ┌────────────┐    ┌────────────┐   ┌────────────┐
+   │ Qdrant  │    │  MongoDB   │    │ Cloudinary │   │  Edge-TTS  │
+   │ vectors │    │ users/jobs │    │   media    │   │  service   │
+   │ + payload│   │ quiz/attempts│  │            │   │            │
+   └─────────┘    └────────────┘    └────────────┘   └────────────┘
+              D A T A   T I E R                    E X T E R N A L
+</code></pre>
+<p><strong>FIGURE 3: Three-tier system architecture</strong></p>
+<p>Three properties of this architecture are worth drawing out.</p>
+<p><strong>The pipeline is a library, not a service boundary.</strong> The five stages are Python packages inside the
+application tier, invoked by the job queue. This keeps latency low — no inter-service hops on the
+critical path — at the cost of horizontal scalability, which is an acceptable trade at pilot scale
+and is revisited in Section 5.4.</p>
+<p><strong>Generation is asynchronous by construction.</strong> A POST to the generation endpoint returns a job
+identifier immediately and schedules the work as a background task. The client subscribes to a
+WebSocket keyed by that identifier and receives a progress event at each of eight stages. This is a
+functional necessity rather than a refinement: a two-minute synchronous HTTP request would exceed
+typical proxy timeouts.</p>
+<p><strong>Ingestion is offline.</strong> Stage 1 runs as a command-line tool against the PDF collection and writes to
+the vector store; it is not part of the request path. A student query touches only stages 2 to 5.</p>
+<h2>4.2 Design Level Diagrams</h2>
+<h3>4.2.1 Ingestion and indexing data flow</h3>
+<pre><code>  chapter.pdf
+      │
+      ▼
+ ┌─────────────────┐   yield &lt; threshold   ┌──────────────────┐
+ │ pymupdf4llm     │──────────────────────▶│ PaddleOCR        │
+ │ markdown extract│                       │ structure model  │
+ └────────┬────────┘◀──────────────────────└──────────────────┘
+          │ markdown
+          ▼
+ ┌─────────────────┐     ┌──────────────────────────────────┐
+ │ header splitter │────▶│ sub-chunker                      │
+ │ (## sections)   │     │  prose  → text units (~1200 ch)   │
+ └─────────────────┘     │  tables → one unit per data row   │
+                         │           (headers prepended)     │
+                         └───────────────┬──────────────────┘
+                                         │ units + previous_text
+          path metadata ────────────────▶│ class, subject, part,
+     Class 11 Physics part 1/            │ chapter no., chapter name
+     7. GRAVITATION.pdf                  ▼
+                              ┌─────────────────────┐
+                              │ MiniLM-L6-v2 encode │
+                              │  384-d, normalised  │
+                              └──────────┬──────────┘
+                                         ▼
+                              ┌─────────────────────┐
+                              │ Qdrant upsert       │
+                              │ cosine + payload    │
+                              │ indexes on subject, │
+                              │ class_level,        │
+                              │ chunk_type, chapter │
+                              └─────────────────────┘
+</code></pre>
+<p><strong>FIGURE 4: Data flow of the NCERT ingestion and indexing engine</strong></p>
+<p>The two guards on this path are the class-scope check, which skips books outside Classes 11 and 12
+before any work is done, and the idempotence check, which skips a chapter already present in the
+collection unless a force flag is supplied.</p>
+<h3>4.2.2 Retrieval sequence</h3>
+<pre><code>  query &quot;Gravitation&quot;, subject=Physics, class=11
+      │
+      ▼
+ ┌──────────────────────────────┐
+ │ STAGE 2a  chapter selection  │   filters: class ∈ {11,12}, subject,
+ │ search(top_k=8)              │            chunk_type = text
+ │ accumulate score by chapter  │
+ └──────────────┬───────────────┘
+                │ chapter = &quot;GRAVITATION&quot;
+                ▼
+ ┌──────────────────────────────┐
+ │ STAGE 2b  passage retrieval  │   + chapter filter
+ │ search(top_k=8..12) → units  │
+ └──────────────┬───────────────┘
+                │ 14 unique units, ~67k chars
+                ▼
+ ┌──────────────────────────────┐
+ │ clean → split into sentences │  drop: numbered headings, equation-only
+ │ form overlapping windows     │        lines, table rows, objective lists
+ └──────────────┬───────────────┘
+                │ 767 candidate windows
+                ▼
+ ┌──────────────────────────────┐
+ │ batch embed + rank vs query  │
+ │ + definitional cue bonus     │
+ │ + quality gate               │
+ └──────────────┬───────────────┘
+                │ 19 passages → self-contained filter → ~10 sentences
+                ▼
+        scene JSON storyboard
+</code></pre>
+<p><strong>FIGURE 5: Two-stage retrieval with sentence-window re-ranking</strong></p>
+<p>For the measured example shown, four vector searches return 34 results comprising 14 unique units and
+approximately 67,000 characters, from which 767 sentence windows are formed and re-ranked, and about
+ten sentences reach the slides. The large fan-out between units and windows is a direct consequence of
+the 4,797-character mean unit size and is the cost that the reduced ingestion unit size will remove.</p>
+<h3>4.2.3 Scene JSON contract</h3>
+<p><strong>TABLE 15: Scene JSON contract between the LLM and video stages</strong></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>part</td>
+<td>string</td>
+<td>HOOK, CONCEPT, EXAMPLE, MEMORY or NEET_ALERT; selects the colour theme and the flow-strip position</td>
+</tr>
+<tr>
+<td>slide_title</td>
+<td>string</td>
+<td>Title text, auto-shrunk to fit two lines</td>
+</tr>
+<tr>
+<td>definition</td>
+<td>string</td>
+<td>Verbatim retrieved sentence, rendered in the quotation card</td>
+</tr>
+<tr>
+<td>definition_source</td>
+<td>string</td>
+<td>Citation displayed beneath the definition</td>
+</tr>
+<tr>
+<td>slide_bullets</td>
+<td>string[]</td>
+<td>Up to three supporting points</td>
+</tr>
+<tr>
+<td>narration_text</td>
+<td>string</td>
+<td>Text sent to the speech engine after normalisation</td>
+</tr>
+<tr>
+<td>visual_type</td>
+<td>enum</td>
+<td>formula, process, comparison, diagram, alert or image</td>
+</tr>
+<tr>
+<td>visual_data</td>
+<td>object</td>
+<td>Content for the chosen visual: steps, comparison columns, labels or caption</td>
+</tr>
+<tr>
+<td>formula_latex</td>
+<td>string</td>
+<td>LaTeX expression when visual_type is formula</td>
+</tr>
+<tr>
+<td>image_path, image_caption</td>
+<td>string</td>
+<td>Original textbook figure, when one is available</td>
+</tr>
+<tr>
+<td>diagram_topic, diagram_chapter</td>
+<td>string</td>
+<td>Inputs to the generated concept-diagram selector</td>
+</tr>
+<tr>
+<td>animation_type</td>
+<td>enum</td>
+<td>fade_in, slide_left or zoom</td>
+</tr>
+<tr>
+<td>duration_hint_seconds</td>
+<td>number</td>
+<td>Requested scene length; the narration length is authoritative</td>
+</tr>
+<tr>
+<td>background_color</td>
+<td>string</td>
+<td>Optional per-scene theme override</td>
+</tr>
+</tbody>
+</table>
+<h3>4.2.4 Video assembly pipeline</h3>
+<pre><code> scene JSON ──┬─────────────────────────────────────────────────────┐
+              │                                                     │
+              ▼                                                     ▼
+   ┌────────────────────┐                              ┌──────────────────────┐
+   │ text_preprocessor  │  subject-aware notation      │ slide_generator      │
+   │ prosody injection  │  expansion                   │  theme · badge ·     │
+   └─────────┬──────────┘                              │  flow strip · title ·│
+             ▼                                         │  definition card ·   │
+   ┌────────────────────┐                              │  bullets · visual    │
+   │ edge-tts synth     │ audio + WordBoundary events  │  panel               │
+   └─────────┬──────────┘                              └──────────┬───────────┘
+             ▼                                                    │ PNG
+   ┌────────────────────┐                                          ▼
+   │ audio_processor    │  high-pass 80 Hz → trim → −16 LUFS   ┌──────────────┐
+   │ shift timestamps by│                                      │animation_    │
+   │ trimmed lead-in    │                                      │engine        │
+   └─────────┬──────────┘                                      │fade/slide/   │
+             │ corrected word boundaries                       │zoom          │
+             └──────────────────┬──────────────────────────────┴──────┬───────┘
+                                ▼                                     │
+                    ┌──────────────────────────┐                      │
+                    │ subtitle_engine.burn_onto│◀─────────────────────┘
+                    │ float32 band composite   │
+                    │ centre-crop to canvas    │
+                    └────────────┬─────────────┘
+                                 ▼
+                    ┌──────────────────────────┐
+                    │ concatenate + intro/outro│
+                    │ encode H.264 / AAC → MP4 │
+                    └──────────────────────────┘
+</code></pre>
+<p><strong>FIGURE 6: Video assembly pipeline from scene JSON to MP4</strong></p>
+<h2>4.3 User Interface Diagrams</h2>
+<h3>4.3.1 Navigation flow</h3>
+<pre><code>                          ┌──────────────┐
+                          │  /           │  LandingPage
+                          │  subject +   │  choose Physics / Chemistry / Biology
+                          │  class       │  choose Class 11 / 12
+                          └──────┬───────┘
+                                 ▼
+        ┌──────────┐      ┌──────────────┐      ┌──────────┐
+        │ /login   │─────▶│  /search     │◀─────│ /register│
+        │          │ JWT  │ TopicSearch  │  JWT │          │
+        └──────────┘      └──────┬───────┘      └──────────┘
+                                 │ POST /api/generate → job_id
+                                 ▼
+                          ┌──────────────┐
+                          │ /generate/   │  VideoGeneration
+                          │   :jobId     │  ProgressRing driven by
+                          │              │  WS /api/ws/{job_id}
+                          └──────┬───────┘
+                                 │ status = complete
+                                 ▼
+                          ┌──────────────┐
+                          │ /watch/      │  VideoPlayer
+                          │   :videoId   │  scene list, playback
+                          └──────┬───────┘
+                                 ▼
+                          ┌──────────────┐        ┌──────────────┐
+                          │ /quiz/       │───────▶│ /dashboard   │
+                          │   :videoId   │ answer │ mastery,     │
+                          │ QuizSession  │ →IRT   │ weak topics, │
+                          └──────────────┘        │ history      │
+                                                  └──────────────┘
+                          ┌──────────────┐
+                          │ /admin       │  AdminPanel (restricted)
+                          └──────────────┘
+</code></pre>
+<p><strong>FIGURE 7: Front-end navigation flow</strong></p>
+<h3>4.3.2 Slide layout template</h3>
+<p>The slide is the primary visual surface of the product, so its layout is specified rather than
+improvised. Figure 8 shows the grid.</p>
+<pre><code> 0        80                        680  730                     1200   1280
+ ├────────┬──────────────────────────┬────┬────────────────────────┬──────┤
+ │        │ [BADGE]                  │    │  ● ─ ● ─ ○ ─ ○ ─ ○     │      │ 50
+ │ accent │                          │    │  Hook Concept … Alert  │      │
+ │  bar   │ Title (auto-shrink 44→30)│    │        FLOW STRIP      │      │ 120
+ │        │                          │    │                        │      │
+ │        │ ┌──────────────────────┐ │    │ ┌────────────────────┐ │      │ 190
+ │        │ │ &quot; definition card    │ │    │ │                    │ │      │
+ │        │ │   — citation          │ │    │ │   VISUAL PANEL     │ │      │
+ │        │ └──────────────────────┘ │    │ │  formula / process │ │      │
+ │        │                          │    │ │  comparison /      │ │      │
+ │        │ • bullet                 │    │ │  diagram / figure  │ │      │
+ │        │ • bullet                 │    │ │                    │ │      │
+ │        │ • bullet                 │    │ └────────────────────┘ │      │ 580
+ │        │                          │    │                        │      │
+ │        │      ┌───────────────────────────────────┐             │      │ 600
+ │        │      │  karaoke subtitle band (burned in)│             │      │
+ │        │      └───────────────────────────────────┘             │      │ 700
+ └────────┴──────────────────────────┴────┴────────────────────────┴──────┘ 720
+      title-safe margin: 80 px horizontal, 50 px vertical
+</code></pre>
+<p><strong>FIGURE 8: Slide layout template with title-safe area</strong></p>
+<p>The title-safe margin is not decorative. Zoom animations centre-crop the frame, removing
+W(1 − 1/z)/2 pixels from each side; at the maximum zoom of 1.06 that is approximately 36 pixels
+horizontally and 20 vertically. Every element is placed outside that band, and the maximum zoom
+constant is documented as being bound to the margin so the two cannot drift apart.</p>
+<h2>4.4 Snapshots of Working Prototype</h2>
+<p>This section walks through the prototype in the order a request travels through it, and reports the
+measurement taken at each stage. Every figure named here is regenerated by the script cited with it.</p>
+<h3>4.4.1 Step 1 — The indexed corpus</h3>
+<p>Command: <code>python backend/scripts/eval_retrieval_filters.py</code></p>
+<p><strong>TABLE 16: Corpus composition of the indexed NCERT collection</strong></p>
+<table>
+<thead>
+<tr>
+<th>Dimension</th>
+<th>Composition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Total retrieval units</td>
+<td>2,876</td>
+</tr>
+<tr>
+<td>Vector dimensionality / distance</td>
+<td>384 / cosine</td>
+</tr>
+<tr>
+<td>Class 11</td>
+<td>Chemistry 690, Physics 404, Biology 279</td>
+</tr>
+<tr>
+<td>Class 12</td>
+<td>Chemistry 567, Physics 261, Biology 144</td>
+</tr>
+<tr>
+<td>Class 9 / 10 (out of syllabus)</td>
+<td>Science 242 / 289 — 18% of the corpus</td>
+</tr>
+<tr>
+<td>Unit types</td>
+<td>table_row 1,615 (56%), text 1,246 (43%), table 15</td>
+</tr>
+<tr>
+<td>Retrievable under default filters</td>
+<td>1,015 (Class 11-12 prose only)</td>
+</tr>
+<tr>
+<td>Mean unit size</td>
+<td>4,797 characters</td>
+</tr>
+<tr>
+<td>Chapters indexed</td>
+<td>approximately 60</td>
+</tr>
+</tbody>
+</table>
+<p>Two findings from this audit drove design changes. First, 18% of the corpus is Class 9 and 10 Science,
+which is off-syllabus for NEET and, as Section 4.4.2 shows, was actively displacing correct results.
+Second, 56% of the units are single table rows, which are retrievable but not narratable; they are
+therefore excluded from the default retrieval filter and admitted only on explicit request.</p>
+<h3>4.4.2 Step 2 — Retrieval, before and after filtering</h3>
+<p>Command: <code>python backend/scripts/eval_retrieval_filters.py</code></p>
+<p>The same eight NEET-style queries were run twice against the same corpus: once unfiltered, once
+through the retriever's default filters. A result is scored correct only if the top-ranked passage
+comes from the expected class, subject and chapter.</p>
+<p><strong>TABLE 17: Retrieval accuracy before and after metadata filtering</strong></p>
+<table>
+<thead>
+<tr>
+<th>Query</th>
+<th>Unfiltered top-1</th>
+<th>Filtered top-1</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>State Newton's universal law of gravitation</td>
+<td>Class 9 Science, Ch.9 (0.586) — FAIL</td>
+<td>Class 11 Physics, Ch.7 GRAVITATION — PASS</td>
+</tr>
+<tr>
+<td>What is the SN1 mechanism in haloalkanes?</td>
+<td>Class 12 Chemistry, Ch.1 — PASS</td>
+<td>Class 12 Chemistry, Ch.1 — PASS</td>
+</tr>
+<tr>
+<td>Explain the structure and function of DNA</td>
+<td>Class 12 Chemistry, Biomolecules (0.587) — FAIL</td>
+<td>Class 12 Biology, Ch.9 — PASS</td>
+</tr>
+<tr>
+<td>What is the work energy theorem?</td>
+<td>Class 11 Physics, Ch.5 — PASS</td>
+<td>Class 11 Physics, Ch.5 — PASS</td>
+</tr>
+<tr>
+<td>Explain electrochemical cells and the Nernst equation</td>
+<td>Class 12 Chemistry, Ch.2 — PASS</td>
+<td>Class 12 Chemistry, Ch.2 — PASS</td>
+</tr>
+<tr>
+<td>Describe Mendel's law of independent assortment</td>
+<td>Class 10 Science, Ch.8 Heredity (0.533) — FAIL</td>
+<td>Class 12 Biology, Ch.4 — PASS</td>
+</tr>
+<tr>
+<td>What is the photoelectric effect?</td>
+<td>Class 12 Physics, Ch.3 — PASS</td>
+<td>Class 12 Physics, Ch.3 — PASS</td>
+</tr>
+<tr>
+<td>Explain the kinetic theory of gases</td>
+<td>Class 11 Physics, Ch.5 — PASS</td>
+<td>Class 11 Physics, Ch.5 — PASS</td>
+</tr>
+<tr>
+<td><strong>Top-1 correct book</strong></td>
+<td><strong>5/8 (62%)</strong></td>
+<td><strong>8/8 (100%)</strong></td>
+</tr>
+</tbody>
+</table>
+<p>The three failures are instructive. Two were caused by out-of-syllabus material outranking the correct
+book — a NEET aspirant asking about gravitation received the Class 9 treatment. The third was
+cross-subject leakage: a Biology question about DNA was answered from the Class 12 Chemistry chapter
+on Biomolecules, which discusses nucleic acids and is therefore topically similar but pedagogically
+wrong.</p>
+<p>A separate observation from the same exercise motivated the sentence-window design. A query quoting
+the universal law of gravitation almost verbatim failed to retrieve the unit containing it in the top
+three, because the statement sits at character 2,951 of a 5,176-character unit whose embedding is
+dominated by the rest of the section. Chapter-scoped sentence re-ranking recovers it; on a
+ten-topic definition test the retriever now returns a genuine definitional sentence for nine topics
+and correctly returns nothing for the tenth.</p>
+<h3>4.4.3 Step 3 — Narration preparation</h3>
+<p>Command: <code>python backend/scripts/demo_text_preprocessor.py</code></p>
+<p><strong>TABLE 18: Subject-specific text normalisation examples</strong></p>
+<table>
+<thead>
+<tr>
+<th>Subject</th>
+<th>Raw script text</th>
+<th>Text sent to the speech engine</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Physics</td>
+<td>v² = u² + 2as</td>
+<td>v squared equals u squared plus 2 a s</td>
+</tr>
+<tr>
+<td>Physics</td>
+<td>20 N acting on 4 kg … 5 m/s2</td>
+<td>20 newtons acting on 4 kilograms … 5 metres per second squared</td>
+</tr>
+<tr>
+<td>Physics</td>
+<td>F = G \frac{m_1 m_2}{r^2}</td>
+<td>F equals G m 1 m 2 upon r squared</td>
+</tr>
+<tr>
+<td>Chemistry</td>
+<td>CH4 burns in O2 … CO2 and H2O</td>
+<td>methane burns in oxygen … carbon dioxide and water</td>
+</tr>
+<tr>
+<td>Chemistry</td>
+<td>NaCl(aq) + AgNO3(aq) → AgCl(s)</td>
+<td>sodium chloride aqueous plus Ag N O three aqueous gives Ag Cl solid</td>
+</tr>
+<tr>
+<td>Chemistry</td>
+<td>H2SO4 dehydrates C2H5OH at 443 K</td>
+<td>sulphuric acid dehydrates ethanol at 443 kelvin</td>
+</tr>
+<tr>
+<td>Biology</td>
+<td>70S ribosomes, NOT 80S</td>
+<td>seventy S ribosomes, NOT eighty S</td>
+</tr>
+<tr>
+<td>Biology</td>
+<td>5' to 3' direction</td>
+<td>five prime to three prime direction</td>
+</tr>
+</tbody>
+</table>
+<p>Without this stage the engine voices "v² = u² + 2as" as "v u as". Two defects found while building it
+are worth recording because both are the kind that a regex-only approach produces. Expanding SI units
+initially corrupted subscripted variables — after m_1 m_2 expands to "m 1 m 2", a naive unit rule
+renders the second variable as "1 metres 2" — which required a lookbehind that distinguishes a
+standalone single-letter variable from ordinary prose. And the chemical-formula speller, which spells
+unrecognised formulas element by element, treated the word <strong>NEET</strong> as N + E + E + T and voiced it "N
+E E T"; it now validates every group against a real element-symbol set before spelling.</p>
+<h3>4.4.4 Step 4 — Speech engine selection</h3>
+<p>Command: <code>python backend/app/tts/multi_voice_test.py</code></p>
+<p><strong>TABLE 19: TTS engine comparison</strong></p>
+<table>
+<thead>
+<tr>
+<th>Engine</th>
+<th>Mean latency</th>
+<th>Mean RTF</th>
+<th>Sample rate</th>
+<th>Word timestamps</th>
+<th>Offline</th>
+<th>Indian-English voice</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Edge-TTS</strong></td>
+<td><strong>5.26 s</strong></td>
+<td><strong>0.449</strong></td>
+<td>24 kHz</td>
+<td><strong>Yes</strong></td>
+<td>No</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>gTTS</td>
+<td>5.91 s</td>
+<td>0.503</td>
+<td>24 kHz</td>
+<td>No</td>
+<td>No</td>
+<td>Accent only</td>
+</tr>
+<tr>
+<td>Coqui-TTS</td>
+<td>not installed</td>
+<td>—</td>
+<td>—</td>
+<td>No</td>
+<td>Yes</td>
+<td>No</td>
+</tr>
+</tbody>
+</table>
+<p>Per-subject latency for Edge-TTS was 12.31 s, 1.95 s and 1.53 s; the first figure is a cold-start
+artefact including connection establishment, and warm requests settle at roughly 1.5-2 s. The decision
+turned on word-boundary timestamps rather than latency: without them the karaoke subtitle engine would
+have to estimate word timings from character counts and would drift audibly across a scene.</p>
+<p>Audio post-processing measured on a sample Physics scene: 0.13 s of leading silence and 0.85 s of
+trailing silence removed, +5.26 dB gain applied to reach the −16 target, and the first word timestamp
+correspondingly corrected from 0.13 s to 0.00 s.</p>
+<h3>4.4.5 Step 5 — Rendered slides</h3>
+<p>Command: <code>python backend/scripts/benchmark_video.py</code></p>
+<p>Rendering cost is 0.10 s per slide on average across the five themes, with the EXAMPLE theme the
+outlier at approximately 0.28 s because it invokes matplotlib for the LaTeX formula.</p>
+<p>Figure 9 shows the CONCEPT slide produced for the query "Gravitation". The definition card carries a
+sentence retrieved verbatim from the corpus, with its citation beneath it; the flow strip at top right
+marks the current position in the five-part lesson; the right panel holds a process flow whose steps
+are real retrieved statements rather than placeholders.</p>
+<p><img alt="CONCEPT slide" src="figures/fig09_concept_slide.png" width="620" /></p>
+<p><strong>FIGURE 9: Prototype snapshot — CONCEPT slide with cited definition</strong></p>
+<p>The definition card reproduces the retrieved sentence verbatim — "Newton's law of universal
+gravitation states that the gravitational force of attraction between any two particles of masses m1
+and m2 separated by a distance r has the magnitude." — above its citation to Class 11 Physics,
+Ch.7 GRAVITATION. The flow strip at top right marks the current part of the five-part lesson.</p>
+<p><img alt="EXAMPLE slide" src="figures/fig10_example_slide.png" width="620" /></p>
+<p><strong>FIGURE 10: Prototype snapshot — EXAMPLE slide with generated concept diagram</strong></p>
+<p>The right panel shows two attracting masses with the force pair and the separation r labelled, drawn
+by the concept-diagram library and selected automatically from the topic. Bullets on the left are
+retrieved textbook sentences.</p>
+<p>Three rendering defects were found by inspecting output frames rather than by reading code, and each
+is recorded here because each was invisible in the source.</p>
+<p><strong>Missing glyphs.</strong> Subscripts and superscripts rendered as empty boxes: Arial lacks U+2081, U+2082
+and U+207B, so "m₁" and "kg⁻²" appeared as "m□" and "kg□". Typeface selection now verifies glyph
+coverage of the required scientific character set before choosing a face, with matplotlib's bundled
+DejaVuSans as a guaranteed-complete fallback on any platform.</p>
+<p><strong>Clipping by the zoom animation.</strong> At the original zoom of 1.12 the centre-crop removed 69 pixels
+from each side while the badge and title were drawn at x = 40, so at peak zoom the badge was cut in
+half and the title read "olving NCERT Examples". The fix was the title-safe area of Figure 8, a
+reduction of the maximum zoom to 1.06, and scaling of formula images to fit the panel.</p>
+<p><strong>Uninformative placeholder graphics.</strong> The comparison panel drew "Condition A" and "Condition B"
+with empty bodies and the flowchart drew "Step 1, Step 2, Step 3", because the drawing routines used
+fixed strings rather than scene data. Every panel now renders from the scene's visual_data, and the
+concept-diagram library returns nothing when no diagram fits the topic, so the slide falls back to its
+text panel rather than showing an unrelated illustration.</p>
+<h3>4.4.6 Step 6 — The assembled video</h3>
+<p><img alt="Video timeline" src="figures/fig11_video_timeline.png" width="640" /></p>
+<p><strong>FIGURE 11: Prototype snapshot — complete video timeline, all five scenes</strong></p>
+<p>Frames sampled at eleven-second intervals from the generated lesson. Left to right: intro card, HOOK,
+CONCEPT with the definition card, EXAMPLE with the formula and concept diagram, MEMORY, NEET ALERT
+and the outro card. The karaoke subtitle band is visible on every scene with the active word
+highlighted.</p>
+<p><strong>TABLE 20: Output video specifications</strong></p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Resolution</td>
+<td>1280 x 720 (HD 16:9)</td>
+</tr>
+<tr>
+<td>Frame rate</td>
+<td>24 fps</td>
+</tr>
+<tr>
+<td>Video codec</td>
+<td>H.264 (libx264), yuv420p, veryfast preset</td>
+</tr>
+<tr>
+<td>Audio codec</td>
+<td>AAC-LC, 44.1 kHz stereo</td>
+</tr>
+<tr>
+<td>Container</td>
+<td>MP4</td>
+</tr>
+<tr>
+<td>Structure</td>
+<td>intro card (2.5 s) → 5 scenes → outro card (2.5 s)</td>
+</tr>
+<tr>
+<td>Measured output</td>
+<td>82.7 s, 3.62 MB</td>
+</tr>
+<tr>
+<td>Content source</td>
+<td>NCERT corpus, retrieved at request time</td>
+</tr>
+</tbody>
+</table>
+<h3>4.4.7 Step 7 — Performance analysis</h3>
+<p>Command: <code>python backend/scripts/profile_frame_pipeline.py</code></p>
+<p>The first full benchmark reported 585 s to generate a 74 s video, with approximately 94% of wall time
+inside the encoding call. The initial hypothesis — that the video encoder was responsible — was tested
+by changing the x264 preset from <code>medium</code> to <code>veryfast</code>; total time moved to 625 s, within noise and
+in the wrong direction. The hypothesis was rejected, and the cost was therefore attributed to
+Python-side frame generation.</p>
+<p>The profiler encodes the same ten-second slide six ways, isolating each feature.</p>
+<p><strong>TABLE 21: Frame pipeline profile: cost per rendering feature</strong></p>
+<table>
+<thead>
+<tr>
+<th>Variant</th>
+<th>Time</th>
+<th>Throughput</th>
+<th>Overhead vs baseline</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>static (encoder floor)</td>
+<td>1.77 s</td>
+<td>136.0 fps</td>
+<td>—</td>
+</tr>
+<tr>
+<td>ken_burns only</td>
+<td>3.06 s</td>
+<td>78.4 fps</td>
+<td>+73%</td>
+</tr>
+<tr>
+<td><strong>subtitles via library composite</strong></td>
+<td><strong>21.80 s</strong></td>
+<td><strong>11.0 fps</strong></td>
+<td><strong>+1132%</strong></td>
+</tr>
+<tr>
+<td>subtitles via purpose-built composite</td>
+<td>3.56 s</td>
+<td>67.5 fps</td>
+<td>+101%</td>
+</tr>
+<tr>
+<td>ken_burns + library composite (original)</td>
+<td>20.92 s</td>
+<td>11.5 fps</td>
+<td>+1082%</td>
+</tr>
+<tr>
+<td><strong>ken_burns + purpose-built (current)</strong></td>
+<td><strong>4.79 s</strong></td>
+<td><strong>50.2 fps</strong></td>
+<td><strong>+171%</strong></td>
+</tr>
+</tbody>
+</table>
+<p><img alt="Frame profile" src="figures/fig12_frame_profile.png" width="620" /></p>
+<p><strong>FIGURE 12: Frame-generation cost by pipeline stage</strong></p>
+<p>Throughput for each variant of Table 21. Red bars use the media library's generic compositing path;
+green bars use the purpose-built band compositor. The zoom animation costs comparatively little; the
+subtitle compositing method accounts for almost the whole difference.</p>
+<p>Profiling within the slow variant attributed 8.9 s of 11.4 s to the media library's generic blit
+routine, at approximately 37 ms per call, with a further 1.5 s in channel-stacking the alpha mask.
+The routine copies the entire destination frame, expands the mask across three channels on every
+frame, and performs the blend in float64 — all for an overlay occupying the bottom eighth of the
+screen.</p>
+<p>The replacement stores the alpha once in a shape that broadcasts over the colour channels, caches
+each subtitle band pre-multiplied by alpha so a frame costs one multiply and one add, touches only
+the band region, and centre-crops the zoomed base frame in the same pass. That last detail also
+corrected a latent visual defect: the library was anchoring the enlarged frame at the top-left, so the
+zoom drifted into a corner instead of pushing into the centre.</p>
+<p><strong>TABLE 22: End-to-end generation time before and after optimisation</strong></p>
+<table>
+<thead>
+<tr>
+<th>Stage</th>
+<th>Before</th>
+<th>After</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Encode (including frame generation)</td>
+<td>593.39 s</td>
+<td>111.63 s</td>
+<td>5.3x faster</td>
+</tr>
+<tr>
+<td>Text-to-speech</td>
+<td>28.06 s</td>
+<td>11.61 s</td>
+<td>network variance</td>
+</tr>
+<tr>
+<td>Slide rendering</td>
+<td>0.25 s</td>
+<td>0.29 s</td>
+<td>unchanged</td>
+</tr>
+<tr>
+<td>Animation setup</td>
+<td>0.27 s</td>
+<td>0.26 s</td>
+<td>unchanged</td>
+</tr>
+<tr>
+<td>Subtitle setup</td>
+<td>0.17 s</td>
+<td>0.15 s</td>
+<td>unchanged</td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td><strong>625.18 s</strong></td>
+<td><strong>125.37 s</strong></td>
+<td><strong>4.7x faster</strong></td>
+</tr>
+<tr>
+<td>Real-time factor</td>
+<td>8.48x</td>
+<td>1.70x</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p>The 90-second target of NFR-1 is not yet met for a full-length lesson: 125 s is 1.4x over. Three
+observations bound the remaining work. Encoding is now 89% of the residual and scales with video
+length, so at the measured real-time factor any lesson shorter than about 53 s already meets the
+target. Scene rendering is embarrassingly parallel — the five scenes share no state and are currently
+encoded sequentially — so rendering them in parallel processes and concatenating at container level
+without re-encoding is the identified remedy. And a cache hit returns an existing lesson immediately,
+so the measured figure is the cold worst case rather than the typical one.</p>
+<p>A later increment added the concept-diagram library, which raised generation to 286 s because the
+richer slides contain more high-frequency detail for the encoder to compress. This is a deliberate
+quality-for-speed trade and is reversible through the encoder-preset setting; it is noted here so the
+two figures in this report are not read as contradictory.</p>
+<hr />
+<h1>CHAPTER 5: CONCLUSIONS AND FUTURE SCOPE</h1>
+<h2>5.1 Work Accomplished</h2>
+<p>Table 23 states attainment against each approved objective. The discussion that follows explains the
+two entries that are partial and records one deliberate departure from the proposal.</p>
+<p><strong>TABLE 23: Objective-wise work accomplished</strong></p>
+<table>
+<thead>
+<tr>
+<th>Objective</th>
+<th>Status</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>1. Build a textbook-grounded RAG pipeline</strong></td>
+<td>Achieved</td>
+<td>2,876 units indexed across ~60 chapters with class, subject and chapter metadata (Table 16). Retrieval restricted to the correct book, with two-stage chapter selection and sentence-window re-ranking. Top-1 correct book 8/8 on the benchmark, up from 5/8 unfiltered (Table 17). Definitions displayed verbatim with citation.</td>
+</tr>
+<tr>
+<td><strong>2. Automate end-to-end video generation</strong></td>
+<td>Achieved for the retrieval-grounded path; language-model stage pending a provider</td>
+<td>A topic query produces an 82 s narrated MP4 with themed slides, concept diagrams and word-synchronised subtitles, with no human authoring (Table 20, Figures 9-11). The PPA prompt architecture, subject addenda, scene segmenter and quiz generator are implemented and unit-tested against a mock provider.</td>
+</tr>
+<tr>
+<td><strong>3. Deliver a student-facing interface</strong></td>
+<td>Achieved in components; integration pending</td>
+<td>Fourteen REST endpoints and a WebSocket progress channel (Table 7), JWT authentication with per-user resource isolation, MongoDB persistence, and a seven-page React client. The client currently resides on a separate branch and is scheduled for integration.</td>
+</tr>
+<tr>
+<td><strong>4. Optimise performance and response time</strong></td>
+<td>Substantially advanced; target not yet met</td>
+<td>End-to-end generation reduced 4.7x, from 625 s to 125 s, by locating the bottleneck through profiling and replacing the generic compositing path (Tables 21 and 22). The 90 s target is not met for a full-length lesson; the remedy is identified and scheduled.</td>
+</tr>
+</tbody>
+</table>
+<h3>5.1.1 Objective 1 in detail</h3>
+<p>The pipeline that converts textbook PDFs into retrievable, metadata-tagged units and answers a query
+from the correct book is complete and measured. Its value is best seen in the failures it prevents:
+before filtering, a NEET aspirant asking for the universal law of gravitation received the Class 9
+Science treatment, and a Biology question about DNA was answered from a Chemistry chapter. Both are
+plausible-looking answers that a student could not detect as wrong, which is precisely the failure
+mode the project exists to eliminate.</p>
+<p>Two design contributions were made in service of this objective. Chapter-scoped search addresses the
+lexical mismatch between a concept name and its defining sentence. Sentence-window re-ranking recovers
+precision from an index whose units are too coarse, without requiring re-ingestion — which mattered
+practically, because the source PDFs were not available to re-ingest.</p>
+<h3>5.1.2 Objective 2 in detail, and a departure from the proposal</h3>
+<p>The media pipeline is complete. Speech is synthesised with word-level timestamps, normalised for
+loudness, and its timestamps corrected for the silence removed; slides are drawn pixel-by-pixel with
+verified glyph coverage and a title-safe layout; diagrams are selected from the topic; subtitles are
+composited by a purpose-built routine; and the result is encoded to a standards-conformant MP4.</p>
+<p><strong>Departure from the proposal.</strong> The project proposal listed "an automated AI video generation
+pipeline that outputs lip-synced avatar videos from text" among the deliverables. The implemented
+system produces slide-based instructional video without an avatar presenter. This follows the
+implementation guide, which specifies MoviePy and PIL slide assembly, and the change is defended on
+three grounds. First, the evidence for the educational value of synthetic video [4][5] concerns
+AI-generated instruction generally, not avatar presence specifically; neither study isolates the
+avatar as the effective variable. Second, for the content this system teaches — a definition to be
+memorised verbatim, a formula, a labelled diagram — screen area spent on a presenter is screen area
+not spent on the material, and the multimedia-learning rationale in Section 2.1.1 favours the
+diagram. Third, an avatar layer would consume the rendering budget that Objective 4 requires be
+reduced. Avatar rendering remains available as an enhancement layer: the integration module for a
+third-party video service is implemented and requires only a key.</p>
+<h3>5.1.3 Objectives 3 and 4 in detail</h3>
+<p>The backend meets its functional requirements: asynchronous job handling, real-time progress over
+WebSocket, ownership checks on every user-scoped endpoint, and persistence of jobs, attempts and
+mastery. The React client covering all seven pages exists but was developed on a separate branch;
+integration is the first activity of the next increment and is tracked as risk R-7.</p>
+<p>Objective 4 produced the most instructive result of the phase. The measured 4.7x improvement is
+significant, but the more valuable outcome is methodological: the initial hypothesis about the cause
+of slowness was wrong, and only a controlled experiment revealed it. Had the team optimised the
+encoder — the intuitive target — no improvement would have been obtained.</p>
+<p>One regression is recorded honestly. A refactor during this phase removed the MongoDB caching layer,
+so a repeated topic is currently regenerated rather than served from cache (FR-21). Restoring it is
+scheduled in Section 5.4.</p>
+<h2>5.2 Conclusions</h2>
+<p>The project has demonstrated that a claim can be carried from a textbook page to a student's screen
+with its attribution intact, automatically. The CONCEPT slide of a generated lesson displays a
+sentence that exists verbatim in the NCERT chapter named beneath it. A student can open that chapter
+and find that sentence. This is a stronger and more checkable property than "the model was instructed
+to use the textbook", and it is the project's central result.</p>
+<p>Three secondary conclusions follow from the work.</p>
+<p><strong>Retrieval precision is a property of the whole pipeline, not of the embedding model.</strong> The largest
+accuracy gain in this phase came not from a better model but from applying metadata the ingestion
+stage was already writing and from re-ranking at a finer granularity than the index provides. Both
+are cheap; neither requires retraining.</p>
+<p><strong>Output defects in a media pipeline are found by looking at the output.</strong> Missing glyphs, content
+clipped by a zoom, placeholder graphics carrying no information and subtitles drifting after silence
+trimming were all invisible in the source code and in the absence of runtime errors. Each was found
+by rendering a frame and inspecting it against an expectation.</p>
+<p><strong>Performance claims require a control.</strong> Changing the encoder preset produced no improvement, which
+falsified the intuitive diagnosis and redirected the work to the component that was actually
+responsible. The profiling harness is retained as a deliverable so the measurement can be repeated as
+the pipeline changes.</p>
+<p>The system is not finished. The language-model stage awaits a provider, original textbook figures
+await the source PDFs, subjective audio quality awaits listener ratings, and the latency target is
+not yet met. But the path from a query to a grounded, narrated, subtitled lesson exists and runs
+end to end, and the remaining work is well-specified rather than exploratory.</p>
+<h2>5.3 Environmental, Economic and Social Benefits</h2>
+<p><strong>Social.</strong> The system's purpose is to decouple access to competent instruction from access to a
+teacher. A student preparing for NEET in a district without coaching institutes has the same
+textbook as a student in a metropolitan coaching centre; what differs is explanation. Because this
+system explains from that same textbook, on demand, at no marginal cost per student, it narrows a gap
+that is geographic and economic rather than intellectual. The design choices reinforce this: narration
+is in an Indian-English voice familiar to the target learner, every video carries burned-in subtitles
+which assist comprehension for non-native speakers and accessibility for hearing-impaired students,
+and the syllabus scope is fixed to what the student is actually examined on rather than to whatever a
+general model happens to know.</p>
+<p><strong>Economic.</strong> Producing a single professionally recorded instructional video involves scripting,
+studio time, presenter time and editing. This system produces a lesson for the cost of approximately
+two minutes of CPU time and a small language-model call — projected at roughly ten thousand rupees per
+month for a pilot serving a thousand lessons (Table 10), which is a small fraction of the cost of
+producing the equivalent library conventionally. Crucially the marginal cost of the thousandth
+student is close to zero, whereas the marginal cost of the thousandth student in a classroom is not.</p>
+<p><strong>Environmental.</strong> The system generates content on demand rather than pre-rendering a catalogue,
+so compute is spent only on lessons actually requested. The rendering optimisation reported in
+Section 4.4 reduces the energy required per lesson by approximately the same factor as it reduces
+time, since encoding is CPU-bound; restoring the cache layer will remove repeat computation entirely
+for popular topics. Against this, the system's footprint is not zero: video encoding is
+computationally intensive, and the honest position is that the environmental case rests on
+substitution — a generated lesson displaces neither travel to a coaching centre nor a printed
+resource unless it is actually used in their place.</p>
+<h2>5.4 Future Work Plan</h2>
+<p>The work is sequenced so that the items unblocking others come first.</p>
+<p><strong>Increment 1 — Consolidation (immediate, 1 week).</strong>
+Merge the language-model module and the React client from their respective branches onto the
+integration branch, so that every team member is working against the same system. Rotate the
+credential identified in risk R-6 and remove it from the repository history. This increment removes
+the two highest-likelihood project risks and requires no new development.</p>
+<p><strong>Increment 2 — Activate the language-model stage (2 weeks).</strong>
+Provision an API key and switch the prompt architecture from the mock provider to a live one. This
+replaces the retrieval-only scene assembler, which selects sentences but cannot condense them, and
+addresses the two known content weaknesses: bullets currently truncate mid-sentence because NCERT
+sentences are long, and the MEMORY scene cannot produce a genuine mnemonic because textbooks do not
+contain one to retrieve. Run the thirty-topic prompt evaluation and the PPA ablation study against
+the live provider, and report the hallucination rate.</p>
+<p><strong>Increment 3 — Re-ingest the corpus (2 weeks, requires the source PDFs).</strong>
+Add the NCERT PDF collection and re-run ingestion. This single run delivers three improvements
+already implemented and waiting for data: retrieval units at approximately 1,200 characters instead
+of 4,797, which will make chunk-level retrieval precise enough to reduce the sentence re-ranking
+cost; extraction of original textbook figures with their captions, which the slide renderer already
+supports and prefers over generated diagrams; and exclusion of the Class 9 and 10 material at source
+rather than by filter. Delete or re-scope the existing out-of-syllabus vectors once the replacement
+corpus is verified.</p>
+<p><strong>Increment 4 — Meet the latency target (1 week).</strong>
+Render the five scenes in parallel processes and concatenate at container level without re-encoding.
+The scenes share no state, so this is expected to approach the 90 s target directly. Restore the
+MongoDB cache with a TTL index and log the hit rate, which satisfies FR-21 and removes repeat
+computation.</p>
+<p><strong>Increment 5 — Evaluation (3 weeks).</strong>
+Collect the Mean Opinion Score ratings from ten listeners using the blinded listening test already
+built and populated with fifteen samples. Run the embedding-model comparison across four candidate
+models with MRR and Hit@K, which is the one substantial retrieval deliverable not yet done. Conduct
+the ten-student user study, measuring both satisfaction and whether the adaptive engine correctly
+identifies weak topics. Complete the curriculum-alignment audit by verifying that every factual claim
+in thirty generated scripts traces to its retrieved passage.</p>
+<p><strong>Increment 6 — Deployment and final report (2 weeks).</strong>
+Deploy backend and client, validate on Linux — the code is written to be portable and the font and
+path handling were made platform-independent during this phase, but this has not been verified in
+deployment. Complete the end-semester report with the evaluation tables filled in.</p>
+<p><strong>Beyond the capstone.</strong> Three extensions are worth recording. Hybrid retrieval combining BM25 with
+dense vectors would improve exact-formula queries, for which pure dense retrieval is known to be weak.
+The avatar layer described in Section 5.1.2 could be enabled as an optional enhancement. And the
+architecture is not NEET-specific: the ingestion, retrieval and rendering stages are agnostic to the
+corpus, so the same system applied to a different curriculum requires only a different PDF collection
+and a revised subject vocabulary.</p>
+<hr />
+<h1>APPENDIX A: REFERENCES</h1>
+<p>[1] P. Lewis, E. Perez, A. Piktus, F. Petroni, V. Karpukhin, N. Goyal, H. Kuttler, M. Lewis, W. Tau
+Yih, T. Rocktaschel, S. Riedel, and D. Kiela, 2020, "Retrieval-Augmented Generation for
+Knowledge-Intensive NLP Tasks," <em>Advances in Neural Information Processing Systems</em>, vol. 33,
+pp. 9459-9474.</p>
+<p>[2] Y. Gao, Y. Xiong, X. Gao, K. Jia, J. Pan, Y. Bi, Y. Dai, J. Sun, and H. Wang, 2023,
+"Retrieval-Augmented Generation for Large Language Models: A Survey," <em>arXiv preprint</em>,
+arXiv:2312.10997.</p>
+<p>[3] A. Asai, Z. Wu, Y. Wang, A. Sil, and H. Hajishirzi, 2023, "Self-RAG: Learning to Retrieve,
+Generate, and Critique through Self-Reflection," <em>arXiv preprint</em>, arXiv:2310.11511.</p>
+<p>[4] X. Xu, B. Riordan, and B. Pardos, 2024, "From Recorded to AI-Generated Instructional Videos: A
+Comparison of Learning Performance and Experience," <em>British Journal of Educational Technology</em>,
+vol. 55, no. 3, pp. 1124-1142.</p>
+<p>[5] D. Leiker, S. Bernstein, A. Beckman, and M. Planey, 2023, "Generative AI for Learning:
+Investigating the Potential of Learning Videos with Synthetic Virtual Instructors," in <em>Proc.
+International Conference on Artificial Intelligence in Education</em>, Tokyo, Japan, pp. 391-397.</p>
+<p>[6] A. Maity, S. Saha, and S. Ghosh, 2025, "Leveraging In-Context Learning and Retrieval-Augmented
+Generation for Automatic Question Generation in Educational Domains," <em>arXiv preprint</em>,
+arXiv:2501.17397.</p>
+<p>[7] Z. Levonian, C. Li, W. Zhu, A. Garg, O. Koutcheme, L. Murali, and S. Tran, 2023,
+"Retrieval-Augmented Generation to Improve Math Question-Answering: Trade-offs Between Groundedness
+and Human Preference," in <em>Proc. Educational Data Mining Conference</em>, Atlanta, USA, pp. 220-226.</p>
+<p>[8] J. Li, D. Li, S. Savarese, and S. Hoi, 2023, "BLIP-2: Bootstrapping Language-Image Pre-training
+with Frozen Image Encoders and Large Language Models," in <em>Proc. 40th International Conference on
+Machine Learning</em>, Honolulu, USA, pp. 19730-19742.</p>
+<p>[9] H. Lin, B. Zhu, Y. Liu, G. Zeng, Z. Yang, G. Huang, and N. Zheng, 2023, "Video-LLaMA: An
+Instruction-tuned Audio-Visual Language Model for Video Understanding," in <em>Proc. Conference on
+Empirical Methods in Natural Language Processing: System Demonstrations</em>, Singapore, pp. 543-553.</p>
+<p>[10] S. Jeong, Y. Shin, J. Kim, S. Yoon, C. Park, S. Jo, and E. Choi, 2025, "VideoRAG:
+Retrieval-Augmented Generation over Video Corpus," <em>arXiv preprint</em>, arXiv:2501.05874.</p>
+<p>[11] Y. Luo, Z. Zhao, M. Chen, Z. Zhao, H. Zhang, and X. Wang, 2024, "Video-RAG: Visually-Aligned
+Retrieval-Augmented Long Video Comprehension," <em>arXiv preprint</em>, arXiv:2411.13093.</p>
+<p>[12] Y. Zhao, Z. Xu, Y. Liu, Y. Jiang, and H. Zhang, 2025, "Multi-RAG: Multimodal
+Retrieval-Augmented Generation System," <em>arXiv preprint</em>, arXiv:2505.23990.</p>
+<hr />
+<h1>APPENDIX B: PLAGIARISM REPORT</h1>
+<p><em>(Insert the similarity report generated by the institute-approved tool here.)</em></p>
+<hr />
+<h2>Appendix C: Reproducing the Measurements in This Report</h2>
+<p>Every quantitative claim in Chapter 4 is regenerated by a script in the repository. The commands are
+listed so that a reviewer can verify any figure independently.</p>
+<table>
+<thead>
+<tr>
+<th>Reported in</th>
+<th>Command</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Table 16 corpus composition; Table 17 retrieval accuracy</td>
+<td><code>python backend/scripts/eval_retrieval_filters.py</code></td>
+</tr>
+<tr>
+<td>Table 18 notation expansion examples</td>
+<td><code>python backend/scripts/demo_text_preprocessor.py</code></td>
+</tr>
+<tr>
+<td>Table 19 TTS engine comparison</td>
+<td><code>python backend/app/tts/multi_voice_test.py</code></td>
+</tr>
+<tr>
+<td>Table 20 frame pipeline profile; Figure 12</td>
+<td><code>python backend/scripts/profile_frame_pipeline.py</code></td>
+</tr>
+<tr>
+<td>Table 21 generation time; Table 22 video specifications; Figures 9-11</td>
+<td><code>python backend/scripts/benchmark_video.py</code></td>
+</tr>
+<tr>
+<td>Retrieval-grounded lesson for any topic</td>
+<td><code>python backend/scripts/make_grounded_video.py "&lt;topic&gt;" --subject &lt;s&gt; --class &lt;c&gt;</code></td>
+</tr>
+<tr>
+<td>End-to-end assembly test</td>
+<td><code>python tests/test_video_pipeline.py</code></td>
+</tr>
+<tr>
+<td>Figure extraction and label lookup</td>
+<td><code>python tests/test_figure_extraction.py</code></td>
+</tr>
+<tr>
+<td>MOS listening test (build / report)</td>
+<td><code>python backend/app/tts/voice_eval.py build</code> / <code>report</code></td>
+</tr>
+</tbody>
+</table>
+<p>Machine-readable results are written to <code>backend/outputs/benchmarks/</code> as JSON alongside the console
+output, so a later run can be compared against an earlier one.</p>
+</body></html>

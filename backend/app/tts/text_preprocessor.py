@@ -139,6 +139,49 @@ ELEMENT_SYMBOLS = {
 }
 
 
+# Acronyms an Indian student hears spelled out, letter by letter. Edge-TTS reads
+# an unknown run of capitals as a word instead — "NCERT" comes out as "nasart" —
+# and no existing pass touches it: the formula speller skips it because E, R and
+# T are not element symbols.
+#
+# The split is per-acronym on purpose. NEET is said as a word ("neet"), CBSE and
+# NCERT are spelled; one blanket rule would get one of the two wrong.
+SPELLED_ACRONYMS = {
+    "NCERT": "N C E R T",
+    "CBSE": "C B S E",
+    "AIIMS": "A I I M S",
+    "JEE": "J E E",
+    "ICSE": "I C S E",
+    "DNA": "D N A",
+    "RNA": "R N A",
+    "ATP": "A T P",
+    "ADP": "A D P",
+    "NADP": "N A D P",
+    "NADPH": "N A D P H",
+    "SI": "S I",
+    "EMF": "E M F",
+    "AC": "A C",
+    "DC": "D C",
+    "pH": "p H",
+    "UV": "U V",
+    "IR": "I R",
+    "NMR": "N M R",
+}
+
+# Acronyms that are already pronounced as words; listed so a future blanket rule
+# cannot start spelling them out.
+SPOKEN_AS_WORD = {"NEET", "AIDS", "LASER", "RADAR", "SONAR", "SCUBA"}
+
+_ACRONYM_PATTERN = re.compile(
+    r"\b(" + "|".join(sorted(SPELLED_ACRONYMS, key=len, reverse=True)) + r")\b"
+)
+
+
+def expand_acronyms(text: str) -> str:
+    """Spell out acronyms a speech engine would otherwise read as words."""
+    return _ACRONYM_PATTERN.sub(lambda m: SPELLED_ACRONYMS[m.group(1)], text)
+
+
 def _is_chemical_formula(token: str) -> bool:
     """True when every element group in ``token`` is a real element symbol."""
     groups = re.findall(r"([A-Z][a-z]?)(\d*)", token)
@@ -406,6 +449,9 @@ def preprocess(text: str, subject: str = "physics", emphasis_words=None) -> str:
     text = strip_markup(text)
     text = expand_latex(text)
     text = expand_subscripts(text)
+    # Before the subject pass: the chemistry speller would otherwise treat
+    # "NADPH" as a formula and read it as elements.
+    text = expand_acronyms(text)
     text = SUBJECT_PASSES[subject_key](text)
     text = expand_powers(text)
     text = expand_greek(text)

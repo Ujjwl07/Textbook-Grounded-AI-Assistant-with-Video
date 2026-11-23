@@ -59,10 +59,24 @@ class Settings(BaseSettings):
     qdrant_collection: str = "textbook_chunks"
     embedding_model: str = "all-MiniLM-L6-v2"
 
+    # Below this similarity a topic is treated as absent from the corpus rather
+    # than matched to the least-bad chapter. Measured over 11 topics, the
+    # in-corpus and off-corpus scores do not overlap: the weakest real topic
+    # ("circulation of blood") scores 0.482 and the strongest miss ("Quantum
+    # Tunnelling") 0.312, with "Blockchain" at 0.147. 0.40 sits in that gap.
+    # Configurable because the gap is a property of the corpus, not a constant.
+    topic_match_threshold: float = 0.40
+
     # --- LLM Integration (Google Gemini) ---
     gemini_api_key: str = ""
     llm_provider: str = "gemini"
     llm_model: str = "gemini-3.6-flash"
+    # gemini-3.6-flash reasons before answering and those thinking tokens come
+    # out of this budget: a five-scene script measured 1,097 thinking tokens
+    # against 803 of actual output. At the old 2,048 the response came back
+    # finishReason=MAX_TOKENS, truncated mid-JSON. thinkingConfig is not
+    # accepted by this model (HTTP 400), so headroom is the available lever.
+    llm_max_output_tokens: int = 8192
 
     model_config = SettingsConfigDict(
         env_file=str(BACKEND_DIR / ".env"),

@@ -1,4 +1,6 @@
+import asyncio
 import json
+import random
 import logging
 import re
 from typing import Any, Dict, List, Optional
@@ -7,6 +9,47 @@ import httpx
 from app.core.config import get_settings
 
 logger = logging.getLogger("textbook_assistant.gemini")
+
+
+class GeminiUnavailable(RuntimeError):
+    """Gemini could not be reached, or was too busy to answer.
+
+    Separate from a configuration or request error on purpose: an overloaded
+    model is a temporary condition the caller can work around, while a missing
+    key or a malformed prompt is not.
+    """
+
+
+# Statuses worth trying again. 429 is the quota/rate limit, 503 is the
+# "model is overloaded" the API returns under load; the 5xx family is transient
+# by definition. Anything else (400 bad request, 403 bad key) will fail the same
+# way on every attempt, so it is raised immediately.
+_RETRY_STATUS = {429, 500, 502, 503, 504}
+_MAX_ATTEMPTS = 4
+_BASE_BACKOFF_SECONDS = 1.5
+
+
+# The model is asked for NEET_ALERT but reliably shortens it. An unknown part
+# name silently falls back to the CONCEPT theme and drops out of the flow strip,
+# so the aliases are normalised before the scene reaches the renderer.
+_PART_ALIASES = {
+    "ALERT": "NEET_ALERT",
+    "NEET": "NEET_ALERT",
+    "EXAM_ALERT": "NEET_ALERT",
+    "NEET_TRAP": "NEET_ALERT",
+    "RECALL": "MEMORY",
+    "INTRO": "HOOK",
+}
+
+# Per-part fallback when the model omits visual_type. Deliberately not "alert"
+# for every part: that is what made five scenes render the same hazard triangle.
+_DEFAULT_VISUAL = {
+    "HOOK": "topic_card",
+    "CONCEPT": "process",
+    "EXAMPLE": "formula",
+    "MEMORY": "comparison",
+    "NEET_ALERT": "alert",
+}
 
 
 class GeminiLLMService:
@@ -28,12 +71,28 @@ class GeminiLLMService:
     def is_configured(self) -> bool:
         return bool(self.api_key and len(self.api_key.strip()) > 10)
 
+    async def _backoff(self, attempt: int, retry_after: Optional[str], detail: str) -> None:
+        """Wait before retrying, honouring Retry-After when the API sends one."""
+        delay = _BASE_BACKOFF_SECONDS * (2 ** (attempt - 1))
+        if retry_after:
+            try:
+                delay = max(delay, float(retry_after))
+            except ValueError:
+                pass
+        # Jitter, so several queued jobs do not all retry on the same tick.
+        delay += random.uniform(0, 0.5)
+        logger.warning(
+            "Gemini unavailable (attempt %s/%s), retrying in %.1fs: %s",
+            attempt, _MAX_ATTEMPTS, delay, detail,
+        )
+        await asyncio.sleep(delay)
+
     async def generate_text(
         self,
         prompt: str,
         system_instruction: Optional[str] = None,
         temperature: float = 0.2,
-        max_output_tokens: int = 2048,
+        max_output_tokens: Optional[int] = None,
     ) -> str:
         """Call Gemini API to generate plain text or structured response."""
         if not self.is_configured:
@@ -49,7 +108,7 @@ class GeminiLLMService:
             ],
             "generationConfig": {
                 "temperature": temperature,
-                "maxOutputTokens": max_output_tokens,
+                "maxOutputTokens": max_output_tokens or self.settings.llm_max_output_tokens,
             },
         }
 
@@ -58,22 +117,68 @@ class GeminiLLMService:
                 "parts": [{"text": system_instruction}]
             }
 
+        last_error = None
         async with httpx.AsyncClient(timeout=45.0) as client:
-            response = await client.post(endpoint, json=payload)
-            if response.status_code != 200:
+            for attempt in range(1, _MAX_ATTEMPTS + 1):
+                try:
+                    response = await client.post(endpoint, json=payload)
+                except httpx.RequestError as exc:
+                    # DNS, connection reset, timeout: transient like a 503.
+                    last_error = GeminiUnavailable(f"Gemini request failed: {exc}")
+                    await self._backoff(attempt, None, str(exc))
+                    continue
+
+                if response.status_code == 200:
+                    break
+
+                detail = response.text[:200]
+                if response.status_code in _RETRY_STATUS and attempt < _MAX_ATTEMPTS:
+                    last_error = GeminiUnavailable(
+                        f"Gemini API error {response.status_code}: {detail}"
+                    )
+                    await self._backoff(attempt, response.headers.get("Retry-After"), detail)
+                    continue
+
                 logger.error(f"Gemini API error ({response.status_code}): {response.text}")
-                raise RuntimeError(f"Gemini API error {response.status_code}: {response.text[:200]}")
+                message = f"Gemini API error {response.status_code}: {detail}"
+                if response.status_code in _RETRY_STATUS:
+                    raise GeminiUnavailable(message)
+                raise RuntimeError(message)
+            else:
+                raise last_error or GeminiUnavailable("Gemini did not respond")
 
             data = response.json()
             candidates = data.get("candidates", [])
             if not candidates:
                 raise RuntimeError("Gemini returned empty candidates list")
 
-            parts = candidates[0].get("content", {}).get("parts", [])
-            if not parts:
-                raise RuntimeError("Gemini returned no content parts")
+            candidate = candidates[0]
+            finish_reason = candidate.get("finishReason")
+            # Join every part: a reasoning model can return the answer split
+            # across parts, and reading parts[0] alone dropped the rest.
+            parts = candidate.get("content", {}).get("parts", [])
+            text = "".join(part.get("text", "") for part in parts).strip()
 
-            return parts[0].get("text", "").strip()
+            usage = data.get("usageMetadata", {})
+            if finish_reason == "MAX_TOKENS":
+                # Truncated output is not a transient failure and retrying the
+                # same prompt cannot fix it. Saying so beats letting the caller
+                # discover it as "Expecting value: line 1 column 1 (char 0)"
+                # when the half-written JSON fails to parse.
+                raise RuntimeError(
+                    "Gemini hit maxOutputTokens and the answer was truncated "
+                    f"({usage.get('thoughtsTokenCount', 0)} thinking + "
+                    f"{usage.get('candidatesTokenCount', 0)} output tokens against a "
+                    f"{max_output_tokens or self.settings.llm_max_output_tokens} cap). "
+                    "Raise LLM_MAX_OUTPUT_TOKENS."
+                )
+            if not text:
+                raise RuntimeError(
+                    f"Gemini returned no text (finishReason={finish_reason}, "
+                    f"thinking tokens={usage.get('thoughtsTokenCount', 0)})"
+                )
+
+            return text
 
     def _extract_json_block(self, raw_text: str) -> Any:
         """Extract and parse JSON array or object from markdown or raw text."""
@@ -137,47 +242,85 @@ SCENE STRUCTURE REQUIRED (exactly 5 scenes):
 5. NEET ALERT: High-yield exam trap or important condition.
 
 SCHEMA REQUIRED (Return a JSON list of 5 objects):
+
+Each scene has a "visual_type" that decides what is drawn in the right-hand
+panel, and a "visual_data" that supplies its content. A panel with no content is
+worse than no panel, so never emit a visual_type without the matching
+visual_data. Give the five scenes DIFFERENT visual types — repeating one type
+across the video makes every slide look identical.
+
+  topic_card   {{"kicker": "SOURCED FROM", "chapter": "...", "scope": "Class 11 - Physics"}}
+  process      {{"steps": ["Short step", "Short step", "Short step"]}}
+  comparison   {{"left": {{"title": "g", "points": ["...", "..."]}},
+                "right": {{"title": "G", "points": ["...", "..."]}}}}
+  diagram      {{"title": "...", "labels": ["Term", "Term", "Term"]}}
+  checklist    {{"title": "REVISE THESE", "items": ["Term", "Term", "Term"]}}
+  formula      {{"title": "..."}} plus a top-level "formula_latex"
+  alert        {{"caption": "The trap, in a few words"}}
+
+Rules that matter:
+- "slide_bullets": at most 3, each under 110 characters, each able to stand
+  alone. Never open a bullet with "However", "This" or "It".
+- "definition" on the CONCEPT scene must be the textbook's own wording, with
+  "definition_source" naming the chapter it came from. Leave both out rather
+  than paraphrasing.
+- "visual_data" labels and items are short TERMS (1-3 words), not sentences.
+- "narration_text" is spoken aloud, so no symbols or markup.
+- Use "alert" for the NEET_ALERT scene only.
+
 [
   {{
     "part": "HOOK",
     "slide_title": "Short Slide Headline (max 6 words)",
-    "slide_bullets": ["Key bullet point 1", "Key bullet point 2", "Key bullet point 3"],
-    "narration_text": "2 to 3 natural spoken sentences for voiceover narration explaining this scene.",
-    "visual_type": "alert",
-    "animation_type": "fade_in"
+    "slide_bullets": ["Key bullet point 1", "Key bullet point 2"],
+    "narration_text": "2 to 3 natural spoken sentences introducing the topic.",
+    "visual_type": "topic_card",
+    "visual_data": {{"kicker": "SOURCED FROM", "chapter": "Chapter name", "scope": "Class {class_level or '11'} - {subject or 'Physics'}"}},
+    "animation_type": "fade_in",
+    "duration_hint_seconds": 12
   }},
   {{
     "part": "CONCEPT",
     "slide_title": "Concept Headline",
-    "slide_bullets": ["Bullet 1", "Bullet 2", "Bullet 3"],
-    "narration_text": "Narration text explaining the core principle clearly.",
-    "visual_type": "formula",
-    "formula_latex": "\\\\vec{{F}} = m\\\\vec{{a}}",
-    "animation_type": "zoom"
+    "definition": "The textbook's exact defining sentence.",
+    "definition_source": "Class {class_level or '11'} {subject or 'Physics'}, Ch.N Chapter Name",
+    "slide_bullets": ["Bullet 1", "Bullet 2"],
+    "narration_text": "Narration explaining the core principle clearly.",
+    "visual_type": "process",
+    "visual_data": {{"steps": ["First step", "Second step", "Third step"]}},
+    "animation_type": "slide_left",
+    "duration_hint_seconds": 18
   }},
   {{
     "part": "EXAMPLE",
     "slide_title": "Example Headline",
     "slide_bullets": ["Bullet 1", "Bullet 2", "Bullet 3"],
-    "narration_text": "Narration text walking through the example.",
-    "visual_type": "alert",
-    "animation_type": "slide_left"
+    "narration_text": "Narration walking through the example.",
+    "visual_type": "formula",
+    "formula_latex": "F = G m_1 m_2 / r^2",
+    "visual_data": {{"title": "Chapter name"}},
+    "animation_type": "zoom",
+    "duration_hint_seconds": 16
   }},
   {{
     "part": "MEMORY",
     "slide_title": "Memory Rule",
-    "slide_bullets": ["Bullet 1", "Bullet 2", "Bullet 3"],
-    "narration_text": "Narration text with mnemonic and memory aid.",
-    "visual_type": "alert",
-    "animation_type": "fade_in"
+    "slide_bullets": ["Bullet 1", "Bullet 2"],
+    "narration_text": "Narration with the mnemonic and memory aid.",
+    "visual_type": "comparison",
+    "visual_data": {{"left": {{"title": "Term A", "points": ["Point", "Point"]}}, "right": {{"title": "Term B", "points": ["Point", "Point"]}}}},
+    "animation_type": "slide_left",
+    "duration_hint_seconds": 14
   }},
   {{
-    "part": "ALERT",
+    "part": "NEET_ALERT",
     "slide_title": "Exam Alert",
     "slide_bullets": ["Bullet 1", "Bullet 2", "Bullet 3"],
-    "narration_text": "Narration text highlighting the exam trap.",
+    "narration_text": "Narration highlighting the exam trap.",
     "visual_type": "alert",
-    "animation_type": "zoom"
+    "visual_data": {{"caption": "The trap in a few words"}},
+    "animation_type": "zoom",
+    "duration_hint_seconds": 14
   }}
 ]
 
@@ -193,14 +336,27 @@ Output ONLY the valid JSON array without any markdown wrappers or commentary.
                 # Sanitize and validate required keys
                 validated_scenes = []
                 for s in scenes:
+                    part = _PART_ALIASES.get(
+                        str(s.get("part", "CONCEPT")).upper().replace(" ", "_"),
+                        str(s.get("part", "CONCEPT")).upper().replace(" ", "_"),
+                    )
+                    # The renderer keys its theme, flow strip and panel off these
+                    # fields. Dropping visual_data leaves every panel to draw its
+                    # empty default, which is how five different scenes end up
+                    # looking like the same slide; defaulting visual_type to
+                    # "alert" does the same thing on purpose.
                     validated_scenes.append({
-                        "part": str(s.get("part", "CONCEPT")).upper(),
+                        "part": part,
                         "slide_title": str(s.get("slide_title", topic)),
-                        "slide_bullets": list(s.get("slide_bullets", ["Key Concept"])),
+                        "definition": str(s.get("definition", "") or ""),
+                        "definition_source": str(s.get("definition_source", "") or ""),
+                        "slide_bullets": [str(b) for b in s.get("slide_bullets", []) if str(b).strip()],
                         "narration_text": str(s.get("narration_text", "")),
-                        "visual_type": str(s.get("visual_type", "alert")),
+                        "visual_type": str(s.get("visual_type") or _DEFAULT_VISUAL.get(part, "checklist")),
+                        "visual_data": s.get("visual_data") or {},
                         "formula_latex": s.get("formula_latex"),
                         "animation_type": str(s.get("animation_type", "fade_in")),
+                        "duration_hint_seconds": s.get("duration_hint_seconds"),
                     })
                 logger.info(f"Successfully generated {len(validated_scenes)} Gemini scenes for '{topic}'")
                 return validated_scenes
