@@ -1,0 +1,35 @@
+{
+  "meta": {
+    "pdf_name": "Class11_Physics_Ch7",
+    "chapter_name": "Gravitation",
+    "chapter_number": 7,
+    "subject": "Physics",
+    "class_level": "11"
+  },
+  "figures": [
+    {
+      "label": "7.1",
+      "caption": "Fig. 7.1(b) Drawing an ellipse. A string has its ends",
+      "page": 2,
+      "path": "fig_7_1_p02_x582.png",
+      "width": 463,
+      "height": 463
+    },
+    {
+      "label": "7.3",
+      "caption": "Fig. 7.3 Gravitational force on m1 due to m2 is along r where the vector r is (r2– r1).",
+      "page": 4,
+      "path": "fig_7_3_p04_x552.png",
+      "width": 463,
+      "height": 463
+    },
+    {
+      "label": "7.8",
+      "caption": "Fig. 7.8 (a) g at a height h above the surface of the earth.",
+      "page": 7,
+      "path": "fig_7_8_p07_x507.png",
+      "width": 463,
+      "height": 463
+    }
+  ]
+}

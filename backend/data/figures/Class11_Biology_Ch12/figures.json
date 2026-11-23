@@ -1,0 +1,51 @@
+{
+  "meta": {
+    "pdf_name": "Class11_Biology_Ch12",
+    "chapter_name": "Respiration in Plants",
+    "chapter_number": 12,
+    "subject": "Biology",
+    "class_level": "11"
+  },
+  "figures": [
+    {
+      "label": "12.1",
+      "caption": "Figure 12.1 Steps of glycolysis",
+      "page": 4,
+      "path": "fig_12_1_p04_x7.png",
+      "width": 231,
+      "height": 421
+    },
+    {
+      "label": "12.2",
+      "caption": "Figure 12.2 Major pathways of anaerobic",
+      "page": 5,
+      "path": "fig_12_2_p05_x242.png",
+      "width": 464,
+      "height": 464
+    },
+    {
+      "label": "12.3",
+      "caption": "Figure 12.3 The Citric acid cycle",
+      "page": 7,
+      "path": "fig_12_3_p07_x15.png",
+      "width": 230,
+      "height": 200
+    },
+    {
+      "label": "12.4",
+      "caption": "Figure 12.4 Electron Transport System (ETS)",
+      "page": 8,
+      "path": "fig_12_4_p08_x18.png",
+      "width": 262,
+      "height": 437
+    },
+    {
+      "label": "12.5",
+      "caption": "Figure 12.5 Diagramatic presentation of ATP",
+      "page": 9,
+      "path": "fig_12_5_p09_x21.png",
+      "width": 220,
+      "height": 165
+    }
+  ]
+}

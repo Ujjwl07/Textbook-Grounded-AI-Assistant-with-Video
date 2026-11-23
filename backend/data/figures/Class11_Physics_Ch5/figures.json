@@ -1,0 +1,83 @@
+{
+  "meta": {
+    "pdf_name": "Class11_Physics_Ch5",
+    "chapter_name": "Work, Energy and Power",
+    "chapter_number": 5,
+    "subject": "Physics",
+    "class_level": "11"
+  },
+  "figures": [
+    {
+      "label": "5.1",
+      "caption": "Fig. 5.1 (a) The scalar product of two vectors A and B is a scalar : A.B = A B cos θ. (b) B cos θ is the projection of B onto A. (c) A cos θ is the projection of A onto B.",
+      "page": 2,
+      "path": "fig_5_1_p02_x604.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "5.2",
+      "caption": "Fig. 5.2 An object undergoes a displacement d under the influence of the force F.",
+      "page": 3,
+      "path": "fig_5_2_p03_x589.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "5.3",
+      "caption": "Fig. 5.3(a)",
+      "page": 5,
+      "path": "fig_5_3_p05_x559.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "5.5",
+      "caption": "Fig. 5.5 The conversion of potential energy to kinetic energy for a ball of mass m dropped from a height H.",
+      "page": 8,
+      "path": "fig_5_5_p08_x514.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "5.6",
+      "caption": "Fig. 5.6",
+      "page": 9,
+      "path": "fig_5_6_p09_x499.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "5.7",
+      "caption": "This expression may also be obtained by considering the area of the triangle as in Fig. 5.7(d). Note that the work done by the external pulling force F is positive since it overcomes the spring force.",
+      "page": 10,
+      "path": "fig_5_7_p10_x484.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "5.10",
+      "caption": "Fig. 5.10 Collision of mass m1, with a stationary mass m2.",
+      "page": 13,
+      "path": "fig_5_10_p13_x439.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "5.11",
+      "caption": "Fig. 5.11",
+      "page": 18,
+      "path": "fig_5_11_p18_x364.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "5.14",
+      "caption": "Fig. 5.14",
+      "page": 20,
+      "path": "fig_5_14_p20_x334.png",
+      "width": 465,
+      "height": 465
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "meta": {
+    "pdf_name": "Class11_Chemistry_Ch3",
+    "chapter_name": "Classification of Elements and Periodicity in Properties",
+    "chapter_number": 3,
+    "subject": "Chemistry",
+    "class_level": "11"
+  },
+  "figures": [
+    {
+      "label": "3.6",
+      "caption": "Fig. 3.6(a) First ionization enthalpies (∆iH) of elements of the second period as a",
+      "page": 15,
+      "path": "fig_3_6_p15_x465.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "3.6",
+      "caption": "Fig. 3.6(a) First ionization enthalpies (∆iH) of elements of the second period as a",
+      "page": 15,
+      "path": "fig_3_6_p15_x942.png",
+      "width": 465,
+      "height": 465
+    }
+  ]
+}

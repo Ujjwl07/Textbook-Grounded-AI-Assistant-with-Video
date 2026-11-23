@@ -1,0 +1,51 @@
+{
+  "meta": {
+    "pdf_name": "Class11_Physics_Ch14",
+    "chapter_name": "Waves",
+    "chapter_number": 14,
+    "subject": "Physics",
+    "class_level": "11"
+  },
+  "figures": [
+    {
+      "label": "14.4",
+      "caption": "Fig. 14.4 Longitudinal waves (sound) generated in a",
+      "page": 3,
+      "path": "fig_14_4_p03_x557.png",
+      "width": 462,
+      "height": 462
+    },
+    {
+      "label": "14.8",
+      "caption": "To determine the speed of propagation of a travelling wave, we can fix our attention on any particular point on the wave (characterised by some value of the phase) and see how that point moves in time. It is convenient to look at the motion of the crest of the wave. Fig. 14.8 gives",
+      "page": 7,
+      "path": "fig_14_8_p07_x497.png",
+      "width": 462,
+      "height": 462
+    },
+    {
+      "label": "14.11",
+      "caption": "Fig. 14.11 Reflection of a pulse meeting a rigid",
+      "page": 12,
+      "path": "fig_14_11_p12_x422.png",
+      "width": 462,
+      "height": 462
+    },
+    {
+      "label": "14.12",
+      "caption": "Fig. 14.12 Stationary waves arising from superposition of two harmonic waves travelling in opposite directions.",
+      "page": 13,
+      "path": "fig_14_12_p13_x407.png",
+      "width": 462,
+      "height": 462
+    },
+    {
+      "label": "14.13",
+      "caption": "Fig. 14.13 The first six harmonics of vibrations of a stretched",
+      "page": 14,
+      "path": "fig_14_13_p14_x392.png",
+      "width": 462,
+      "height": 462
+    }
+  ]
+}

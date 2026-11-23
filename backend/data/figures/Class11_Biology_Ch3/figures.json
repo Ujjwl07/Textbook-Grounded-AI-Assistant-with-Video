@@ -1,0 +1,75 @@
+{
+  "meta": {
+    "pdf_name": "Class11_Biology_Ch3",
+    "chapter_name": "Plant Kingdom",
+    "chapter_number": 3,
+    "subject": "Biology",
+    "class_level": "11"
+  },
+  "figures": [
+    {
+      "label": "3.1",
+      "caption": "Figure 3.1 Algae : (a) Green algae (i) Volvox (ii) Ulothrix (b) Brown algae (i) Laminaria (ii) Fucus (iii) Dictyota (c) Red algae (i) Porphyra (ii) Polysiphonia",
+      "page": 3,
+      "path": "fig_3_1_p03_x5.png",
+      "width": 425,
+      "height": 570
+    },
+    {
+      "label": "3.1",
+      "caption": "Figure 3.1 Algae : (a) Green algae (i) Volvox (ii) Ulothrix (b) Brown algae (i) Laminaria (ii) Fucus (iii) Dictyota (c) Red algae (i) Porphyra (ii) Polysiphonia",
+      "page": 3,
+      "path": "fig_3_1_p03_x10025.png",
+      "width": 464,
+      "height": 464
+    },
+    {
+      "label": "3.2",
+      "caption": "Figure 3.2 Bryophytes: A liverwort – Marchantia (a) Female thallus (b) Male thallus Mosses – (c) Funaria, gametophyte and sporophyte (d) Sphagnum gametophyte",
+      "page": 6,
+      "path": "fig_3_2_p06_x9968.png",
+      "width": 464,
+      "height": 464
+    },
+    {
+      "label": "3.3",
+      "caption": "Figure 3.3 Pteridophytes : (a) Selaginella (b) Equisetum (c) Fern (d) Salvinia",
+      "page": 9,
+      "path": "fig_3_3_p09_x6388.png",
+      "width": 153,
+      "height": 204
+    },
+    {
+      "label": "3.3",
+      "caption": "Figure 3.3 Pteridophytes : (a) Selaginella (b) Equisetum (c) Fern (d) Salvinia",
+      "page": 9,
+      "path": "fig_3_3_p09_x6389.png",
+      "width": 139,
+      "height": 241
+    },
+    {
+      "label": "3.3",
+      "caption": "Figure 3.3 Pteridophytes : (a) Selaginella (b) Equisetum (c) Fern (d) Salvinia",
+      "page": 9,
+      "path": "fig_3_3_p09_x9923.png",
+      "width": 464,
+      "height": 464
+    },
+    {
+      "label": "3.4",
+      "caption": "Figure 3.4 Gymnosperms: (a) Cycas",
+      "page": 11,
+      "path": "fig_3_4_p11_x9878.png",
+      "width": 464,
+      "height": 464
+    },
+    {
+      "label": "3.5",
+      "caption": "(b) (a) Figure 3.5 Angiosperms : (a) A dicotyledon (b) A monocotyledon",
+      "page": 12,
+      "path": "fig_3_5_p12_x9692.png",
+      "width": 123,
+      "height": 180
+    }
+  ]
+}

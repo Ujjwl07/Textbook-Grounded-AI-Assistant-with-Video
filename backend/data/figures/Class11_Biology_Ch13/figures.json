@@ -1,0 +1,67 @@
+{
+  "meta": {
+    "pdf_name": "Class11_Biology_Ch13",
+    "chapter_name": "Plant Growth and Development",
+    "chapter_number": 13,
+    "subject": "Biology",
+    "class_level": "11"
+  },
+  "figures": [
+    {
+      "label": "13.1",
+      "caption": "You have already studied the organisation of a flowering plant in Chapter 5. Have you ever thought about where and how the structures like roots, stems, leaves, flowers, fruits and seeds arise and that too in an orderly sequence? You are, by now, aware of the terms seed, seedling, plantlet, mature plant. You have also seen that trees continue to increase in height or girth over a period of time. However, the leaves, flowers and fruits of the same tree not only have limited dimensions but also appear and fall periodically and some time repeatedly. Why does vegetative phase precede flowering in a plant? All plant organs are made up of a variety of tissues; is there any relationship between the structure of a cell, a tissue, an organ and the function they perform? Can the structure and the function of these be altered? All cells of a plant are descendents of the zygote. The question is, then, why and how do they have different structural and functional attributes? Development is the sum of two processes: growth and differentiation. To begin with, it is essential and sufficient to know that the development of a mature plant from a zygote (fertilised egg) follow a precise and highly ordered succession of events. During this process a complex body organisation is formed that produces roots, leaves, branches, flowers, fruits, and seeds, and eventually they die (Figure 13.1). The first step in the process of plant growth is seed germination. The seed germinates when favourable conditions for growth exist in the environment. In absence of such favourable conditions the seeds do not germinate and goes into a period of suspended growth or rest. Once favourable conditions return, the seeds resume metabolic activities and growth takes place.",
+      "page": 1,
+      "path": "fig_13_1_p01_x119.png",
+      "width": 611,
+      "height": 360
+    },
+    {
+      "label": "13.3",
+      "caption": "Figure 13.3 Detection of zones of elongation by",
+      "page": 3,
+      "path": "fig_13_3_p03_x367.png",
+      "width": 466,
+      "height": 466
+    },
+    {
+      "label": "13.4",
+      "caption": "Figure13.4 Diagrammatic representation of : (a) Arithmetic (b) Geometric growth and",
+      "page": 4,
+      "path": "fig_13_4_p04_x43.png",
+      "width": 360,
+      "height": 335
+    },
+    {
+      "label": "13.4",
+      "caption": "Figure13.4 Diagrammatic representation of : (a) Arithmetic (b) Geometric growth and",
+      "page": 4,
+      "path": "fig_13_4_p04_x349.png",
+      "width": 466,
+      "height": 466
+    },
+    {
+      "label": "13.6",
+      "caption": "Figure 13.6 An idealised sigmoid growth",
+      "page": 5,
+      "path": "fig_13_6_p05_x331.png",
+      "width": 466,
+      "height": 466
+    },
+    {
+      "label": "13.9",
+      "caption": "Figure 13.9 Heterophylly in (a) larkspur and (b) buttercup",
+      "page": 8,
+      "path": "fig_13_9_p08_x277.png",
+      "width": 466,
+      "height": 466
+    },
+    {
+      "label": "13.10",
+      "caption": "Figure 13.10 Experiment used to demonstrate",
+      "page": 9,
+      "path": "fig_13_10_p09_x259.png",
+      "width": 466,
+      "height": 466
+    }
+  ]
+}

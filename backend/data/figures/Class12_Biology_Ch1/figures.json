@@ -1,0 +1,91 @@
+{
+  "meta": {
+    "pdf_name": "Class12_Biology_Ch1",
+    "chapter_name": "Sexual Reproduction in Flowering Plants",
+    "chapter_number": 1,
+    "subject": "Biology",
+    "class_level": "12"
+  },
+  "figures": [
+    {
+      "label": "1.1",
+      "caption": "Figure 1.1 A diagrammatic representation of L.S. of a flower",
+      "page": 4,
+      "path": "fig_1_1_p04_x15.png",
+      "width": 346,
+      "height": 307
+    },
+    {
+      "label": "1.4",
+      "caption": "Figure 1.4 Scanning electron micrographs of a few pollen grains (a)",
+      "page": 7,
+      "path": "fig_1_4_p07_x45.png",
+      "width": 135,
+      "height": 113
+    },
+    {
+      "label": "1.4",
+      "caption": "Figure 1.4 Scanning electron micrographs of a few pollen grains (a)",
+      "page": 7,
+      "path": "fig_1_4_p07_x46.png",
+      "width": 115,
+      "height": 114
+    },
+    {
+      "label": "1.6",
+      "caption": "Figure 1.6 Pollen products",
+      "page": 8,
+      "path": "fig_1_6_p08_x226.png",
+      "width": 201,
+      "height": 151
+    },
+    {
+      "label": "1.9",
+      "caption": "Figure 1.9 (a) Self-pollinated flowers;",
+      "page": 12,
+      "path": "fig_1_9_p12_x1016.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "1.10",
+      "caption": "Figure 1.10 A wind-pollinated plant showing",
+      "page": 13,
+      "path": "fig_1_10_p13_x454.png",
+      "width": 229,
+      "height": 311
+    },
+    {
+      "label": "1.11",
+      "caption": "Figure 1.11 (a) Pollination by water in Vallisneria;",
+      "page": 14,
+      "path": "fig_1_11_p14_x457.png",
+      "width": 210,
+      "height": 227
+    },
+    {
+      "label": "1.12a",
+      "caption": "As mentioned earlier, following compatible pollination, the pollen grain germinates on the stigma to produce a pollen tube through one of the germ pores (Figure 1.12a). The contents of the pollen grain move into the",
+      "page": 16,
+      "path": "fig_1_12a_p16_x944.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "1.14",
+      "caption": "Embryos of monocotyledons (Figure 1.14 b) possess only one cotyledon. In the grass family the cotyledon is called scutellum that is situated towards one side (lateral) of the embryonal axis. At its lower end, the embryonal axis has the",
+      "page": 19,
+      "path": "fig_1_14_p19_x890.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "1.15b",
+      "caption": "In most plants, by the time the fruit develops from the ovary, other floral parts degenerate and fall off. However, in a few species such as apple, strawberry, cashew, etc., the thalamus also contributes to fruit formation. Such fruits are called false fruits (Figure 1.15b). Most fruits however develop only from the ovary and are called true fruits. Although in most of the species, fruits are the results of fertilisation, there are a few species",
+      "page": 20,
+      "path": "fig_1_15b_p20_x872.png",
+      "width": 465,
+      "height": 465
+    }
+  ]
+}

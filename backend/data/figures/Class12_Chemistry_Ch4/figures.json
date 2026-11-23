@@ -1,0 +1,27 @@
+{
+  "meta": {
+    "pdf_name": "Class12_Chemistry_Ch4",
+    "chapter_name": "The d- and f-Block Elements",
+    "chapter_number": 4,
+    "subject": "Chemistry",
+    "class_level": "12"
+  },
+  "figures": [
+    {
+      "label": "4.1",
+      "caption": "The transition metals (with the exception of Zn, Cd and Hg) are very hard and have low volatility. Their melting and boiling points are high. Fig. 4.1 depicts the melting points of transition metals belonging to 3d, 4d and 5d series. The high melting points of these metals are attributed to the involvement of greater number of electrons from (n-1)d in addition to the ns electrons in the interatomic metallic bonding. In any row the melting points of these metals rise to a maximum at d",
+      "page": 4,
+      "path": "fig_4_1_p04_x83.png",
+      "width": 471,
+      "height": 153
+    },
+    {
+      "label": "4.1",
+      "caption": "Fig. 4.1: Trends in melting points of",
+      "page": 4,
+      "path": "fig_4_1_p04_x1906.png",
+      "width": 465,
+      "height": 465
+    }
+  ]
+}

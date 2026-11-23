@@ -1,0 +1,59 @@
+{
+  "meta": {
+    "pdf_name": "Class11_Physics_Ch9",
+    "chapter_name": "Mechanical Properties of Fluids",
+    "chapter_number": 9,
+    "subject": "Physics",
+    "class_level": "11"
+  },
+  "figures": [
+    {
+      "label": "9.5",
+      "caption": "Fig 9.5 (a) The mercury barometer.",
+      "page": 5,
+      "path": "fig_9_5_p05_x37.png",
+      "width": 200,
+      "height": 270
+    },
+    {
+      "label": "9.5",
+      "caption": "Fig 9.5 (a) The mercury barometer.",
+      "page": 5,
+      "path": "fig_9_5_p05_x729.png",
+      "width": 463,
+      "height": 463
+    },
+    {
+      "label": "9.8",
+      "caption": "Figure 9.8 displays streamlines for some typical flows. For example, Fig. 9.8(a) describes a laminar flow where the velocities at different points in the fluid may have different magnitudes",
+      "page": 8,
+      "path": "fig_9_8_p08_x684.png",
+      "width": 463,
+      "height": 463
+    },
+    {
+      "label": "9.9",
+      "caption": "Fig. 9.9 The flow of an ideal fluid in a pipe of varying cross section. The fluid in a section of length v1∆t moves to the section of length v2∆t in time ∆t.",
+      "page": 9,
+      "path": "fig_9_9_p09_x669.png",
+      "width": 463,
+      "height": 463
+    },
+    {
+      "label": "9.14",
+      "caption": "Fig. 9.14 Schematic picture of molecules in a liquid, at the surface and balance of forces. (a) Molecule inside a liquid. Forces on a molecule due to others are shown. Direction of arrows indicates attraction of repulsion. (b) Same, for a molecule at a surface. (c) Balance of attractive (AI and repulsive (R) forces.",
+      "page": 14,
+      "path": "fig_9_14_p14_x594.png",
+      "width": 463,
+      "height": 463
+    },
+    {
+      "label": "9.19",
+      "caption": "Fig. 9.19 Capillary rise, (a) Schematic picture of a narrow tube immersed water. (b) Enlarged picture near interface.",
+      "page": 17,
+      "path": "fig_9_19_p17_x549.png",
+      "width": 463,
+      "height": 463
+    }
+  ]
+}

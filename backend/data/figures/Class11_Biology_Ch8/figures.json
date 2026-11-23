@@ -1,0 +1,99 @@
+{
+  "meta": {
+    "pdf_name": "Class11_Biology_Ch8",
+    "chapter_name": "Cell: The Unit of Life",
+    "chapter_number": 8,
+    "subject": "Biology",
+    "class_level": "11"
+  },
+  "figures": [
+    {
+      "label": "8.1",
+      "caption": "Cells differ greatly in size, shape and activities (Figure 8.1). For example, Mycoplasmas, the smallest cells, are only 0.3 µm in length while bacteria",
+      "page": 4,
+      "path": "fig_8_1_p04_x5409.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "8.3",
+      "caption": "All eukaryotic cells are not identical. Plant and animal cells are different as the former possess cell walls, plastids and a large central vacuole which are absent in animal cells. On the other hand, animal cells have centrioles which are absent in almost all plant cells (Figure 8.3).",
+      "page": 7,
+      "path": "fig_8_3_p07_x5352.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "8.3",
+      "caption": "Figure 8.3 Diagram showing : (a) Plant cell (b) Animal cell",
+      "page": 8,
+      "path": "fig_8_3_p08_x5337.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "8.4",
+      "caption": "Figure 8.4 Fluid mosaic model of plasma membrane",
+      "page": 9,
+      "path": "fig_8_4_p09_x2333.png",
+      "width": 418,
+      "height": 253
+    },
+    {
+      "label": "8.4",
+      "caption": "Figure 8.4 Fluid mosaic model of plasma membrane",
+      "page": 9,
+      "path": "fig_8_4_p09_x5322.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "8.6",
+      "caption": "Figure 8.6 Golgi apparatus",
+      "page": 11,
+      "path": "fig_8_6_p11_x5277.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "8.7",
+      "caption": "Figure 8.7 Structure of mitochondrion (Longitudinal section)",
+      "page": 13,
+      "path": "fig_8_7_p13_x2343.png",
+      "width": 336,
+      "height": 166
+    },
+    {
+      "label": "8.9",
+      "caption": "Figure 8.9 Ribosome",
+      "page": 14,
+      "path": "fig_8_9_p14_x2663.png",
+      "width": 193,
+      "height": 112
+    },
+    {
+      "label": "8.11",
+      "caption": "Figure 8.11 Structure of nucleus",
+      "page": 16,
+      "path": "fig_8_11_p16_x3605.png",
+      "width": 180,
+      "height": 163
+    },
+    {
+      "label": "8.13",
+      "caption": "Figure 8.13 Types of chromosomes based on the position of centromere",
+      "page": 17,
+      "path": "fig_8_13_p17_x4328.png",
+      "width": 412,
+      "height": 223
+    },
+    {
+      "label": "8.13",
+      "caption": "Figure 8.13 Types of chromosomes based on the position of centromere",
+      "page": 17,
+      "path": "fig_8_13_p17_x5172.png",
+      "width": 465,
+      "height": 465
+    }
+  ]
+}

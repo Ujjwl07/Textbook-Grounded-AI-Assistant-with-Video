@@ -1,0 +1,19 @@
+{
+  "meta": {
+    "pdf_name": "Class11_Chemistry_Ch7",
+    "chapter_name": "Redox Reactions",
+    "chapter_number": 7,
+    "subject": "Chemistry",
+    "class_level": "11"
+  },
+  "figures": [
+    {
+      "label": "7.1",
+      "caption": "Fig. 7.1 Redox reaction between zinc and aqueous solution of copper nitrate occurring in a beaker.",
+      "page": 4,
+      "path": "fig_7_1_p04_x1184.png",
+      "width": 467,
+      "height": 467
+    }
+  ]
+}

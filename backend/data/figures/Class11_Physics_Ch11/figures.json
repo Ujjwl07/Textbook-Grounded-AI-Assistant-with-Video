@@ -1,0 +1,19 @@
+{
+  "meta": {
+    "pdf_name": "Class11_Physics_Ch11",
+    "chapter_name": "Thermodynamics",
+    "chapter_number": 11,
+    "subject": "Physics",
+    "class_level": "11"
+  },
+  "figures": [
+    {
+      "label": "11.8",
+      "caption": "Fig. 11.8 P-V curves for isothermal and adiabatic processes of an ideal gas.",
+      "page": 10,
+      "path": "fig_11_8_p10_x365.png",
+      "width": 462,
+      "height": 462
+    }
+  ]
+}

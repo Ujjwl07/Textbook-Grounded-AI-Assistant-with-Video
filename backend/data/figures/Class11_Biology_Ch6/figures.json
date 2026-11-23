@@ -1,0 +1,51 @@
+{
+  "meta": {
+    "pdf_name": "Class11_Biology_Ch6",
+    "chapter_name": "Anatomy of Flowering Plants",
+    "chapter_number": 6,
+    "subject": "Biology",
+    "class_level": "11"
+  },
+  "figures": [
+    {
+      "label": "6.3",
+      "caption": "Figure 6.3 T.S. : (a) Dicot root (Primary) (b) Monocot root",
+      "page": 4,
+      "path": "fig_6_3_p04_x94.png",
+      "width": 199,
+      "height": 219
+    },
+    {
+      "label": "6.4",
+      "caption": "Figure 6.4 T.S. of stem : (a) Dicot (b) Monocot",
+      "page": 5,
+      "path": "fig_6_4_p05_x98.png",
+      "width": 440,
+      "height": 168
+    },
+    {
+      "label": "6.4",
+      "caption": "Figure 6.4 T.S. of stem : (a) Dicot (b) Monocot",
+      "page": 5,
+      "path": "fig_6_4_p05_x277.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "6.5",
+      "caption": "Figure 6.5 T.S. of leaf : (a) Dicot (b) Monocot",
+      "page": 6,
+      "path": "fig_6_5_p06_x105.png",
+      "width": 172,
+      "height": 132
+    },
+    {
+      "label": "6.5",
+      "caption": "Figure 6.5 T.S. of leaf : (a) Dicot (b) Monocot",
+      "page": 6,
+      "path": "fig_6_5_p06_x259.png",
+      "width": 465,
+      "height": 465
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "meta": {
+    "pdf_name": "Class12_Biology_Ch9",
+    "chapter_name": "Biotechnology: Principles and Processes",
+    "chapter_number": 9,
+    "subject": "Biology",
+    "class_level": "12"
+  },
+  "figures": [
+    {
+      "label": "9.2",
+      "caption": "Figure 9.2 Diagrammatic representation of recombinant DNA technology",
+      "page": 7,
+      "path": "fig_9_2_p07_x312.png",
+      "width": 463,
+      "height": 463
+    },
+    {
+      "label": "9.5",
+      "caption": "Recall that nucleic acid is the genetic material of all organisms without exception. In majority of organisms this is deoxyribonucleic acid or DNA. In order to cut the DNA with restriction enzymes, it needs to be in pure form, free from other macro-molecules. Since the DNA is enclosed within the membranes, we have to break the cell open to release DNA along with other macromolecules such as RNA, proteins, polysaccharides and also lipids. This can be achieved by treating the bacterial cells/plant or animal tissue with enzymes such as lysozyme (bacteria), cellulase (plant cells), chitinase (fungus). You know that genes are located on long molecules of DNA interwined with proteins such as histones. The RNA can be removed by treatment with ribonuclease whereas proteins can be removed by treatment with protease. Other molecules can be removed by appropriate treatments and purified DNA ultimately precipitates out after the addition of chilled ethanol. This can be seen as collection of fine threads in the suspension (Figure 9.5).",
+      "page": 11,
+      "path": "fig_9_5_p11_x34.png",
+      "width": 132,
+      "height": 123
+    },
+    {
+      "label": "9.5",
+      "caption": "Figure 9.5 DNA that separates out can be",
+      "page": 11,
+      "path": "fig_9_5_p11_x35.png",
+      "width": 135,
+      "height": 123
+    },
+    {
+      "label": "9.6",
+      "caption": "Figure 9.6 Polymerase chain reaction (PCR) : Each cycle has three steps: (i) Denaturation; (ii) Primer annealing; and (iii) Extension of primers",
+      "page": 12,
+      "path": "fig_9_6_p12_x222.png",
+      "width": 463,
+      "height": 463
+    }
+  ]
+}

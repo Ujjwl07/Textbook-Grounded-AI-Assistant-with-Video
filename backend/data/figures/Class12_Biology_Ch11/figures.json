@@ -1,0 +1,35 @@
+{
+  "meta": {
+    "pdf_name": "Class12_Biology_Ch11",
+    "chapter_name": "Organisms and Populations",
+    "chapter_number": 11,
+    "subject": "Biology",
+    "class_level": "12"
+  },
+  "figures": [
+    {
+      "label": "11.4",
+      "caption": "Figure 11.4 Mutual relationship between fig tree and wasp: (a) Fig flower is pollinated by wasp; (b) Wasp laying eggs in a fig fruit",
+      "page": 14,
+      "path": "fig_11_4_p14_x86.png",
+      "width": 174,
+      "height": 164
+    },
+    {
+      "label": "11.4",
+      "caption": "Figure 11.4 Mutual relationship between fig tree and wasp: (a) Fig flower is pollinated by wasp; (b) Wasp laying eggs in a fig fruit",
+      "page": 14,
+      "path": "fig_11_4_p14_x87.png",
+      "width": 256,
+      "height": 165
+    },
+    {
+      "label": "11.5",
+      "caption": "Figure 11.5 Showing bee-a pollinator",
+      "page": 15,
+      "path": "fig_11_5_p15_x90.png",
+      "width": 190,
+      "height": 204
+    }
+  ]
+}

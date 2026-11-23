@@ -1,0 +1,43 @@
+{
+  "meta": {
+    "pdf_name": "Class11_Biology_Ch18",
+    "chapter_name": "Neural Control and Coordination",
+    "chapter_number": 18,
+    "subject": "Biology",
+    "class_level": "11"
+  },
+  "figures": [
+    {
+      "label": "18.1",
+      "caption": "A neuron is a microscopic structure composed of three major parts, namely, cell body, dendrites and axon (Figure 18.1). The cell body contains cytoplasm with typical cell organelles and certain granular bodies called Nissl’s granules. Short fibres which branch repeatedly and project out of the cell body also",
+      "page": 2,
+      "path": "fig_18_1_p02_x390.png",
+      "width": 466,
+      "height": 466
+    },
+    {
+      "label": "18.3",
+      "caption": "Figure 18.3 Diagram showing axon terminal and synapse",
+      "page": 5,
+      "path": "fig_18_3_p05_x333.png",
+      "width": 466,
+      "height": 466
+    },
+    {
+      "label": "18.4",
+      "caption": "Figure 18.4 Diagram showing sagital section of the human brain",
+      "page": 6,
+      "path": "fig_18_4_p06_x177.png",
+      "width": 396,
+      "height": 253
+    },
+    {
+      "label": "18.4",
+      "caption": "Figure 18.4 Diagram showing sagital section of the human brain",
+      "page": 6,
+      "path": "fig_18_4_p06_x318.png",
+      "width": 466,
+      "height": 466
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "meta": {
+    "pdf_name": "Class12_Physics_Ch8",
+    "chapter_name": "Electromagnetic Waves",
+    "chapter_number": 8,
+    "subject": "Physics",
+    "class_level": "12"
+  },
+  "figures": [
+    {
+      "label": "8.2",
+      "caption": "It can be shown from Maxwell’s equations that electric and magnetic fields in an electromagnetic wave are perpendicular to each other, and to the direction of propagation. It appears reasonable, say from our discussion of the displacement current. Consider Fig. 8.2. The electric field inside the plates of the capacitor is directed perpendicular to the plates. The magnetic field this gives rise to via the displacement current is along the perimeter of a circle parallel to the capacitor plates. So B and E are perpendicular in this case. This is a general feature.",
+      "page": 6,
+      "path": "fig_8_2_p06_x60.png",
+      "width": 120,
+      "height": 147
+    },
+    {
+      "label": "8.3",
+      "caption": "FIGURE 8.3 A linearly polarised electromagnetic wave, propagating in the z-direction with the oscillating electric field E",
+      "page": 6,
+      "path": "fig_8_3_p06_x500.png",
+      "width": 464,
+      "height": 464
+    },
+    {
+      "label": "8.5",
+      "caption": "FIGURE 8.5",
+      "page": 13,
+      "path": "fig_8_5_p13_x395.png",
+      "width": 464,
+      "height": 464
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "meta": {
+    "pdf_name": "Class11_Physics_Ch4",
+    "chapter_name": "Laws of Motion",
+    "chapter_number": 4,
+    "subject": "Physics",
+    "class_level": "11"
+  },
+  "figures": [
+    {
+      "label": "4.1",
+      "caption": "Fig. 4.1(b) The law of inertia was inferred by Galileo",
+      "page": 2,
+      "path": "fig_4_1_p02_x618.png",
+      "width": 462,
+      "height": 462
+    },
+    {
+      "label": "4.9",
+      "caption": "Fig. 4.9 Some examples of contact forces in mechanics.",
+      "page": 11,
+      "path": "fig_4_9_p11_x80.png",
+      "width": 451,
+      "height": 135
+    },
+    {
+      "label": "4.9",
+      "caption": "Fig. 4.9 Some examples of contact forces in mechanics.",
+      "page": 11,
+      "path": "fig_4_9_p11_x483.png",
+      "width": 462,
+      "height": 462
+    },
+    {
+      "label": "4.11",
+      "caption": "Fig. 4.11",
+      "page": 13,
+      "path": "fig_4_11_p13_x453.png",
+      "width": 462,
+      "height": 462
+    },
+    {
+      "label": "4.13",
+      "caption": "Fig. 4.13 Some ways of reducing friction. (a) Ball bearings placed between moving parts of a machine.",
+      "page": 14,
+      "path": "fig_4_13_p14_x438.png",
+      "width": 462,
+      "height": 462
+    },
+    {
+      "label": "4.16",
+      "caption": "Fig. 4.16",
+      "page": 21,
+      "path": "fig_4_16_p21_x333.png",
+      "width": 462,
+      "height": 462
+    }
+  ]
+}

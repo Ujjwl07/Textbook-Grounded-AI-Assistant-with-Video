@@ -1,0 +1,43 @@
+{
+  "meta": {
+    "pdf_name": "Class11_Biology_Ch7",
+    "chapter_name": "Structural Organisation in Animals",
+    "chapter_number": 7,
+    "subject": "Biology",
+    "class_level": "11"
+  },
+  "figures": [
+    {
+      "label": "7.2",
+      "caption": "Figure 7.2 Diagrammatic representation of internal organs of frog showing complete digestive system",
+      "page": 3,
+      "path": "fig_7_2_p03_x135.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "7.3",
+      "caption": "Figure 7.3 Male reproductive system",
+      "page": 5,
+      "path": "fig_7_3_p05_x11.png",
+      "width": 199,
+      "height": 206
+    },
+    {
+      "label": "7.4",
+      "caption": "Figure 7.4 Female reproductive system",
+      "page": 5,
+      "path": "fig_7_4_p05_x12.png",
+      "width": 226,
+      "height": 249
+    },
+    {
+      "label": "7.4",
+      "caption": "Figure 7.4 Female reproductive system",
+      "page": 5,
+      "path": "fig_7_4_p05_x99.png",
+      "width": 465,
+      "height": 465
+    }
+  ]
+}

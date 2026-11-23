@@ -1,0 +1,147 @@
+{
+  "meta": {
+    "pdf_name": "Class12_Physics_Ch1",
+    "chapter_name": "Electric Charges and Fields",
+    "chapter_number": 1,
+    "subject": "Physics",
+    "class_level": "12"
+  },
+  "figures": [
+    {
+      "label": "1.4",
+      "caption": "FIGURE 1.4",
+      "page": 10,
+      "path": "fig_1_4_p10_x1274.png",
+      "width": 464,
+      "height": 464
+    },
+    {
+      "label": "1.5",
+      "caption": "FIGURE 1.5 A system of (a) three charges (b) multiple charges.",
+      "page": 11,
+      "path": "fig_1_5_p11_x1259.png",
+      "width": 464,
+      "height": 464
+    },
+    {
+      "label": "1.6",
+      "caption": "FIGURE 1.6",
+      "page": 12,
+      "path": "fig_1_6_p12_x1244.png",
+      "width": 464,
+      "height": 464
+    },
+    {
+      "label": "1.8",
+      "caption": "FIGURE 1.8 Electric",
+      "page": 14,
+      "path": "fig_1_8_p14_x1214.png",
+      "width": 464,
+      "height": 464
+    },
+    {
+      "label": "1.10",
+      "caption": "In Fig. 1.10 (b), the field is downward, and the positively charged proton experiences a downward force of magnitude eE. The acceleration of the proton is",
+      "page": 17,
+      "path": "fig_1_10_p17_x1169.png",
+      "width": 464,
+      "height": 464
+    },
+    {
+      "label": "1.12",
+      "caption": "FIGURE 1.12 Field of a point charge.",
+      "page": 19,
+      "path": "fig_1_12_p19_x1139.png",
+      "width": 464,
+      "height": 464
+    },
+    {
+      "label": "1.14",
+      "caption": "FIGURE 1.14 Field lines due to some simple charge configurations.",
+      "page": 21,
+      "path": "fig_1_14_p21_x1109.png",
+      "width": 464,
+      "height": 464
+    },
+    {
+      "label": "1.16",
+      "caption": "FIGURE 1.16 Convention for defining normal",
+      "page": 22,
+      "path": "fig_1_16_p22_x221.png",
+      "width": 112,
+      "height": 261
+    },
+    {
+      "label": "1.16",
+      "caption": "FIGURE 1.16 Convention for defining normal",
+      "page": 22,
+      "path": "fig_1_16_p22_x1094.png",
+      "width": 464,
+      "height": 464
+    },
+    {
+      "label": "1.18",
+      "caption": "FIGURE 1.18",
+      "page": 25,
+      "path": "fig_1_18_p25_x1049.png",
+      "width": 464,
+      "height": 464
+    },
+    {
+      "label": "1.20",
+      "caption": "FIGURE 1.20 Electric force on a",
+      "page": 27,
+      "path": "fig_1_20_p27_x1019.png",
+      "width": 464,
+      "height": 464
+    },
+    {
+      "label": "1.22",
+      "caption": "FIGURE 1.22 Flux",
+      "page": 29,
+      "path": "fig_1_22_p29_x989.png",
+      "width": 464,
+      "height": 464
+    },
+    {
+      "label": "1.25",
+      "caption": "FIGURE 1.25",
+      "page": 32,
+      "path": "fig_1_25_p32_x944.png",
+      "width": 464,
+      "height": 464
+    },
+    {
+      "label": "1.26",
+      "caption": "FIGURE 1.26 (a) Electric field due to an infinitely long thin straight wire is radial,",
+      "page": 33,
+      "path": "fig_1_26_p33_x929.png",
+      "width": 464,
+      "height": 464
+    },
+    {
+      "label": "1.27",
+      "caption": "FIGURE 1.27 Gaussian surface for a uniformly charged infinite plane sheet.",
+      "page": 34,
+      "path": "fig_1_27_p34_x914.png",
+      "width": 464,
+      "height": 464
+    },
+    {
+      "label": "1.28",
+      "caption": "(ii) Field inside the shell: In Fig. 1.28(b), the point P is inside the",
+      "page": 35,
+      "path": "fig_1_28_p35_x899.png",
+      "width": 464,
+      "height": 464
+    },
+    {
+      "label": "1.30",
+      "caption": "the above amount, and the distance between them is halved? 1.13 Figure 1.30 shows tracks of three charged particles in a uniform electrostatic field. Give the signs of the three charges. Which particle has the highest charge to mass ratio?",
+      "page": 42,
+      "path": "fig_1_30_p42_x794.png",
+      "width": 464,
+      "height": 464
+    }
+  ]
+}

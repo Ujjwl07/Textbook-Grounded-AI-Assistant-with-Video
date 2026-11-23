@@ -1,0 +1,43 @@
+{
+  "meta": {
+    "pdf_name": "Class11_Biology_Ch9",
+    "chapter_name": "Biomolecules",
+    "chapter_number": 9,
+    "subject": "Biology",
+    "class_level": "11"
+  },
+  "figures": [
+    {
+      "label": "9.1",
+      "caption": "Figure 9.1 Diagrammatic representation of small molecular weight organic compounds in living tissues",
+      "page": 4,
+      "path": "fig_9_1_p04_x357.png",
+      "width": 466,
+      "height": 466
+    },
+    {
+      "label": "9.2",
+      "caption": "Figure 9.2 Diagrammatic representation of a portion of glycogen",
+      "page": 7,
+      "path": "fig_9_2_p07_x303.png",
+      "width": 466,
+      "height": 466
+    },
+    {
+      "label": "9.3",
+      "caption": "Some proteins are an assembly of more than one polypeptide or subunits. The manner in which these individual folded polypeptides or subunits are arranged with respect to each other (e.g. linear string of spheres, spheres arranged one upon each other in the form of a cube or plate etc.) is the architecture of a protein otherwise called the quaternary structure of a protein (Fig. 9.3 d). Adult human haemoglobin consists of 4 subunits. Two of these are identical to each other. Hence, two subunits of α type and two subunits of β type together constitute the human haemoglobin (Hb).",
+      "page": 9,
+      "path": "fig_9_3_p09_x22.png",
+      "width": 240,
+      "height": 300
+    },
+    {
+      "label": "9.5",
+      "caption": "Figure 9.5 Effect of change in : (a) pH (b) Temperature and (c) Concentration of",
+      "page": 13,
+      "path": "fig_9_5_p13_x195.png",
+      "width": 466,
+      "height": 466
+    }
+  ]
+}

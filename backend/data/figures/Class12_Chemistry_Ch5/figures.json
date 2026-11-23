@@ -1,0 +1,59 @@
+{
+  "meta": {
+    "pdf_name": "Class12_Chemistry_Ch5",
+    "chapter_name": "Coordination Compounds",
+    "chapter_number": 5,
+    "subject": "Chemistry",
+    "class_level": "12"
+  },
+  "figures": [
+    {
+      "label": "5.3",
+      "caption": "Fig. 5.3: Geometrical isomers (cis and trans)",
+      "page": 8,
+      "path": "fig_5_3_p08_x1975.png",
+      "width": 466,
+      "height": 466
+    },
+    {
+      "label": "5.7",
+      "caption": "Fig.5.7 Optical isomers (d and l) of cis- [PtCl2(en)2]2+",
+      "page": 9,
+      "path": "fig_5_7_p09_x1957.png",
+      "width": 466,
+      "height": 466
+    },
+    {
+      "label": "5.8",
+      "caption": "Fig.5.8: d orbital splitting in an octahedral crystal field",
+      "page": 15,
+      "path": "fig_5_8_p15_x621.png",
+      "width": 325,
+      "height": 222
+    },
+    {
+      "label": "5.9",
+      "caption": "Fig.5.9: d orbital splitting in a tetrahedral",
+      "page": 16,
+      "path": "fig_5_9_p16_x633.png",
+      "width": 242,
+      "height": 125
+    },
+    {
+      "label": "5.10",
+      "caption": "1eg 0 ® t2g 0eg 1). Consequently, the complex appears violet in colour (Fig. 5.10). The crystal field theory attributes the colour of the coordination compounds to d-d transition of the electron.",
+      "page": 16,
+      "path": "fig_5_10_p16_x1831.png",
+      "width": 466,
+      "height": 466
+    },
+    {
+      "label": "5.13",
+      "caption": "Decacarbonyldimanganese(0) is made up of two square pyramidal Mn(CO)5 units joined by a Mn – Mn bond. Octacarbonyldicobalt(0) has a Co – Co bond bridged by two CO groups (Fig.5.13).",
+      "page": 18,
+      "path": "fig_5_13_p18_x1795.png",
+      "width": 466,
+      "height": 466
+    }
+  ]
+}

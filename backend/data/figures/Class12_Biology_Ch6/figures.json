@@ -1,0 +1,43 @@
+{
+  "meta": {
+    "pdf_name": "Class12_Biology_Ch6",
+    "chapter_name": "Evolution",
+    "chapter_number": 6,
+    "subject": "Biology",
+    "class_level": "12"
+  },
+  "figures": [
+    {
+      "label": "6.4",
+      "caption": "Figure 6.4 Figure showing white - winged moth and dark - winged moth (melanised)",
+      "page": 7,
+      "path": "fig_6_4_p07_x41.png",
+      "width": 117,
+      "height": 117
+    },
+    {
+      "label": "6.4",
+      "caption": "Figure 6.4 Figure showing white - winged moth and dark - winged moth (melanised)",
+      "page": 7,
+      "path": "fig_6_4_p07_x95.png",
+      "width": 117,
+      "height": 117
+    },
+    {
+      "label": "6.6",
+      "caption": "Figure 6.6 Adaptive radiation of marsupials of Australia",
+      "page": 8,
+      "path": "fig_6_6_p08_x612.png",
+      "width": 461,
+      "height": 461
+    },
+    {
+      "label": "6.8",
+      "caption": "Figure 6.8 Diagrammatic representation of the operation of natural selection on different",
+      "page": 11,
+      "path": "fig_6_8_p11_x558.png",
+      "width": 461,
+      "height": 461
+    }
+  ]
+}

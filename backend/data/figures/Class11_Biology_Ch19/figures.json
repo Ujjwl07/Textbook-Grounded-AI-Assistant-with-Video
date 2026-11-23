@@ -1,0 +1,27 @@
+{
+  "meta": {
+    "pdf_name": "Class11_Biology_Ch19",
+    "chapter_name": "Chemical Coordination and Integration",
+    "chapter_number": 19,
+    "subject": "Biology",
+    "class_level": "11"
+  },
+  "figures": [
+    {
+      "label": "19.3",
+      "caption": "Figure 19.3 Diagrammatic view of the",
+      "page": 4,
+      "path": "fig_19_3_p04_x821.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "19.4",
+      "caption": "Figure 19.4 Diagrammatic representation of : (a) Adrenal gland above kidney (b) Section",
+      "page": 6,
+      "path": "fig_19_4_p06_x479.png",
+      "width": 319,
+      "height": 217
+    }
+  ]
+}

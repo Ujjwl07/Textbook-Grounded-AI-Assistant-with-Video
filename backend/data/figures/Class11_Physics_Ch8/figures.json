@@ -1,0 +1,51 @@
+{
+  "meta": {
+    "pdf_name": "Class11_Physics_Ch8",
+    "chapter_name": "Mechanical Properties of Solids",
+    "chapter_number": 8,
+    "subject": "Physics",
+    "class_level": "11"
+  },
+  "figures": [
+    {
+      "label": "8.1",
+      "caption": "Fig. 8.1 (a) A cylindrical body under tensile stress elongates by ∆L (b) Shearing stress on a cylinder deforming it by an angle θ (c) A body subjected to shearing stress (d) A solid body under a stress normal to the surface at every point (hydraulic stress). The volumetric strain is ∆V/V, but there is no change in shape.",
+      "page": 2,
+      "path": "fig_8_1_p02_x410.png",
+      "width": 463,
+      "height": 463
+    },
+    {
+      "label": "8.4",
+      "caption": "Fig. 8.4 Human pyramid in a circus.",
+      "page": 5,
+      "path": "fig_8_4_p05_x43.png",
+      "width": 117,
+      "height": 187
+    },
+    {
+      "label": "8.4",
+      "caption": "Fig. 8.4 Human pyramid in a circus.",
+      "page": 5,
+      "path": "fig_8_4_p05_x365.png",
+      "width": 463,
+      "height": 463
+    },
+    {
+      "label": "8.6",
+      "caption": "Fig. 8.6 A beam supported at the ends and loaded at the centre.",
+      "page": 9,
+      "path": "fig_8_6_p09_x305.png",
+      "width": 463,
+      "height": 463
+    },
+    {
+      "label": "8.9",
+      "caption": "Fig. 8.9",
+      "page": 11,
+      "path": "fig_8_9_p11_x275.png",
+      "width": 463,
+      "height": 463
+    }
+  ]
+}

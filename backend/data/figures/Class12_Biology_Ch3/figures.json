@@ -1,0 +1,35 @@
+{
+  "meta": {
+    "pdf_name": "Class12_Biology_Ch3",
+    "chapter_name": "Reproductive Health",
+    "chapter_number": 3,
+    "subject": "Biology",
+    "class_level": "12"
+  },
+  "figures": [
+    {
+      "label": "3.2",
+      "caption": "Figure 3.2. Copper T (CuT)",
+      "page": 4,
+      "path": "fig_3_2_p04_x7.png",
+      "width": 169,
+      "height": 199
+    },
+    {
+      "label": "3.3",
+      "caption": "Figure 3.3 Implants",
+      "page": 5,
+      "path": "fig_3_3_p05_x71.png",
+      "width": 169,
+      "height": 123
+    },
+    {
+      "label": "3.4",
+      "caption": "Figure 3.4 (a) Vasectomy Figure 3.4 (b) Tubectomy",
+      "page": 5,
+      "path": "fig_3_4_p05_x281.png",
+      "width": 465,
+      "height": 465
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "meta": {
+    "pdf_name": "Class12_Chemistry_Ch3",
+    "chapter_name": "Chemical Kinetics",
+    "chapter_number": 3,
+    "subject": "Chemistry",
+    "class_level": "12"
+  },
+  "figures": [
+    {
+      "label": "3.8",
+      "caption": "Fig. 3.8: Distribution curve showing energies",
+      "page": 19,
+      "path": "fig_3_8_p19_x1797.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "3.10",
+      "caption": "Fig. 3.10: A plot between ln k and 1/T",
+      "page": 20,
+      "path": "fig_3_10_p20_x1779.png",
+      "width": 465,
+      "height": 465
+    }
+  ]
+}

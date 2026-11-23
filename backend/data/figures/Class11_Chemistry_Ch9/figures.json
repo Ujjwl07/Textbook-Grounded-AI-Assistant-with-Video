@@ -1,0 +1,27 @@
+{
+  "meta": {
+    "pdf_name": "Class11_Chemistry_Ch9",
+    "chapter_name": "Hydrocarbons",
+    "chapter_number": 9,
+    "subject": "Chemistry",
+    "class_level": "11"
+  },
+  "figures": [
+    {
+      "label": "9.3",
+      "caption": "Fig. 9.3 Newman’s projections of ethane",
+      "page": 11,
+      "path": "fig_9_3_p11_x1578.png",
+      "width": 467,
+      "height": 467
+    },
+    {
+      "label": "9.7",
+      "caption": "Fig. 9.7 (b)",
+      "page": 26,
+      "path": "fig_9_7_p26_x1308.png",
+      "width": 467,
+      "height": 467
+    }
+  ]
+}
