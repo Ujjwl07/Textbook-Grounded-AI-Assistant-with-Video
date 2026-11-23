@@ -100,6 +100,10 @@ class JobQueue:
         message: str,
         status: JobStatus = JobStatus.running,
     ) -> None:
+        logger.info(
+            "Job %s [%s%%] %s: %s (%s)",
+            job.job_id[:8], progress, stage, message, status.value if hasattr(status, "value") else status,
+        )
         job.progress = progress
         job.stage = stage
         job.message = message

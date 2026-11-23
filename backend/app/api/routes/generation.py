@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, WebSocket, WebSocketDisconnect
 
 from app.models.schemas import GenerateRequest, GenerateResponse, JobStatus
@@ -7,6 +9,7 @@ from app.services.job_queue import job_queue
 from app.services.websocket_manager import websocket_manager
 
 router = APIRouter(tags=["generation"])
+logger = logging.getLogger(__name__)
 
 
 @router.post("/generate", response_model=GenerateResponse)
@@ -17,6 +20,10 @@ async def generate_video(
 ) -> GenerateResponse:
     job = await job_queue.create_job(request, user_id=current_user["id"])
     background_tasks.add_task(job_queue.run_generation, job.job_id)
+    logger.info(
+        "Generation request accepted: job %s, topic %r, subject %s, class %s",
+        job.job_id, request.topic, request.subject or "auto", request.class_level or "auto",
+    )
     return GenerateResponse(
         job_id=job.job_id,
         status=job.status,
@@ -44,11 +51,13 @@ async def get_generation_status(job_id: str, current_user: dict = Depends(get_cu
 async def generation_websocket(websocket: WebSocket, job_id: str) -> None:
     token = websocket.query_params.get("token")
     if not token:
+        logger.warning("WebSocket for job %s rejected: no token", job_id)
         await websocket.close(code=1008)
         return
     try:
         current_user = await get_user_from_token(token)
     except HTTPException:
+        logger.warning("WebSocket for job %s rejected: invalid token", job_id)
         await websocket.close(code=1008)
         return
 
@@ -56,6 +65,7 @@ async def generation_websocket(websocket: WebSocket, job_id: str) -> None:
     record = None if job else await database.get_video_record(job_id)
     owner_id = job.user_id if job else record.get("user_id") if record else None
     if owner_id != current_user["id"]:
+        logger.warning("WebSocket for job %s rejected: not found or not the owner", job_id)
         await websocket.close(code=1008)
         return
 

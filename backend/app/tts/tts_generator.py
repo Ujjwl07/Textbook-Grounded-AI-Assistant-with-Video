@@ -11,9 +11,11 @@ The final shift matters: Edge-TTS timestamps are relative to the *untrimmed*
 audio, so without it the karaoke subtitles drift ahead by the lead-in length.
 """
 
+import asyncio
 import logging
 
 import edge_tts
+from edge_tts.exceptions import NoAudioReceived
 
 from app.core.config import get_settings
 from app.tts.audio_processor import process_audio_file, shift_word_boundaries
@@ -21,6 +23,12 @@ from app.tts.text_preprocessor import preprocess
 from app.tts.tts_config import VOICE_MAP, get_voice_config
 
 logger = logging.getLogger(__name__)
+
+# The Edge speech service sometimes closes a request without sending audio
+# (NoAudioReceived) for text it synthesises fine a moment later. One such
+# blip used to abort the whole video, so each scene is retried.
+SYNTHESIS_ATTEMPTS = 4
+RETRY_BASE_DELAY_SECONDS = 1.0
 
 
 class TTSGenerator:
@@ -35,16 +43,11 @@ class TTSGenerator:
         config = get_voice_config(subject)
         return preprocess(text, subject, emphasis_words=config.get("emphasis_words"))
 
-    async def generate_scene_audio(self, text: str, subject: str, output_path: str) -> dict:
-        subject_key = (subject or "physics").lower()
-        if subject_key not in VOICE_MAP:
-            subject_key = "physics"
-
-        config = get_voice_config(subject_key)
-        text_processed = self._preprocess_for_tts(text, subject_key)
-
+    @staticmethod
+    async def _synthesize(text: str, config: dict, output_path: str) -> list:
+        """One Edge-TTS request; returns the word boundaries, audio in ``output_path``."""
         communicate = edge_tts.Communicate(
-            text=text_processed,
+            text=text,
             voice=config["voice"],
             rate=config["rate"],
             pitch=config["pitch"],
@@ -52,14 +55,12 @@ class TTSGenerator:
         )
 
         word_boundaries = []
-
         with open(output_path, "wb") as audio_file:
             async for chunk in communicate.stream():
                 if chunk["type"] == "audio":
                     audio_file.write(chunk["data"])
                 elif chunk["type"] == "WordBoundary":
                     # Offset and duration are in 100-nanosecond units (ticks).
-                    # Convert to seconds (1 tick = 10^-7 seconds).
                     start_sec = chunk["offset"] * 1e-7
                     duration_sec = chunk["duration"] * 1e-7
                     word_boundaries.append({
@@ -68,6 +69,32 @@ class TTSGenerator:
                         "end": start_sec + duration_sec,
                         "duration": duration_sec,
                     })
+        return word_boundaries
+
+    async def generate_scene_audio(self, text: str, subject: str, output_path: str) -> dict:
+        subject_key = (subject or "physics").lower()
+        if subject_key not in VOICE_MAP:
+            subject_key = "physics"
+
+        config = get_voice_config(subject_key)
+        text_processed = self._preprocess_for_tts(text, subject_key)
+
+        word_boundaries = []
+        for attempt in range(1, SYNTHESIS_ATTEMPTS + 1):
+            try:
+                word_boundaries = await self._synthesize(
+                    text_processed, config, output_path
+                )
+                break
+            except NoAudioReceived:
+                if attempt == SYNTHESIS_ATTEMPTS:
+                    raise
+                delay = RETRY_BASE_DELAY_SECONDS * 2 ** (attempt - 1)
+                logger.warning(
+                    "Edge-TTS returned no audio (attempt %s/%s), retrying in %.1fs",
+                    attempt, SYNTHESIS_ATTEMPTS, delay,
+                )
+                await asyncio.sleep(delay)
 
         audio_metrics = {"applied": False, "leading_trim_seconds": 0.0}
         if self.postprocess:

@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -16,6 +17,29 @@ async def lifespan(app: FastAPI):
 
 
 settings = get_settings()
+
+
+def _configure_app_logging() -> None:
+    """Show INFO from the app's own modules in the server console.
+
+    Nothing configures the root logger, so every ``logger.info`` under ``app.*``
+    was dropped and the console showed only uvicorn's access lines. This gives
+    just the ``app`` namespace a handler; third-party libraries stay at their
+    default (WARNING) so their chatter does not bury the job's progress.
+    """
+    app_logger = logging.getLogger("app")
+    if app_logger.handlers:
+        return
+    handler = logging.StreamHandler()
+    handler.setFormatter(
+        logging.Formatter("%(asctime)s | %(levelname)-8s | %(name)s - %(message)s")
+    )
+    app_logger.addHandler(handler)
+    app_logger.setLevel(logging.INFO)
+    app_logger.propagate = False
+
+
+_configure_app_logging()
 
 app = FastAPI(
     title=settings.app_name,

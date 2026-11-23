@@ -1,7 +1,10 @@
+import logging
 from collections import defaultdict
 from typing import Dict, Set
 
 from fastapi import WebSocket
+
+logger = logging.getLogger(__name__)
 
 
 class WebSocketManager:
@@ -11,12 +14,19 @@ class WebSocketManager:
     async def connect(self, job_id: str, websocket: WebSocket) -> None:
         await websocket.accept()
         self._connections[job_id].add(websocket)
+        logger.info(
+            "WebSocket opened for job %s (%s listener(s))",
+            job_id, len(self._connections[job_id]),
+        )
 
     def disconnect(self, job_id: str, websocket: WebSocket) -> None:
         sockets = self._connections.get(job_id)
         if not sockets:
             return
         sockets.discard(websocket)
+        logger.info(
+            "WebSocket closed for job %s (%s listener(s) left)", job_id, len(sockets)
+        )
         if not sockets:
             self._connections.pop(job_id, None)
 

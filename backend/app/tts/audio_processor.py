@@ -20,6 +20,7 @@ whole generation job.
 
 import logging
 import os
+import shutil
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +36,16 @@ try:
         _FFMPEG = imageio_ffmpeg.get_ffmpeg_exe()
         AudioSegment.converter = _FFMPEG
         AudioSegment.ffmpeg = _FFMPEG
+
+        # imageio-ffmpeg ships ffmpeg but not ffprobe. pydub shells out to
+        # ffprobe for stream metadata before decoding, so on a machine without
+        # a system ffprobe every clip failed with "[WinError 2]" and went out
+        # unprocessed. The decode itself only needs ffmpeg, and pydub handles
+        # an empty probe result, so skip the probe.
+        if shutil.which("ffprobe") is None:
+            import pydub.audio_segment as _pydub_segment
+
+            _pydub_segment.mediainfo_json = lambda *args, **kwargs: {}
     except Exception:  # pragma: no cover - falls back to a system ffmpeg
         _FFMPEG = None
 
