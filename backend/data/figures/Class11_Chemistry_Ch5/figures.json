@@ -1,0 +1,91 @@
+{
+  "meta": {
+    "pdf_name": "Class11_Chemistry_Ch5",
+    "chapter_name": "Thermodynamics",
+    "chapter_number": 5,
+    "subject": "Chemistry",
+    "class_level": "11"
+  },
+  "figures": [
+    {
+      "label": "5.2",
+      "caption": "Fig. 5.2 Open, closed and isolated systems.",
+      "page": 2,
+      "path": "fig_5_2_p02_x449.png",
+      "width": 206,
+      "height": 244
+    },
+    {
+      "label": "5.2",
+      "caption": "Fig. 5.2 Open, closed and isolated systems.",
+      "page": 2,
+      "path": "fig_5_2_p02_x8290.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "5.2",
+      "caption": "Fig. 5.2 Open, closed and isolated systems.",
+      "page": 2,
+      "path": "fig_5_2_p02_x8866.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "5.5",
+      "caption": "Fig. 5.5 (a) Work done on an ideal gas in a",
+      "page": 5,
+      "path": "fig_5_5_p05_x8245.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "5.5",
+      "caption": "Fig. 5.5 (a) Work done on an ideal gas in a",
+      "page": 5,
+      "path": "fig_5_5_p05_x8821.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "5.5",
+      "caption": "Fig. 5.5 (c) pV-plot when pressure is not constant",
+      "page": 6,
+      "path": "fig_5_5_p06_x8216.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "5.5",
+      "caption": "Fig. 5.5 (c) pV-plot when pressure is not constant",
+      "page": 6,
+      "path": "fig_5_5_p06_x8791.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "5.8",
+      "caption": "Fig. 5.8 Calorimeter for measuring heat changes at constant pressure (atmospheric pressure).",
+      "page": 11,
+      "path": "fig_5_8_p11_x1877.png",
+      "width": 145,
+      "height": 255
+    },
+    {
+      "label": "5.9",
+      "caption": "5. Na (g) Cl (g) Na Cl (s) + − + − + → The sequence of steps is shown in Fig. 5.9, and is known as a Born-Haber",
+      "page": 20,
+      "path": "fig_5_9_p20_x7978.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "5.9",
+      "caption": "5. Na (g) Cl (g) Na Cl (s) + − + − + → The sequence of steps is shown in Fig. 5.9, and is known as a Born-Haber",
+      "page": 20,
+      "path": "fig_5_9_p20_x8551.png",
+      "width": 465,
+      "height": 465
+    }
+  ]
+}

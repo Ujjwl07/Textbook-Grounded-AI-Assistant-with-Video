@@ -1,0 +1,51 @@
+{
+  "meta": {
+    "pdf_name": "Class11_Biology_Ch17",
+    "chapter_name": "Locomotion and Movement",
+    "chapter_number": 17,
+    "subject": "Biology",
+    "class_level": "11"
+  },
+  "figures": [
+    {
+      "label": "17.2",
+      "caption": "Figure 17.2 Diagrammatic representation of (a) anatomy of a muscle fibre showing",
+      "page": 4,
+      "path": "fig_17_2_p04_x7.png",
+      "width": 385,
+      "height": 325
+    },
+    {
+      "label": "17.2",
+      "caption": "Figure 17.2 Diagrammatic representation of (a) anatomy of a muscle fibre showing",
+      "page": 4,
+      "path": "fig_17_2_p04_x1018.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "17.8",
+      "caption": "Figure 17.8 Ribs and rib cage",
+      "page": 9,
+      "path": "fig_17_8_p09_x529.png",
+      "width": 247,
+      "height": 221
+    },
+    {
+      "label": "17.8",
+      "caption": "Figure 17.8 Ribs and rib cage",
+      "page": 9,
+      "path": "fig_17_8_p09_x928.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "17.10",
+      "caption": "Joints are essential for all types of movements involving the bony parts of the body. Locomotory movements are no exception to Figure 17.10 Right pelvic girdle and lower limb",
+      "page": 10,
+      "path": "fig_17_10_p10_x910.png",
+      "width": 465,
+      "height": 465
+    }
+  ]
+}

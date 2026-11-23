@@ -1,0 +1,67 @@
+{
+  "meta": {
+    "pdf_name": "Class12_Chemistry_Ch2",
+    "chapter_name": "Electrochemistry",
+    "chapter_number": 2,
+    "subject": "Chemistry",
+    "class_level": "12"
+  },
+  "figures": [
+    {
+      "label": "2.3",
+      "caption": "Fig. 2.3: Standard Hydrogen Electrode (SHE).",
+      "page": 4,
+      "path": "fig_2_3_p04_x1790.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "2.1",
+      "caption": "If the circuit in Daniell cell (Fig. 2.1) is closed then we note that the reaction",
+      "page": 9,
+      "path": "fig_2_1_p09_x748.png",
+      "width": 443,
+      "height": 158
+    },
+    {
+      "label": "2.7",
+      "caption": "Fig. 2.7: Variation of Lm against c½.",
+      "page": 18,
+      "path": "fig_2_7_p18_x1538.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "2.8",
+      "caption": "Fig. 2.8: A commercial dry cell",
+      "page": 24,
+      "path": "fig_2_8_p24_x1430.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "2.10",
+      "caption": "Fig. 2.10: The Lead storage battery.",
+      "page": 25,
+      "path": "fig_2_10_p25_x585.png",
+      "width": 235,
+      "height": 195
+    },
+    {
+      "label": "2.10",
+      "caption": "A secondary cell after use can be recharged by passing current through it in the opposite direction so that it can be used again. A good secondary cell can undergo a large number of discharging and charging cycles. The most important secondary cell is the lead storage battery (Fig. 2.10) commonly used in automobiles and invertors. It consists of a lead anode and a grid of lead packed with lead dioxide (PbO2 ) as cathode. A 38% solution of sulphuric acid is used as an electrolyte.",
+      "page": 25,
+      "path": "fig_2_10_p25_x586.png",
+      "width": 154,
+      "height": 124
+    },
+    {
+      "label": "2.10",
+      "caption": "Fig. 2.10: The Lead storage battery.",
+      "page": 25,
+      "path": "fig_2_10_p25_x1412.png",
+      "width": 465,
+      "height": 465
+    }
+  ]
+}

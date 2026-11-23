@@ -1,0 +1,131 @@
+{
+  "meta": {
+    "pdf_name": "Class11_Biology_Ch5",
+    "chapter_name": "Morphology of Flowering Plants",
+    "chapter_number": 5,
+    "subject": "Biology",
+    "class_level": "11"
+  },
+  "figures": [
+    {
+      "label": "5.2",
+      "caption": "Figure 5.2 Different types of roots : (a) Tap (b) Fibrous (c) Adventitious",
+      "page": 4,
+      "path": "fig_5_2_p04_x14.png",
+      "width": 204,
+      "height": 153
+    },
+    {
+      "label": "5.2",
+      "caption": "Figure 5.2 Different types of roots : (a) Tap (b) Fibrous (c) Adventitious",
+      "page": 4,
+      "path": "fig_5_2_p04_x402.png",
+      "width": 464,
+      "height": 464
+    },
+    {
+      "label": "5.5",
+      "caption": "Figure 5.5 Compound leaves : (a) pinnately compound leaf (b) palmately compound leaf",
+      "page": 6,
+      "path": "fig_5_5_p06_x21.png",
+      "width": 126,
+      "height": 165
+    },
+    {
+      "label": "5.4",
+      "caption": "Figure 5.4 Structure of a leaf : (a) Parts of a leaf (b) Reticulate venation (c) Parallel venation",
+      "page": 6,
+      "path": "fig_5_4_p06_x24.png",
+      "width": 115,
+      "height": 153
+    },
+    {
+      "label": "5.5",
+      "caption": "Figure 5.5 Compound leaves : (a) pinnately compound leaf (b) palmately compound leaf",
+      "page": 6,
+      "path": "fig_5_5_p06_x366.png",
+      "width": 464,
+      "height": 464
+    },
+    {
+      "label": "5.7",
+      "caption": "In cymose type of inflorescence the main axis terminates in a flower, hence is limited in growth.The flowers are borne in a basipetal order (Figure 5.7).",
+      "page": 7,
+      "path": "fig_5_7_p07_x31.png",
+      "width": 198,
+      "height": 240
+    },
+    {
+      "label": "5.7",
+      "caption": "In cymose type of inflorescence the main axis terminates in a flower, hence is limited in growth.The flowers are borne in a basipetal order (Figure 5.7).",
+      "page": 7,
+      "path": "fig_5_7_p07_x348.png",
+      "width": 464,
+      "height": 464
+    },
+    {
+      "label": "5.9",
+      "caption": "Figure 5.9 Position of floral parts on thalamus : (a) Hypogynous (b) and (c) Perigynous (d) Epigynous",
+      "page": 8,
+      "path": "fig_5_9_p08_x34.png",
+      "width": 432,
+      "height": 153
+    },
+    {
+      "label": "5.9",
+      "caption": "Figure 5.9 Position of floral parts on thalamus : (a) Hypogynous (b) and (c) Perigynous (d) Epigynous",
+      "page": 8,
+      "path": "fig_5_9_p08_x330.png",
+      "width": 464,
+      "height": 464
+    },
+    {
+      "label": "5.10",
+      "caption": "Figure 5.10 Parts of a flower",
+      "page": 9,
+      "path": "fig_5_10_p09_x312.png",
+      "width": 464,
+      "height": 464
+    },
+    {
+      "label": "5.11",
+      "caption": "Figure 5.11 Types of aestivation in corolla : (a) Valvate (b) Twisted (c) Imbricate (d) Vexillary",
+      "page": 10,
+      "path": "fig_5_11_p10_x40.png",
+      "width": 321,
+      "height": 174
+    },
+    {
+      "label": "5.13",
+      "caption": "In mango and coconut, the fruit is known as a drupe (Figure 5.13). They develop from monocarpellary superior ovaries and are one seeded. In mango the pericarp is well differentiated into an",
+      "page": 11,
+      "path": "fig_5_13_p11_x276.png",
+      "width": 464,
+      "height": 464
+    },
+    {
+      "label": "5.13",
+      "caption": "Figure 5.13 Parts of a fruit : (a) Mango (b) Coconut",
+      "page": 12,
+      "path": "fig_5_13_p12_x52.png",
+      "width": 144,
+      "height": 116
+    },
+    {
+      "label": "5.16",
+      "caption": "for female, for bisexual plants, ⊕ for actinomorphic Figure 5.16 Floral diagram with",
+      "page": 13,
+      "path": "fig_5_16_p13_x240.png",
+      "width": 464,
+      "height": 464
+    },
+    {
+      "label": "5.17",
+      "caption": "Figure 5.17 Solanum nigrum (makoi) plant : (a) Flowering twig (b) Flower",
+      "page": 14,
+      "path": "fig_5_17_p14_x222.png",
+      "width": 464,
+      "height": 464
+    }
+  ]
+}

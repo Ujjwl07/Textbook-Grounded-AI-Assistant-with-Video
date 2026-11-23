@@ -1,0 +1,99 @@
+{
+  "meta": {
+    "pdf_name": "Class12_Biology_Ch8",
+    "chapter_name": "Microbes in Human Welfare",
+    "chapter_number": 8,
+    "subject": "Biology",
+    "class_level": "12"
+  },
+  "figures": [
+    {
+      "label": "8.3",
+      "caption": "Microbes like bacteria and many fungi can be grown on nutritive media to form colonies (Figure 8.3), that can be seen with the naked eyes. Such cultures are useful in studies on micro-organisms.",
+      "page": 1,
+      "path": "fig_8_3_p01_x493.png",
+      "width": 464,
+      "height": 464
+    },
+    {
+      "label": "8.1",
+      "caption": "(c) Figure 8.1 Bacteria: (a) Rod-shaped, magnified 1500X; (b) Spherical shaped, magnified1500X; (c) A rod- shaped bacterium showing flagella, magnified 50,000X",
+      "page": 2,
+      "path": "fig_8_1_p02_x86.png",
+      "width": 179,
+      "height": 111
+    },
+    {
+      "label": "8.3",
+      "caption": "Figure 8.3 (a) Colonies of bacteria growing in a petri dish; (b) Fungal colony growing in a petri dish",
+      "page": 2,
+      "path": "fig_8_3_p02_x475.png",
+      "width": 464,
+      "height": 464
+    },
+    {
+      "label": "8.4",
+      "caption": "Even in industry, microbes are used to synthesise a number of products valuable to human beings. Beverages and antibiotics are some examples. Production on an industrial scale, requires growing microbes in very large vessels called fermentors (Figure 8.4).",
+      "page": 3,
+      "path": "fig_8_4_p03_x457.png",
+      "width": 464,
+      "height": 464
+    },
+    {
+      "label": "8.5",
+      "caption": "Figure 8.5 Fermentation Plant",
+      "page": 4,
+      "path": "fig_8_5_p04_x127.png",
+      "width": 205,
+      "height": 171
+    },
+    {
+      "label": "8.4",
+      "caption": "Figure 8.4 Fermentors",
+      "page": 4,
+      "path": "fig_8_4_p04_x128.png",
+      "width": 216,
+      "height": 165
+    },
+    {
+      "label": "8.6",
+      "caption": "Figure 8.6 Secondary treatment",
+      "page": 6,
+      "path": "fig_8_6_p06_x133.png",
+      "width": 238,
+      "height": 176
+    },
+    {
+      "label": "8.7",
+      "caption": "The effluent from the secondary treatment plant is generally released into natural water bodies like rivers and streams. An aerial view of such a plant is shown in Figure 8.7.",
+      "page": 6,
+      "path": "fig_8_7_p06_x403.png",
+      "width": 464,
+      "height": 464
+    },
+    {
+      "label": "8.7",
+      "caption": "Figure 8.7 An aerial view of a sewage plant",
+      "page": 7,
+      "path": "fig_8_7_p07_x136.png",
+      "width": 214,
+      "height": 136
+    },
+    {
+      "label": "8.8",
+      "caption": "Figure 8.8 A typical biogas plant",
+      "page": 8,
+      "path": "fig_8_8_p08_x144.png",
+      "width": 282,
+      "height": 137
+    },
+    {
+      "label": "8.8",
+      "caption": "Figure 8.8 A typical biogas plant",
+      "page": 8,
+      "path": "fig_8_8_p08_x153.png",
+      "width": 239,
+      "height": 145
+    }
+  ]
+}

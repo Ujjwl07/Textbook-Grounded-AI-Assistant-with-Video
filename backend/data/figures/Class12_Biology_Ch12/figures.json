@@ -1,0 +1,35 @@
+{
+  "meta": {
+    "pdf_name": "Class12_Biology_Ch12",
+    "chapter_name": "Ecosystem",
+    "chapter_number": 12,
+    "subject": "Biology",
+    "class_level": "12"
+  },
+  "figures": [
+    {
+      "label": "12.1",
+      "caption": "It is important to note that all the above steps in decomposition operate simultaneously on the detritus (Figure 12.1). Humification and mineralisation occur during decomposition in the soil. Humification leads",
+      "page": 3,
+      "path": "fig_12_1_p03_x314.png",
+      "width": 463,
+      "height": 463
+    },
+    {
+      "label": "12.2",
+      "caption": "Figure 12.2 Diagrammatic representation of trophic levels in an ecosystem",
+      "page": 6,
+      "path": "fig_12_2_p06_x260.png",
+      "width": 463,
+      "height": 463
+    },
+    {
+      "label": "12.4",
+      "caption": "Figure 12.4 (c) Inverted pyramid of biomass-small standing crop of phytoplankton supports large",
+      "page": 8,
+      "path": "fig_12_4_p08_x224.png",
+      "width": 463,
+      "height": 463
+    }
+  ]
+}

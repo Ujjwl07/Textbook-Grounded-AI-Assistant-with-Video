@@ -1,0 +1,27 @@
+{
+  "meta": {
+    "pdf_name": "Class11_Chemistry_Ch8",
+    "chapter_name": "Organic Chemistry - Some Basic Principles and Techniques",
+    "chapter_number": 8,
+    "subject": "Chemistry",
+    "class_level": "11"
+  },
+  "figures": [
+    {
+      "label": "8.2",
+      "caption": "Fig. 8.2",
+      "page": 5,
+      "path": "fig_8_2_p05_x2056.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "8.13",
+      "caption": "Fig.8.13 Paper chromatography. Chromatography paper in two different shapes.",
+      "page": 29,
+      "path": "fig_8_13_p29_x1624.png",
+      "width": 465,
+      "height": 465
+    }
+  ]
+}

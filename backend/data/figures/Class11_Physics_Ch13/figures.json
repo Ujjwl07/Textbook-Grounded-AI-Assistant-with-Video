@@ -1,0 +1,59 @@
+{
+  "meta": {
+    "pdf_name": "Class11_Physics_Ch13",
+    "chapter_name": "Oscillations",
+    "chapter_number": 13,
+    "subject": "Physics",
+    "class_level": "11"
+  },
+  "figures": [
+    {
+      "label": "13.1",
+      "caption": "Fig. 13.1 Examples of periodic motion. The period T",
+      "page": 2,
+      "path": "fig_13_1_p02_x518.png",
+      "width": 463,
+      "height": 463
+    },
+    {
+      "label": "13.7",
+      "caption": "Fig. 13.7 (b) A plot obtained from Eq. (13.4). The",
+      "page": 5,
+      "path": "fig_13_7_p05_x473.png",
+      "width": 463,
+      "height": 463
+    },
+    {
+      "label": "13.11",
+      "caption": "Fig. 13.11 The velocity, v (t), of the particle P′ is the projection of the velocity v of the reference particle, P.",
+      "page": 8,
+      "path": "fig_13_11_p08_x428.png",
+      "width": 463,
+      "height": 463
+    },
+    {
+      "label": "18.18",
+      "caption": "Fig. 18.18",
+      "page": 16,
+      "path": "fig_18_18_p16_x308.png",
+      "width": 463,
+      "height": 463
+    },
+    {
+      "label": "13.19",
+      "caption": "Fig. 13.19",
+      "page": 17,
+      "path": "fig_13_19_p17_x293.png",
+      "width": 463,
+      "height": 463
+    },
+    {
+      "label": "13.21",
+      "caption": "Fig. 13.21 (a) What is the maximum extension of the spring in the two cases ? (b) If the mass in Fig. (a) and the two masses in Fig. (b) are released, what is the period of oscillation in each case ?",
+      "page": 18,
+      "path": "fig_13_21_p18_x278.png",
+      "width": 463,
+      "height": 463
+    }
+  ]
+}

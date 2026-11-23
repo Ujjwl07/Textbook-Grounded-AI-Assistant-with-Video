@@ -1,0 +1,27 @@
+{
+  "meta": {
+    "pdf_name": "Class12_Chemistry_Ch7",
+    "chapter_name": "Alcohols, Phenols and Ethers",
+    "chapter_number": 7,
+    "subject": "Chemistry",
+    "class_level": "12"
+  },
+  "figures": [
+    {
+      "label": "7.1",
+      "caption": "3 hybridised orbital of oxygen. Fig. 7.1 depicts structural aspects of methanol, phenol and methoxymethane.",
+      "page": 6,
+      "path": "fig_7_1_p06_x691.png",
+      "width": 473,
+      "height": 170
+    },
+    {
+      "label": "7.1",
+      "caption": "Fig. 7.1: Structures of methanol, phenol and methoxymethane",
+      "page": 6,
+      "path": "fig_7_1_p06_x1630.png",
+      "width": 466,
+      "height": 466
+    }
+  ]
+}

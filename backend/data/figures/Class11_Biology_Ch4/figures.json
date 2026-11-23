@@ -1,0 +1,131 @@
+{
+  "meta": {
+    "pdf_name": "Class11_Biology_Ch4",
+    "chapter_name": "Animal Kingdom",
+    "chapter_number": 4,
+    "subject": "Biology",
+    "class_level": "11"
+  },
+  "figures": [
+    {
+      "label": "4.4",
+      "caption": "The broad classification of Animalia based on common fundamental features as mentioned in the preceding sections is given in Figure 4.4.",
+      "page": 3,
+      "path": "fig_4_4_p03_x17107.png",
+      "width": 466,
+      "height": 466
+    },
+    {
+      "label": "4.4",
+      "caption": "Figure 4.4 Broad classification of Kingdom Animalia based on common fundamental features",
+      "page": 4,
+      "path": "fig_4_4_p04_x1938.png",
+      "width": 453,
+      "height": 231
+    },
+    {
+      "label": "4.5",
+      "caption": "Figure 4.5 Examples of Porifera : (a) Sycon (b) Euspongia (c) Spongilla",
+      "page": 4,
+      "path": "fig_4_5_p04_x17092.png",
+      "width": 466,
+      "height": 466
+    },
+    {
+      "label": "4.9",
+      "caption": "Figure 4.9 Examples of Platyhelminthes : (a) Tape worm (b) Liver fluke",
+      "page": 6,
+      "path": "fig_4_9_p06_x17050.png",
+      "width": 466,
+      "height": 466
+    },
+    {
+      "label": "4.11",
+      "caption": "Figure 4.11 Examples of Annelida : (a) Nereis",
+      "page": 7,
+      "path": "fig_4_11_p07_x17035.png",
+      "width": 466,
+      "height": 466
+    },
+    {
+      "label": "4.13",
+      "caption": "Figure 4.13 Examples of Mollusca :",
+      "page": 8,
+      "path": "fig_4_13_p08_x17020.png",
+      "width": 466,
+      "height": 466
+    },
+    {
+      "label": "4.15",
+      "caption": "Figure 4.15 Balanoglossus",
+      "page": 9,
+      "path": "fig_4_15_p09_x17005.png",
+      "width": 466,
+      "height": 466
+    },
+    {
+      "label": "4.19",
+      "caption": "Figure 4.19 Example of Cartilaginous fishes :",
+      "page": 11,
+      "path": "fig_4_19_p11_x16960.png",
+      "width": 466,
+      "height": 466
+    },
+    {
+      "label": "4.21",
+      "caption": "Figure 4.21 Examples of Amphibia :",
+      "page": 12,
+      "path": "fig_4_21_p12_x16945.png",
+      "width": 466,
+      "height": 466
+    },
+    {
+      "label": "4.22",
+      "caption": "Figure 4.22 Reptiles: (a) Chameleon (b) Crocodilus (c) Chelone (d) Naja",
+      "page": 13,
+      "path": "fig_4_22_p13_x12425.png",
+      "width": 118,
+      "height": 126
+    },
+    {
+      "label": "4.22",
+      "caption": "Figure 4.22 Reptiles: (a) Chameleon (b) Crocodilus (c) Chelone (d) Naja",
+      "page": 13,
+      "path": "fig_4_22_p13_x12426.png",
+      "width": 120,
+      "height": 156
+    },
+    {
+      "label": "4.22",
+      "caption": "Figure 4.22 Reptiles: (a) Chameleon (b) Crocodilus (c) Chelone (d) Naja",
+      "page": 13,
+      "path": "fig_4_22_p13_x12427.png",
+      "width": 113,
+      "height": 126
+    },
+    {
+      "label": "4.23",
+      "caption": "Figure 4.23 Some birds : (a) Neophron (b) Struthio (c) Psittacula (d) Pavo",
+      "page": 14,
+      "path": "fig_4_23_p14_x12808.png",
+      "width": 212,
+      "height": 160
+    },
+    {
+      "label": "4.23",
+      "caption": "Figure 4.23 Some birds : (a) Neophron (b) Struthio (c) Psittacula (d) Pavo",
+      "page": 14,
+      "path": "fig_4_23_p14_x12809.png",
+      "width": 140,
+      "height": 190
+    },
+    {
+      "label": "4.24",
+      "caption": "Figure 4.24 Some mammals : (a) Ornithorhynchus (b) Macropus (c) Pteropus (d) Balaenoptera",
+      "page": 14,
+      "path": "fig_4_24_p14_x16915.png",
+      "width": 466,
+      "height": 466
+    }
+  ]
+}

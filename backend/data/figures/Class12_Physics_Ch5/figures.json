@@ -1,0 +1,43 @@
+{
+  "meta": {
+    "pdf_name": "Class12_Physics_Ch5",
+    "chapter_name": "Magnetism and Matter",
+    "chapter_number": 5,
+    "subject": "Physics",
+    "class_level": "12"
+  },
+  "figures": [
+    {
+      "label": "5.1",
+      "caption": "FIGURE FIGURE FIGURE FIGURE FIGURE 5.1 5.1 5.1 5.1 5.1 The arrangement of iron filings surrounding a bar",
+      "page": 2,
+      "path": "fig_5_1_p02_x12.png",
+      "width": 156,
+      "height": 216
+    },
+    {
+      "label": "5.3",
+      "caption": "FIGURE 5.3 Calculation of (a) The axial field of a",
+      "page": 3,
+      "path": "fig_5_3_p03_x29.png",
+      "width": 243,
+      "height": 247
+    },
+    {
+      "label": "5.6",
+      "caption": "FIGURE 5.6",
+      "page": 8,
+      "path": "fig_5_6_p08_x568.png",
+      "width": 469,
+      "height": 469
+    },
+    {
+      "label": "5.7",
+      "caption": "Figure 5.7(a) shows a bar of diamagnetic material placed in an external magnetic field. The field lines are repelled or expelled and the field inside the material is reduced. In most cases, this reduction is slight, being one part in 105. When placed in a non-uniform magnetic field, the bar will tend to move from high to low field.",
+      "page": 12,
+      "path": "fig_5_7_p12_x484.png",
+      "width": 469,
+      "height": 469
+    }
+  ]
+}

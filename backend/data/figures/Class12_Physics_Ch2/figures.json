@@ -1,0 +1,83 @@
+{
+  "meta": {
+    "pdf_name": "Class12_Physics_Ch2",
+    "chapter_name": "Electrostatic Potential and Capacitance",
+    "chapter_number": 2,
+    "subject": "Physics",
+    "class_level": "12"
+  },
+  "figures": [
+    {
+      "label": "2.5",
+      "caption": "As we learnt in the last chapter, an electric dipole consists of two charges q and –q separated by a (small) distance 2a. Its total charge is zero. It is characterised by a dipole moment vector p whose magnitude is q × 2a and which points in the direction from –q to q (Fig. 2.5). We also saw that the electric field of a dipole at a point with position vector r depends not just on the magnitude r, but also on the angle between r and p. Further,",
+      "page": 5,
+      "path": "fig_2_5_p05_x1227.png",
+      "width": 468,
+      "height": 468
+    },
+    {
+      "label": "2.6",
+      "caption": "FIGURE 2.6 Potential at a point due to a system of charges is the sum of potentials",
+      "page": 7,
+      "path": "fig_2_6_p07_x1197.png",
+      "width": 468,
+      "height": 468
+    },
+    {
+      "label": "2.11",
+      "caption": "FIGURE 2.11 Some equipotential surfaces for (a) a dipole,",
+      "page": 10,
+      "path": "fig_2_11_p10_x1152.png",
+      "width": 468,
+      "height": 468
+    },
+    {
+      "label": "2.14",
+      "caption": "FIGURE 2.14 Potential energy of a system of three charges is given by",
+      "page": 12,
+      "path": "fig_2_14_p12_x1122.png",
+      "width": 468,
+      "height": 468
+    },
+    {
+      "label": "2.21",
+      "caption": "FIGURE 2.21 Some examples of polar",
+      "page": 21,
+      "path": "fig_2_21_p21_x987.png",
+      "width": 468,
+      "height": 468
+    },
+    {
+      "label": "2.24",
+      "caption": "FIGURE 2.24 A system of two conductors separated by an insulator forms a capacitor.",
+      "page": 23,
+      "path": "fig_2_24_p23_x957.png",
+      "width": 468,
+      "height": 468
+    },
+    {
+      "label": "2.25",
+      "caption": "FIGURE 2.25 The parallel plate capacitor.",
+      "page": 24,
+      "path": "fig_2_25_p24_x942.png",
+      "width": 468,
+      "height": 468
+    },
+    {
+      "label": "2.27",
+      "caption": "FIGURE 2.27 Combination of n",
+      "page": 27,
+      "path": "fig_2_27_p27_x897.png",
+      "width": 468,
+      "height": 468
+    },
+    {
+      "label": "2.28",
+      "caption": "FIGURE 2.28 Parallel combination of",
+      "page": 28,
+      "path": "fig_2_28_p28_x882.png",
+      "width": 468,
+      "height": 468
+    }
+  ]
+}

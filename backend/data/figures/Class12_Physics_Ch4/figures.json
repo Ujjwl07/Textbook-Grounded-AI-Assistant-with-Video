@@ -1,0 +1,75 @@
+{
+  "meta": {
+    "pdf_name": "Class12_Physics_Ch4",
+    "chapter_name": "Moving Charges and Magnetism",
+    "chapter_number": 4,
+    "subject": "Physics",
+    "class_level": "12"
+  },
+  "figures": [
+    {
+      "label": "4.6",
+      "caption": "FIGURE 4.6 Helical motion",
+      "page": 6,
+      "path": "fig_4_6_p06_x1409.png",
+      "width": 469,
+      "height": 469
+    },
+    {
+      "label": "4.8",
+      "caption": "FIGURE 4.8",
+      "page": 8,
+      "path": "fig_4_8_p08_x1379.png",
+      "width": 469,
+      "height": 469
+    },
+    {
+      "label": "4.10",
+      "caption": "FIGURE 4.10 The magnetic field lines for a current loop. The direction of the field is given by the right-hand thumb rule described in the text. The",
+      "page": 10,
+      "path": "fig_4_10_p10_x1349.png",
+      "width": 469,
+      "height": 469
+    },
+    {
+      "label": "4.13",
+      "caption": "FIGURE 4.13",
+      "page": 13,
+      "path": "fig_4_13_p13_x1304.png",
+      "width": 469,
+      "height": 469
+    },
+    {
+      "label": "4.16",
+      "caption": "FIGURE 4.16 The magnetic field of a very long solenoid. We consider a",
+      "page": 15,
+      "path": "fig_4_16_p15_x1247.png",
+      "width": 469,
+      "height": 469
+    },
+    {
+      "label": "4.17",
+      "caption": "FIGURE 4.17 Two long straight parallel conductors carrying steady currents Ia and Ib and separated by a",
+      "page": 16,
+      "path": "fig_4_17_p16_x1232.png",
+      "width": 469,
+      "height": 469
+    },
+    {
+      "label": "4.20",
+      "caption": "The galvanometer consists of a coil, with many turns, free to rotate about a fixed axis (Fig. 4.20), in a uniform radial magnetic field. There is a cylindrical soft iron core which not only makes the field radial but also increases the strength of the magnetic field. When a current flows through the coil, a torque acts on it. This torque is given by Eq. (4.20) to be",
+      "page": 23,
+      "path": "fig_4_20_p23_x1112.png",
+      "width": 469,
+      "height": 469
+    },
+    {
+      "label": "4.23",
+      "caption": "FIGURE 4.23",
+      "page": 25,
+      "path": "fig_4_23_p25_x1067.png",
+      "width": 469,
+      "height": 469
+    }
+  ]
+}

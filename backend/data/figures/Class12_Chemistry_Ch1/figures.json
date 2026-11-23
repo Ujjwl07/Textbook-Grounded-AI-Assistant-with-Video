@@ -1,0 +1,43 @@
+{
+  "meta": {
+    "pdf_name": "Class12_Chemistry_Ch1",
+    "chapter_name": "Solutions",
+    "chapter_number": 1,
+    "subject": "Chemistry",
+    "class_level": "12"
+  },
+  "figures": [
+    {
+      "label": "1.2",
+      "caption": "Fig. 1.2: Experimental results for",
+      "page": 7,
+      "path": "fig_1_2_p07_x1498.png",
+      "width": 465,
+      "height": 465
+    },
+    {
+      "label": "1.7",
+      "caption": "The vapour pressure of a liquid increases with increase of temperature. It boils at the temperature at which its vapour pressure is equal to the atmospheric pressure. For example, water boils at 373.15 K (100° C) because at this temperature the vapour pressure of water is 1.013 bar (1 atmosphere). We have also learnt in the last section that vapour pressure of the solvent decreases in the presence of non-volatile solute. Fig. 1.7 depicts the variation of vapour pressure of the pure solvent and solution as a function of temperature. For example, the vapour pressure of an aqueous solution of sucrose is less than 1.013 bar at 373.15 K. In order to make this solution boil, its vapour pressure must be increased to 1.013 bar by raising the temperature above the boiling temperature of the pure solvent (water). Thus, the boiling point of a solution is",
+      "page": 16,
+      "path": "fig_1_7_p16_x294.png",
+      "width": 476,
+      "height": 178
+    },
+    {
+      "label": "1.8",
+      "caption": "The lowering of vapour pressure of a solution causes a lowering of the freezing point compared to that of the pure solvent (Fig. 1.8). We know that at the freezing point of a substance, the solid phase is in dynamic",
+      "page": 18,
+      "path": "fig_1_8_p18_x654.png",
+      "width": 474,
+      "height": 301
+    },
+    {
+      "label": "1.9",
+      "caption": "Fig. 1.9 Level of solution rises in the thistle funnel due to osmosis of solvent.",
+      "page": 20,
+      "path": "fig_1_9_p20_x1264.png",
+      "width": 465,
+      "height": 465
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "meta": {
+    "pdf_name": "Class11_Biology_Ch11",
+    "chapter_name": "Photosynthesis in Higher Plants",
+    "chapter_number": 11,
+    "subject": "Biology",
+    "class_level": "11"
+  },
+  "figures": [
+    {
+      "label": "11.2",
+      "caption": "Figure 11.2 Diagrammatic representation of an electron micrograph of a section of",
+      "page": 6,
+      "path": "fig_11_2_p06_x458.png",
+      "width": 464,
+      "height": 464
+    },
+    {
+      "label": "11.7",
+      "caption": "Figure 11.7 ATP synthesis through chemiosmosis",
+      "page": 11,
+      "path": "fig_11_7_p11_x45.png",
+      "width": 379,
+      "height": 291
+    },
+    {
+      "label": "11.8",
+      "caption": "Figure 11.8 The Calvin cycle proceeds in three stages : (1) carboxylation, during which",
+      "page": 14,
+      "path": "fig_11_8_p14_x52.png",
+      "width": 339,
+      "height": 370
+    },
+    {
+      "label": "11.9",
+      "caption": "Figure 11.9 Diagrammatic representation of the Hatch and Slack Pathway",
+      "page": 16,
+      "path": "fig_11_9_p16_x57.png",
+      "width": 294,
+      "height": 366
+    },
+    {
+      "label": "11.9",
+      "caption": "Figure 11.9 Diagrammatic representation of the Hatch and Slack Pathway",
+      "page": 16,
+      "path": "fig_11_9_p16_x278.png",
+      "width": 464,
+      "height": 464
+    },
+    {
+      "label": "11.10",
+      "caption": "Figure 11.10 Graph of light intensity on the",
+      "page": 19,
+      "path": "fig_11_10_p19_x224.png",
+      "width": 464,
+      "height": 464
+    }
+  ]
+}
