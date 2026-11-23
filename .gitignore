@@ -47,3 +47,7 @@ outputs/
 Thumbs.db
 .vscode/
 *.swp
+# Raw NCERT textbook PDFs (large, kept locally)
+Dataset/
+backend/data/textbooks/*
+!backend/data/textbooks/.gitkeep
