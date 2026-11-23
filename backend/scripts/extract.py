@@ -2,6 +2,7 @@ import os
 os.environ.setdefault("PADDLE_PDX_ENABLE_MKLDNN_BYDEFAULT", "0")
 
 import argparse
+import json
 import fitz
 import pymupdf4llm
 import re
@@ -16,7 +17,10 @@ from qdrant_client.models import (
 )
 from dotenv import load_dotenv
 
-from ncert_chapters import lookup_chapter
+import sys
+# Works both as `python backend/scripts/extract.py` and as `from scripts.extract import ...`.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from ncert_chapters import lookup_chapter  # noqa: E402
 
 load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
@@ -39,6 +43,13 @@ PREVIOUS_TEXT_CHARS = 500
 POINT_NAMESPACE = uuid.UUID("6f1c2a9e-3b0d-4c55-9a43-1d2e7f8b0c11")
 
 SKIP_KEYWORDS = {"answer", "answers", "appendix", "appendices"}
+
+# NEET is a Class 11-12 syllabus; Class 9/10 books in the same dataset root outrank
+# the right book for NEET queries, so they are skipped unless --all-classes is given.
+NEET_CLASS_LEVELS = {"11", "12"}
+
+# Chapter diagrams (PNG + figures.json per PDF) read by app/rag/figures.py on main_dev.
+FIGURES_DIR = Path(__file__).resolve().parents[1] / "data" / "figures"
 _model: Optional[SentenceTransformer] = None
 
 
@@ -126,6 +137,133 @@ def parse_metadata_from_path(pdf_path: Path) -> dict:
         "chapter_name": chapter_name,
         "pdf_name": stem,
     }
+
+
+def extract_figures(pdf_path: Path, meta: dict, out_root: Path, min_side: int = 110) -> list:
+    """Save the embedded diagrams of a chapter PDF and label them by caption.
+
+    Chunks carry no page numbers, so a figure cannot be linked to a chunk by
+    position. It is linked by label instead: NCERT prose refers to its diagrams
+    explicitly ("as shown in Fig. 7.2"), so the caption under each image is read
+    and stored, and app.rag.figures resolves a label mentioned in retrieved text
+    back to the saved file.
+
+    Returns the manifest entries; writes PNGs plus figures.json under
+    ``out_root/<pdf_name>/``.
+    """
+    out_dir = out_root / meta["pdf_name"]
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    doc = fitz.open(str(pdf_path))
+    entries = []
+    seen_xrefs = set()
+
+    for page_index in range(len(doc)):
+        page = doc[page_index]
+        # Text blocks on this page, used to find the caption under an image.
+        blocks = [b for b in page.get_text("blocks") if len(b) >= 5 and str(b[4]).strip()]
+
+        for image in page.get_images(full=True):
+            xref = image[0]
+            if xref in seen_xrefs:
+                continue
+
+            try:
+                rects = page.get_image_rects(xref)
+            except Exception:
+                rects = []
+            if not rects:
+                continue
+            rect = rects[0]
+
+            # Skip rules, decorative borders and tiny icons.
+            if rect.width < min_side or rect.height < min_side:
+                continue
+
+            try:
+                pixmap = fitz.Pixmap(doc, xref)
+                # PNG takes only DeviceGray or DeviceRGB. Convert everything else —
+                # CMYK, and single-ink "Separation" images that report one channel
+                # like grey but still fail to save — dropping alpha first.
+                if pixmap.colorspace is None or pixmap.colorspace.name not in (fitz.csRGB.name, fitz.csGRAY.name):
+                    if pixmap.alpha:
+                        pixmap = fitz.Pixmap(pixmap, 0)
+                    pixmap = fitz.Pixmap(fitz.csRGB, pixmap)
+            except Exception as exc:
+                print(f"[figures] xref {xref} on page {page_index + 1}: {exc}")
+                continue
+
+            caption, label = _caption_for_rect(blocks, rect)
+            if not label:
+                # Unlabelled images are decoration far more often than content.
+                pixmap = None
+                continue
+
+            safe_label = re.sub(r"[^0-9a-zA-Z]+", "_", label)
+            filename = f"fig_{safe_label}_p{page_index + 1:02d}_x{xref}.png"
+            try:
+                pixmap.save(str(out_dir / filename))
+            except Exception as exc:
+                print(f"[figures] could not save {filename}: {exc}")
+                continue
+            finally:
+                pixmap = None
+
+            seen_xrefs.add(xref)
+            entries.append({
+                "label": label,
+                "caption": caption,
+                "page": page_index + 1,
+                "path": filename,
+                "width": int(rect.width),
+                "height": int(rect.height),
+            })
+
+    doc.close()
+
+    manifest = {
+        "meta": {
+            "pdf_name": meta["pdf_name"],
+            "chapter_name": meta["chapter_name"],
+            "chapter_number": meta["chapter_number"],
+            "subject": meta["subject"],
+            "class_level": meta["class_level"],
+        },
+        "figures": entries,
+    }
+    (out_dir / "figures.json").write_text(
+        json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
+    print(f"[figures] {len(entries)} labelled figure(s) -> {out_dir}")
+    return entries
+
+
+CAPTION_LABEL = re.compile(r"\bFig(?:ure)?\.?\s*(\d+\.\d+[a-z]?)", re.I)
+
+
+def _caption_for_rect(blocks, rect, max_gap: float = 90.0):
+    """Find the 'Fig. X.Y ...' caption belonging to an image rectangle.
+
+    NCERT captions sit directly below the figure, so the nearest text block that
+    starts with a figure label and begins within ``max_gap`` points of the
+    image's bottom edge wins.
+    """
+    best = (None, None, max_gap)
+    for block in blocks:
+        x0, y0, x1, y1, text = block[0], block[1], block[2], block[3], str(block[4])
+        match = CAPTION_LABEL.search(text)
+        if not match:
+            continue
+        gap = y0 - rect.y1
+        if gap < -20:            # caption above the image: unusual, allow a little
+            continue
+        # Require horizontal overlap with the image column.
+        if x1 < rect.x0 - 40 or x0 > rect.x1 + 40:
+            continue
+        if gap < best[2]:
+            caption = " ".join(text.split())
+            best = (caption, match.group(1), gap)
+    return best[0], best[1]
 
 
 def should_skip(pdf_path: Path) -> bool:
@@ -550,15 +688,27 @@ def build_chunks(pdf_path: Path, meta: dict) -> list[dict]:
     return chunk_markdown(text, meta)
 
 
-def process_pdf(pdf_path: Path, client: Optional[QdrantClient], force: bool = False, dry_run: bool = False):
+def process_pdf(pdf_path: Path, client: Optional[QdrantClient], force: bool = False, dry_run: bool = False,
+                all_classes: bool = False, with_figures: bool = True, figures_only: bool = False):
     if should_skip(pdf_path):
         print(f"[skip] {pdf_path.name} (answer/appendix)")
         return
     meta = parse_metadata_from_path(pdf_path)
+    if not all_classes and meta["class_level"] not in NEET_CLASS_LEVELS:
+        print(f"[skip] {pdf_path.name} (Class {meta['class_level'] or '?'} is outside the NEET syllabus; use --all-classes to include)")
+        return
+    if figures_only:
+        extract_figures(pdf_path, meta, FIGURES_DIR)
+        return
     if not dry_run and not force and is_already_ingested(meta["pdf_name"], client):
         print(f"[skip] Already in Qdrant: {pdf_path.name}")
         return
     print(f"\n[process] Class {meta['class_level']} | {meta['subject']} {meta['part']} | Ch.{meta['chapter_number']} {meta['chapter_name']}")
+    if with_figures and not dry_run:
+        try:
+            extract_figures(pdf_path, meta, FIGURES_DIR)
+        except Exception as exc:
+            print(f"[figures] extraction failed for {pdf_path.name}: {exc}")
     chunks = build_chunks(pdf_path, meta)
     if dry_run:
         sizes = [len(c["content"]) for c in chunks if c["chunk_type"] == "text"]
@@ -579,8 +729,13 @@ def main():
     parser.add_argument("input_path", help="Dataset root directory or single PDF file")
     parser.add_argument("--force", action="store_true", help="Replace PDFs that are already in Qdrant")
     parser.add_argument("--dry-run", action="store_true", help="Extract and chunk only; print stats, upload nothing")
+    parser.add_argument("--no-figures", action="store_true", help="Skip extracting diagrams from the PDFs")
+    parser.add_argument("--figures-only", action="store_true",
+                        help="Only (re)extract diagrams into backend/data/figures; no chunking or upload")
+    parser.add_argument("--all-classes", action="store_true",
+                        help="Also ingest Class 9/10 books (off-syllabus for NEET; excluded by default)")
     args = parser.parse_args()
-    client = None if args.dry_run else get_qdrant_client()
+    client = None if (args.dry_run or args.figures_only) else get_qdrant_client()
     if client:
         ensure_collection(client)
     input_path = Path(args.input_path)
@@ -595,7 +750,9 @@ def main():
     failed = []
     for pdf in pdf_files:
         try:
-            process_pdf(pdf, client, args.force, args.dry_run)
+            process_pdf(pdf, client, args.force, args.dry_run,
+                        all_classes=args.all_classes, with_figures=not args.no_figures,
+                        figures_only=args.figures_only)
         except Exception as exc:  # keep going; report at the end
             print(f"[error] {pdf.name}: {exc}")
             failed.append(pdf.name)
