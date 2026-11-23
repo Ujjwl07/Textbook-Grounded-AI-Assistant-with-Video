@@ -25,7 +25,7 @@ imageio-ffmpeg>=0.5.0     # bundles the ffmpeg binary used by moviepy and pydub
 requests>=2.31.0          # VMake.ai API client
 
 # --- TTS & audio (Pallika) ---
-edge-tts>=7.0.0
+edge-tts>=7.3.0          # older releases now get "403 Invalid response status" from the Edge speech service
 pydub>=0.25.1             # audio trimming / loudness normalisation
 gTTS>=2.5.0               # engine comparison baseline (multi_voice_test.py)
 # pyloudnorm>=0.1.1       # optional: enables true ITU-R BS.1770 LUFS metering
