@@ -78,6 +78,9 @@ export default function VideoPlayer() {
         <a href={videoUrl} target="_blank" rel="noreferrer" className="btn-secondary" style={{ textDecoration: 'none' }}>
           🔗 Open in New Tab
         </a>
+        <Link to={`/quiz/${jobId}`} className="btn-primary" style={{ textDecoration: 'none' }}>
+          📝 Take the Quiz
+        </Link>
         <Link to="/search" className="btn-secondary" style={{ textDecoration: 'none' }}>
           ← Generate Another
         </Link>

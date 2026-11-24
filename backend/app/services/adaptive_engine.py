@@ -16,6 +16,33 @@ class UserLearningProfile:
 class AdaptiveEngine:
     difficulty_map = {"EASY": -1.0, "MEDIUM": 0.0, "HARD": 1.5}
 
+    def normalise_difficulty(self, difficulty: Optional[str]) -> str:
+        """EASY / MEDIUM / HARD for any casing; anything unknown is MEDIUM.
+
+        Stored questions come from two generators, and an unrecognised value
+        used to raise a KeyError in the middle of a student's answer.
+        """
+        level = str(difficulty or "").strip().upper()
+        return level if level in self.difficulty_map else "MEDIUM"
+
+    def pick_next_question(self, profile: UserLearningProfile, candidates: List[dict]) -> Optional[dict]:
+        """The unanswered question closest to the student's current ability.
+
+        Under a one-parameter model a student is most informed by an item whose
+        difficulty sits at their ability: too easy tells us nothing, too hard
+        tells us nothing. Ties go to the easier item, so a new student (ability
+        0.0) starts on MEDIUM and a struggling one is not thrown a HARD.
+        """
+        if not candidates:
+            return None
+        return min(
+            candidates,
+            key=lambda q: (
+                abs(profile.ability - self.difficulty_map[self.normalise_difficulty(q.get("difficulty"))]),
+                self.difficulty_map[self.normalise_difficulty(q.get("difficulty"))],
+            ),
+        )
+
     def from_dict(self, payload: Optional[dict], user_id: str) -> UserLearningProfile:
         if not payload:
             return UserLearningProfile(user_id=user_id)
@@ -35,7 +62,7 @@ class AdaptiveEngine:
         is_correct: bool,
         question_id: str,
     ) -> UserLearningProfile:
-        item_difficulty = self.difficulty_map[difficulty]
+        item_difficulty = self.difficulty_map[self.normalise_difficulty(difficulty)]
         probability = 1 / (1 + math.exp(-(profile.ability - item_difficulty)))
         observed = 1.0 if is_correct else 0.0
         profile.ability += 0.3 * (observed - probability)

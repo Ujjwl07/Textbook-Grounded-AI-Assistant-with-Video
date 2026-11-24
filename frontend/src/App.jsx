@@ -4,7 +4,6 @@ import LandingPage from './pages/LandingPage'
 import TopicSearch from './pages/TopicSearch'
 import VideoGeneration from './pages/VideoGeneration'
 import VideoPlayer from './pages/VideoPlayer'
-import QuizSession from './pages/QuizSession'
 import QuizPage from './pages/QuizPage'
 import Dashboard from './pages/Dashboard'
 import AdminPanel from './pages/AdminPanel'
@@ -46,8 +45,8 @@ export default function App() {
           <Route path="/search" element={<ProtectedRoute><TopicSearch /></ProtectedRoute>} />
           <Route path="/generate/:jobId" element={<ProtectedRoute><VideoGeneration /></ProtectedRoute>} />
           <Route path="/watch/:jobId" element={<ProtectedRoute><VideoPlayer /></ProtectedRoute>} />
-          <Route path="/quiz/:videoId" element={<ProtectedRoute><QuizSession /></ProtectedRoute>} />
-          <Route path="/quiz" element={<QuizPage />} />
+          <Route path="/quiz/:jobId" element={<ProtectedRoute><QuizPage /></ProtectedRoute>} />
+          <Route path="/quiz" element={<ProtectedRoute><QuizPage /></ProtectedRoute>} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute adminOnly={true}><AdminPanel /></ProtectedRoute>} />
           <Route path="/login" element={<Login />} />
