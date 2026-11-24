@@ -1,103 +1,212 @@
-import React, { useState } from 'react'
-
-const DEMO_QUESTIONS = [
-  {
-    id: 1,
-    subject: 'Physics',
-    topic: "Newton's Laws of Motion",
-    question: 'A body of mass 5 kg is acted upon by two perpendicular forces 8 N and 6 N. The magnitude of the acceleration is:',
-    options: { A: '2.0 m/s²', B: '2.8 m/s²', C: '1.4 m/s²', D: '3.6 m/s²' },
-    correct: 'A',
-    explanation: 'Net force = √(8² + 6²) = √(100) = 10 N. Acceleration = F/m = 10/5 = 2.0 m/s².',
-  },
-  {
-    id: 2,
-    subject: 'Biology',
-    topic: 'Cell Division',
-    question: 'During which phase of mitosis do chromosomes align at the metaphase plate?',
-    options: { A: 'Prophase', B: 'Metaphase', C: 'Anaphase', D: 'Telophase' },
-    correct: 'B',
-    explanation: `During Metaphase, chromosomes line up at the cell's equatorial plate (metaphase plate) attached to spindle fibres at kinetochores.`,
-  },
-  {
-    id: 3,
-    subject: 'Chemistry',
-    topic: 'Chemical Bonding',
-    question: 'The shape of the SF₆ molecule is:',
-    options: { A: 'Tetrahedral', B: 'Square planar', C: 'Octahedral', D: 'Trigonal bipyramidal' },
-    correct: 'C',
-    explanation: 'SF₆ has 6 bonding pairs and no lone pairs around the central S atom, giving it a regular octahedral geometry (sp³d² hybridization).',
-  },
-  {
-    id: 4,
-    subject: 'Physics',
-    topic: 'Ray Optics',
-    question: 'An object is placed at the centre of curvature of a concave mirror. The image formed is:',
-    options: { A: 'Virtual and magnified', B: 'Real, inverted and of same size', C: 'Real, inverted and diminished', D: 'Virtual and diminished' },
-    correct: 'B',
-    explanation: 'When an object is at C (centre of curvature), a concave mirror produces a real, inverted image of the same size at C itself.',
-  },
-  {
-    id: 5,
-    subject: 'Biology',
-    topic: 'Photosynthesis',
-    question: 'Which pigment absorbs light most efficiently in the red and blue-violet regions?',
-    options: { A: 'Chlorophyll b', B: 'Carotenoids', C: 'Chlorophyll a', D: 'Xanthophyll' },
-    correct: 'C',
-    explanation: 'Chlorophyll a has absorption peaks in the blue-violet (430 nm) and red (662 nm) regions and is the primary photosynthetic pigment.',
-  },
-]
+import React, { useEffect, useRef, useState } from 'react'
+import { Link, useParams } from 'react-router-dom'
+import { generateQuiz, getNextQuestion, submitQuiz } from '../services/api'
 
 const SUBJECT_COLORS = {
-  Physics: '#818cf8',
-  Biology: '#34d399',
-  Chemistry: '#fbbf24',
+  physics: '#818cf8',
+  biology: '#34d399',
+  chemistry: '#fbbf24',
 }
 
+const DIFFICULTY_LABEL = { EASY: 'Easy', MEDIUM: 'Medium', HARD: 'Hard' }
+
+function errorText(err, fallback) {
+  const detail = err.response?.data?.detail
+  return typeof detail === 'string' ? detail : fallback
+}
+
+/**
+ * Quiz on a topic, with or without a video.
+ *   /quiz          -> pick any topic
+ *   /quiz/:jobId   -> quiz on the lesson that video was made from
+ * Questions are chosen one at a time by the server according to the student's
+ * ability, so the quiz adapts as they answer.
+ */
 export default function QuizPage() {
-  const [current, setCurrent] = useState(0)
+  const { jobId } = useParams()
+
+  const [phase, setPhase] = useState(jobId ? 'loading' : 'setup')
+  const [topic, setTopic] = useState('')
+  const [count, setCount] = useState(5)
+  const [quiz, setQuiz] = useState(null)
+  const [step, setStep] = useState(null)
   const [selected, setSelected] = useState(null)
-  const [confirmed, setConfirmed] = useState(false)
+  const [feedback, setFeedback] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState(null)
   const [score, setScore] = useState(0)
-  const [finished, setFinished] = useState(false)
-  const [answers, setAnswers] = useState([])
+  const startedFor = useRef(null)
 
-  const q = DEMO_QUESTIONS[current]
-
-  function handleConfirm() {
-    if (selected === null) return
-    const isCorrect = selected === q.correct
-    if (isCorrect) setScore((s) => s + 1)
-    setAnswers((prev) => [...prev, { questionId: q.id, selected, correct: q.correct, isCorrect }])
-    setConfirmed(true)
-  }
-
-  function handleNext() {
-    if (current + 1 >= DEMO_QUESTIONS.length) {
-      setFinished(true)
-    } else {
-      setCurrent((c) => c + 1)
-      setSelected(null)
-      setConfirmed(false)
+  async function start(payload) {
+    setPhase('loading')
+    setError(null)
+    setScore(0)
+    setSelected(null)
+    setFeedback(null)
+    try {
+      const res = await generateQuiz(payload)
+      setQuiz(res.data)
+      await loadNext(res.data.quiz_id)
+    } catch (err) {
+      setError(errorText(err, 'Could not build a quiz. Please try again.'))
+      setPhase(jobId ? 'error' : 'setup')
     }
   }
 
-  function handleRestart() {
-    setCurrent(0)
+  async function loadNext(quizId) {
+    const res = await getNextQuestion(quizId)
+    setStep(res.data)
     setSelected(null)
-    setConfirmed(false)
-    setScore(0)
-    setFinished(false)
-    setAnswers([])
+    setFeedback(null)
+    setPhase(res.data.done ? 'result' : 'question')
   }
 
-  if (finished) {
-    const pct = Math.round((score / DEMO_QUESTIONS.length) * 100)
+  // A quiz opened from a video starts by itself. The ref stops React's
+  // development double-render from generating two quizzes.
+  useEffect(() => {
+    if (jobId && startedFor.current !== jobId) {
+      startedFor.current = jobId
+      start({ job_id: jobId, num_questions: count })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jobId])
+
+  function handleStart(e) {
+    e.preventDefault()
+    if (topic.trim().length < 2) return
+    start({ topic: topic.trim(), num_questions: count })
+  }
+
+  async function handleConfirm() {
+    if (!selected || busy) return
+    setBusy(true)
+    setError(null)
+    try {
+      const res = await submitQuiz({ question_id: step.question.question_id, selected_option: selected })
+      setFeedback(res.data)
+      if (res.data.correct) setScore((s) => s + 1)
+    } catch (err) {
+      setError(errorText(err, 'Could not record your answer.'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function handleNext() {
+    setBusy(true)
+    try {
+      await loadNext(quiz.quiz_id)
+    } catch (err) {
+      setError(errorText(err, 'Could not load the next question.'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  function again() {
+    start(jobId ? { job_id: jobId, num_questions: count } : { topic: quiz.topic, num_questions: count })
+  }
+
+  // ---- setup -------------------------------------------------------------
+  if (phase === 'setup') {
+    return (
+      <div className="search-page">
+        <div className="search-hero">
+          <h1 className="search-title">
+            <span style={{ fontSize: '2rem', display: 'block', marginBottom: '0.25rem' }}>📝</span>
+            Take a <span className="hero-highlight">Quiz</span>
+          </h1>
+          <p className="search-subtitle">
+            Enter any NCERT topic. Questions come from your textbook and adapt to how you are doing.
+            You do not need to watch a video first.
+          </p>
+        </div>
+
+        <form className="search-card glass-panel" onSubmit={handleStart}>
+          <label className="input-label">Topic</label>
+          <input
+            className="input-field"
+            value={topic}
+            onChange={(e) => setTopic(e.target.value)}
+            placeholder="e.g. Photosynthesis, Laws of Motion, Chemical Kinetics"
+            style={{ marginBottom: 0 }}
+          />
+
+          <label className="input-label" style={{ marginTop: '1.5rem' }}>Number of questions</label>
+          <div className="search-classes">
+            {[3, 5, 8, 10].map((n) => (
+              <button
+                type="button"
+                key={n}
+                className={`search-class-btn ${count === n ? 'active' : ''}`}
+                onClick={() => setCount(n)}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+
+          {error && (
+            <div className="search-error">
+              <span>⚠️</span> {error}
+            </div>
+          )}
+
+          <button
+            className="btn-primary"
+            type="submit"
+            disabled={topic.trim().length < 2}
+            style={{ width: '100%', marginTop: '1.5rem', padding: '1rem' }}
+          >
+            Start Quiz
+          </button>
+        </form>
+      </div>
+    )
+  }
+
+  // ---- loading / error ---------------------------------------------------
+  if (phase === 'loading') {
+    return (
+      <div className="quiz-page">
+        <div className="gen-loading glass-panel">
+          <div className="gen-spinner" />
+          <p style={{ color: 'var(--text-secondary)', marginTop: '1rem' }}>
+            Building your quiz from the textbook… this can take up to half a minute.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  if (phase === 'error') {
+    return (
+      <div className="quiz-page">
+        <div className="quiz-result-card glass-panel">
+          <div className="quiz-result-icon">😕</div>
+          <h2 className="quiz-result-title">No quiz this time</h2>
+          <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem' }}>{error}</p>
+          <button onClick={again} className="btn-primary" style={{ marginTop: '1.5rem', width: '100%' }}>
+            Try Again
+          </button>
+          <Link to="/quiz" className="btn-secondary" style={{ marginTop: '0.75rem', textDecoration: 'none', display: 'block' }}>
+            Quiz on another topic
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  // ---- result ------------------------------------------------------------
+  if (phase === 'result') {
+    const summary = step.summary
+    const pct = summary.total ? Math.round((summary.correct / summary.total) * 100) : 0
     return (
       <div className="quiz-page">
         <div className="quiz-result-card glass-panel">
           <div className="quiz-result-icon">{pct >= 60 ? '🎉' : '📚'}</div>
           <h2 className="quiz-result-title">Quiz Complete!</h2>
+          <p style={{ color: 'var(--text-secondary)' }}>{quiz.topic}</p>
           <div className="quiz-score-ring">
             <svg viewBox="0 0 120 120" width="140" height="140">
               <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="8" />
@@ -109,53 +218,80 @@ export default function QuizPage() {
                 style={{ transform: 'rotate(-90deg)', transformOrigin: 'center', transition: 'stroke-dasharray 1s ease' }}
               />
             </svg>
-            <span className="quiz-score-text">{score}/{DEMO_QUESTIONS.length}</span>
+            <span className="quiz-score-text">{summary.correct}/{summary.total}</span>
           </div>
-          <p className="quiz-score-label">{pct}% — {pct >= 80 ? 'Excellent!' : pct >= 60 ? 'Good job!' : 'Keep practising!'}</p>
+          <p className="quiz-score-label">
+            {pct}% — {pct >= 80 ? 'Excellent!' : pct >= 60 ? 'Good job!' : 'Keep practising!'}
+          </p>
 
           <div className="quiz-review">
-            {answers.map((a, i) => (
-              <div key={i} className={`quiz-review-row ${a.isCorrect ? 'correct' : 'wrong'}`}>
-                <span className="quiz-review-num">Q{i + 1}</span>
-                <span className="quiz-review-topic">{DEMO_QUESTIONS[i].topic}</span>
-                <span className={`quiz-review-badge ${a.isCorrect ? 'correct' : 'wrong'}`}>
-                  {a.isCorrect ? '✓ Correct' : `✗ ${a.correct}`}
-                </span>
+            <div className="quiz-review-row">
+              <span className="quiz-review-topic">Your ability estimate</span>
+              <span className="quiz-review-badge correct">{summary.ability.toFixed(2)}</span>
+            </div>
+            {summary.mastery != null && (
+              <div className="quiz-review-row">
+                <span className="quiz-review-topic">Mastery of this topic</span>
+                <span className="quiz-review-badge correct">{Math.round(summary.mastery * 100)}%</span>
               </div>
-            ))}
+            )}
+            {summary.next_topic && (
+              <div className="quiz-review-row">
+                <span className="quiz-review-topic">Revise next: {summary.next_topic}</span>
+                <Link to="/search" className="quiz-review-badge wrong" style={{ textDecoration: 'none' }}>
+                  Make a video
+                </Link>
+              </div>
+            )}
           </div>
 
-          <button onClick={handleRestart} className="btn-primary" style={{ marginTop: '2rem', width: '100%' }}>
-            Retry Quiz
+          <button onClick={again} className="btn-primary" style={{ marginTop: '2rem', width: '100%' }}>
+            New Questions on This Topic
           </button>
+          <Link
+            to="/quiz"
+            className="btn-secondary"
+            style={{ marginTop: '0.75rem', textDecoration: 'none', display: 'block' }}
+          >
+            Quiz on another topic
+          </Link>
         </div>
       </div>
     )
   }
 
+  // ---- question ----------------------------------------------------------
+  const q = step.question
+  const subjectColor = SUBJECT_COLORS[(quiz.subject || '').toLowerCase()] || '#818cf8'
+  const confirmed = Boolean(feedback)
+  const isLast = step.answered + 1 >= step.total
+
   return (
     <div className="quiz-page">
-      {/* Progress header */}
       <div className="quiz-header">
         <div className="quiz-progress-bar-track">
           <div
             className="quiz-progress-bar-fill"
-            style={{ width: `${((current) / DEMO_QUESTIONS.length) * 100}%` }}
+            style={{ width: `${(step.answered / step.total) * 100}%` }}
           />
         </div>
         <div className="quiz-header-info">
-          <span className="quiz-counter">Question {current + 1} of {DEMO_QUESTIONS.length}</span>
+          <span className="quiz-counter">Question {step.answered + 1} of {step.total}</span>
           <span className="quiz-score-live">Score: {score}</span>
         </div>
       </div>
 
-      {/* Question card */}
       <div className="quiz-card glass-panel">
         <div className="quiz-meta">
-          <span className="quiz-subject-badge" style={{ background: SUBJECT_COLORS[q.subject] || '#818cf8' }}>
-            {q.subject}
+          {quiz.subject && (
+            <span className="quiz-subject-badge" style={{ background: subjectColor }}>
+              {quiz.subject.charAt(0).toUpperCase() + quiz.subject.slice(1)}
+            </span>
+          )}
+          <span className="quiz-topic-label">{quiz.topic}</span>
+          <span className="quiz-topic-label" style={{ marginLeft: 'auto' }}>
+            {DIFFICULTY_LABEL[q.difficulty] || q.difficulty}
           </span>
-          <span className="quiz-topic-label">{q.topic}</span>
         </div>
 
         <h2 className="quiz-question">{q.question}</h2>
@@ -164,7 +300,7 @@ export default function QuizPage() {
           {Object.entries(q.options).map(([key, val]) => {
             let cls = 'quiz-option'
             if (confirmed) {
-              if (key === q.correct) cls += ' correct'
+              if (key === feedback.correct_option) cls += ' correct'
               else if (key === selected) cls += ' wrong'
             } else if (key === selected) {
               cls += ' selected'
@@ -185,19 +321,30 @@ export default function QuizPage() {
 
         {confirmed && (
           <div className="quiz-explanation">
-            <div className="quiz-explanation-icon">{selected === q.correct ? '✅' : '❌'}</div>
-            <p>{q.explanation}</p>
+            <div className="quiz-explanation-icon">{feedback.correct ? '✅' : '❌'}</div>
+            <p>{feedback.explanation}</p>
+          </div>
+        )}
+
+        {error && (
+          <div className="search-error">
+            <span>⚠️</span> {error}
           </div>
         )}
 
         <div className="quiz-actions">
           {!confirmed ? (
-            <button className="btn-primary" onClick={handleConfirm} disabled={selected === null} style={{ width: '100%' }}>
-              Confirm Answer
+            <button
+              className="btn-primary"
+              onClick={handleConfirm}
+              disabled={selected === null || busy}
+              style={{ width: '100%' }}
+            >
+              {busy ? 'Checking…' : 'Confirm Answer'}
             </button>
           ) : (
-            <button className="btn-primary" onClick={handleNext} style={{ width: '100%' }}>
-              {current + 1 >= DEMO_QUESTIONS.length ? 'See Results' : 'Next Question →'}
+            <button className="btn-primary" onClick={handleNext} disabled={busy} style={{ width: '100%' }}>
+              {isLast ? 'See Results' : 'Next Question →'}
             </button>
           )}
         </div>

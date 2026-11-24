@@ -77,6 +77,10 @@ class Settings(BaseSettings):
     # finishReason=MAX_TOKENS, truncated mid-JSON. thinkingConfig is not
     # accepted by this model (HTTP 400), so headroom is the available lever.
     llm_max_output_tokens: int = 8192
+    # Quiz questions: Gemini gets this long to answer before the quiz is built
+    # from the textbook text instead. Set QUIZ_LLM_ENABLED=false to skip Gemini.
+    quiz_llm_enabled: bool = True
+    quiz_llm_timeout_seconds: float = 20.0
 
     model_config = SettingsConfigDict(
         env_file=str(BACKEND_DIR / ".env"),

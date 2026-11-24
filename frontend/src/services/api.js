@@ -44,6 +44,15 @@ export async function submitQuiz(attempt) {
   return api.post('/quiz/submit', attempt)
 }
 
+export async function generateQuiz(payload) {
+  // Quiz generation can take a while (Gemini, then a textbook-only fallback).
+  return api.post('/quiz/generate', payload, { timeout: 90000 })
+}
+
+export async function getNextQuestion(quizId) {
+  return api.get(`/quiz/${quizId}/next`)
+}
+
 export async function getQuizHistory(userId) {
   return api.get(`/quiz/history/${userId}`)
 }

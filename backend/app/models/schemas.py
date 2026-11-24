@@ -52,8 +52,60 @@ class QuizSubmitRequest(BaseModel):
     selected_option: str = Field(..., min_length=1, max_length=10)
 
 
+class QuizGenerateRequest(BaseModel):
+    """Ask for a quiz on a topic, or on the topic of an existing video job.
+
+    ``topic`` alone is the standalone service: no video is needed. ``job_id``
+    reuses a video's topic, subject and class so the quiz matches the lesson.
+    """
+
+    topic: Optional[str] = Field(default=None, min_length=2, max_length=160)
+    job_id: Optional[str] = Field(default=None, max_length=80)
+    subject: Optional[str] = Field(default=None, max_length=80)
+    class_level: Optional[str] = Field(default=None, max_length=40)
+    num_questions: int = Field(default=5, ge=3, le=10)
+
+
+class QuizQuestionPublic(BaseModel):
+    """A question as the student sees it: no answer, no explanation."""
+
+    question_id: str
+    difficulty: str
+    question: str
+    options: Dict[str, str]
+
+
+class QuizStartResponse(BaseModel):
+    quiz_id: str
+    topic: str
+    subject: Optional[str] = None
+    class_level: Optional[str] = None
+    total: int
+    generator: str
+    notes: List[str] = Field(default_factory=list)
+
+
+class QuizSummary(BaseModel):
+    correct: int
+    total: int
+    ability: float
+    mastery: Optional[float] = None
+    next_topic: Optional[str] = None
+
+
+class QuizNextResponse(BaseModel):
+    quiz_id: str
+    topic: str
+    done: bool
+    answered: int
+    total: int
+    question: Optional[QuizQuestionPublic] = None
+    summary: Optional[QuizSummary] = None
+
+
 class QuizSubmitResponse(BaseModel):
     correct: bool
+    correct_option: str = ""
     updated_ability: float
     updated_mastery: float
     next_topic: Optional[str] = None
@@ -84,7 +136,6 @@ class UserDashboard(BaseModel):
     user_id: str
     ability: float
     mastery_by_topic: Dict[str, float]
-    weak_areas: List[str]
     weak_areas: List[str]
     strong_areas: List[str]
     videos_watched: int = 0

@@ -28,6 +28,8 @@ class DatabaseManager:
             await self.db.videos.create_index("job_id", unique=True)
             await self.db.videos.create_index([("user_id", 1), ("created_at", -1)])
             await self.db.quiz_questions.create_index("question_id", unique=True)
+            await self.db.quiz_questions.create_index("quiz_id")
+            await self.db.quizzes.create_index("quiz_id", unique=True)
             await self.db.quiz_attempts.create_index([("user_id", 1), ("created_at", -1)])
             await self.db.admins.create_index("email", unique=True)
             
@@ -109,6 +111,34 @@ class DatabaseManager:
     async def get_quiz_question(self, question_id: str) -> Optional[dict]:
         self._require_db()
         return await self.db.quiz_questions.find_one({"question_id": question_id}, {"_id": 0})
+
+    async def save_quiz(self, quiz: dict, questions: list) -> None:
+        """Store a generated quiz and its questions (answers included)."""
+        self._require_db()
+        now = datetime.utcnow()
+        await self.db.quizzes.insert_one({**quiz, "created_at": now})
+        if questions:
+            await self.db.quiz_questions.insert_many(
+                [{**question, "created_at": now} for question in questions]
+            )
+
+    async def get_quiz(self, quiz_id: str) -> Optional[dict]:
+        self._require_db()
+        return await self.db.quizzes.find_one({"quiz_id": quiz_id}, {"_id": 0})
+
+    async def get_quiz_questions(self, quiz_id: str) -> list[dict]:
+        self._require_db()
+        cursor = self.db.quiz_questions.find({"quiz_id": quiz_id}, {"_id": 0}).sort("created_at", 1)
+        return await cursor.to_list(length=100)
+
+    async def get_quiz_attempt(self, attempt_id: str) -> Optional[dict]:
+        self._require_db()
+        return await self.db.quiz_attempts.find_one({"attempt_id": attempt_id}, {"_id": 0})
+
+    async def get_attempts_for_quiz(self, user_id: str, quiz_id: str) -> list[dict]:
+        self._require_db()
+        cursor = self.db.quiz_attempts.find({"user_id": user_id, "quiz_id": quiz_id}, {"_id": 0})
+        return await cursor.to_list(length=100)
 
     async def save_quiz_attempt(self, attempt: dict) -> None:
         self._require_db()
