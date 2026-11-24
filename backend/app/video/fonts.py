@@ -135,15 +135,3 @@ def load_font(size: int, bold: bool = False) -> ImageFont.ImageFont:
 def font_is_scalable() -> bool:
     """True when a real TrueType face was found (i.e. font sizes are honoured)."""
     return bool(resolve_font_path())
-
-
-def font_report() -> dict:
-    """Which faces were chosen and whether they cover the science glyph set."""
-    regular = resolve_font_path(False)
-    bold = resolve_font_path(True)
-    return {
-        "regular": regular,
-        "bold": bold,
-        "regular_covers_science_glyphs": _covers_required(regular) if regular else False,
-        "bold_covers_science_glyphs": _covers_required(bold) if bold else False,
-    }

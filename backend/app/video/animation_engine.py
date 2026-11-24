@@ -45,12 +45,6 @@ def apply_ken_burns(clip, duration: float, start_zoom: float = 1.0, end_zoom: fl
     return clip.resize(lambda t: start_zoom + zoom_diff * (min(t, duration) / duration))
 
 
-def apply_zoom_in(clip, duration: float):
-    """Pronounced push-in, used for scenes tagged ``animation_type: zoom``."""
-    start, end = ZOOM_ENVELOPES["zoom"]
-    return apply_ken_burns(clip, duration, start_zoom=start, end_zoom=end)
-
-
 def apply_slide_left(clip, duration: float, size: tuple = DEFAULT_SIZE, slide_seconds: float = 0.6):
     """Slide the clip in from the right edge, easing to rest at centre.
 

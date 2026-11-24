@@ -81,7 +81,6 @@ def draw_process_flow(draw, box, theme, data, font_for_size):
     y = y0 + ((y1 - y0) - total_h) // 2
 
     width = x1 - x0
-    label_font = font_for_size(20)
 
     for index, step in enumerate(steps):
         fill = lighten(theme["bg"], 0.16)

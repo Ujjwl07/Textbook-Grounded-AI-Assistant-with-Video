@@ -16,7 +16,6 @@ DIAGRAM_KEYWORDS.
 
 import io
 import logging
-import re
 
 import matplotlib
 matplotlib.use("Agg")

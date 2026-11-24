@@ -2,7 +2,7 @@ import logging
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, WebSocket, WebSocketDisconnect
 
-from app.models.schemas import GenerateRequest, GenerateResponse, JobStatus
+from app.models.schemas import GenerateRequest, GenerateResponse
 from app.services.auth_service import get_current_user, get_user_from_token
 from app.services.database import database
 from app.services.job_queue import job_queue

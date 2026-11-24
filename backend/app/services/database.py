@@ -110,14 +110,6 @@ class DatabaseManager:
         self._require_db()
         return await self.db.quiz_questions.find_one({"question_id": question_id}, {"_id": 0})
 
-    async def upsert_quiz_question(self, question: dict) -> None:
-        self._require_db()
-        await self.db.quiz_questions.update_one(
-            {"question_id": question["question_id"]},
-            {"$set": {**question, "updated_at": datetime.utcnow()}},
-            upsert=True,
-        )
-
     async def save_quiz_attempt(self, attempt: dict) -> None:
         self._require_db()
         await self.db.quiz_attempts.insert_one({**attempt, "created_at": datetime.utcnow()})
