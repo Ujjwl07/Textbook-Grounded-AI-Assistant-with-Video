@@ -1,4 +1,5 @@
-from typing import Any, Dict, List, Optional, Union
+import logging
+from typing import Any, Dict, Optional, Union
 from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel, Field
 
@@ -8,6 +9,7 @@ from app.database.qdrant import qdrant_db
 from app.llm.gemini_service import gemini_service
 
 router = APIRouter(prefix="/query", tags=["query"])
+logger = logging.getLogger(__name__)
 
 
 class QueryRequest(BaseModel):

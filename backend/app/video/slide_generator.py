@@ -34,7 +34,6 @@ from app.video.layout import (
     lighten,
     readable_on,
     text_size,
-    text_width,
     wrap_by_width,
 )
 from app.video import visuals

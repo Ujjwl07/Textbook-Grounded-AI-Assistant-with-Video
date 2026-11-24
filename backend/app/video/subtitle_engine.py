@@ -144,13 +144,6 @@ class SubtitleLayout:
                 x += word_width + self.space_width
             y += self.line_height
 
-    def active_index(self, t: float) -> int:
-        """Index of the word being spoken at ``t``, or -1 between words."""
-        pos = bisect_right(self.starts, t) - 1
-        if pos < 0:
-            return -1
-        return pos if t <= self.word_boundaries[pos]["end"] else -1
-
     def resolve(self, t: float) -> tuple:
         """``(highlighted word index, page on screen)`` at time ``t``.
 

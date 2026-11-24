@@ -37,14 +37,6 @@ class VideoStorage:
             return result["secure_url"]
         return f"/api/video-file/{path.name}"
 
-    def create_placeholder_video(self, job_id: str, topic: str) -> str:
-        path = self.settings.video_output_dir / f"{job_id}.txt"
-        path.write_text(
-            f"Placeholder video artifact for topic: {topic}\n"
-            "Replace this file by connecting the MoviePy/video assembler module.\n",
-            encoding="utf-8",
-        )
-        return str(path)
 
 
 video_storage = VideoStorage()

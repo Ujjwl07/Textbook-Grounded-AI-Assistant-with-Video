@@ -47,17 +47,6 @@ class JobState(BaseModel):
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 
-class VideoRecord(BaseModel):
-    video_id: str
-    topic: str
-    subject: Optional[str] = None
-    class_level: Optional[str] = None
-    video_url: str
-    transcript: Optional[str] = None
-    scenes: List[Dict] = Field(default_factory=list)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-
-
 class QuizSubmitRequest(BaseModel):
     question_id: str = Field(..., min_length=1, max_length=120)
     selected_option: str = Field(..., min_length=1, max_length=10)
