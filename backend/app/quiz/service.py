@@ -29,6 +29,7 @@ from typing import Dict, List, Optional
 
 from app.core.config import get_settings
 from app.llm.gemini_service import GeminiUnavailable, describe_gemini_failure, gemini_service
+from app.llm.llm_router import AllProvidersFailedError, acall_llm, is_task_configured
 from app.quiz import rule_based
 from app.quiz.rule_based import Question, citation_for
 from app.quiz.validation import _trigrams, _words, validate_item
@@ -99,8 +100,8 @@ RULES
 - "source_quote" must be copied word for word from the passages: the single sentence that proves the answer (at least 8 words).
 - "explanation" is one or two sentences saying why the answer is right, using the textbook's wording.
 
-Return ONLY a JSON array, no other text, in this shape:
-[
+Return ONLY a JSON object, no other text, in this shape:
+{{"questions": [
   {{
     "question": "...",
     "options": {{"A": "...", "B": "...", "C": "...", "D": "..."}},
@@ -109,22 +110,25 @@ Return ONLY a JSON array, no other text, in this shape:
     "explanation": "...",
     "source_quote": "..."
   }}
-]
+]}}
 
 PASSAGES
 {context}
 """
 
 
+async def _llm(prompt: str, system: str) -> str:
+    """The quiz's AI call: route "quiz_generate" (Groq -> Gemini -> OpenRouter)."""
+    text, provider = await acall_llm("quiz_generate", prompt, system=system, json_mode=True, max_tokens=4096)
+    logger.info("Quiz questions written by %s", provider)
+    return text
+
+
 async def _ask_gemini(topic, subject, class_level, context, mix) -> list:
-    raw = await gemini_service.generate_text(
-        _prompt(topic, subject, class_level, context, mix),
-        system_instruction=_SYSTEM,
-        temperature=0.4,
-    )
+    raw = await _llm(_prompt(topic, subject, class_level, context, mix), _SYSTEM)
     parsed = gemini_service._extract_json_block(raw)
     if isinstance(parsed, dict):
-        parsed = parsed.get("questions", [])
+        parsed = parsed.get("questions") or next((v for v in parsed.values() if isinstance(v, list)), [])
     if not isinstance(parsed, list):
         raise ValueError("Gemini did not return a JSON list of questions")
     return parsed
@@ -194,7 +198,7 @@ async def generate_quiz(
     questions: List[Question] = []
 
     # ---- 1. Gemini ------------------------------------------------------
-    if settings.quiz_llm_enabled and gemini_service.is_configured:
+    if settings.quiz_llm_enabled and is_task_configured("quiz_generate"):
         try:
             items = await asyncio.wait_for(
                 _ask_gemini(topic, subject or "Science", class_level or "11", result.context_text, mix),
@@ -207,24 +211,24 @@ async def generate_quiz(
                     question.citation = _citation_for_quote(question.source_quote, result.chunks)
                     valid.append(question)
             logger.info(
-                "Quiz %r: Gemini status: WORKING - %s question(s) returned, %s passed validation",
+                "Quiz %r: AI status: WORKING - %s question(s) returned, %s passed validation",
                 topic, len(items), len(valid),
             )
             dropped = len(items) - len(valid)
             if dropped:
-                notes.append(f"{dropped} Gemini question(s) failed the textbook-grounding check and were dropped.")
+                notes.append(f"{dropped} AI-written question(s) failed the textbook-grounding check and were dropped.")
             questions = _pick(valid, mix, count)
-        except (GeminiUnavailable, asyncio.TimeoutError) as exc:
+        except (GeminiUnavailable, AllProvidersFailedError, asyncio.TimeoutError) as exc:
             logger.warning(
-                "Quiz %r: Gemini status: %s - using the textbook text instead",
+                "Quiz %r: AI status: %s - using the textbook text instead",
                 topic, describe_gemini_failure(exc),
             )
-            notes.append("Gemini was unavailable, so these questions were built directly from the textbook text.")
+            notes.append("The AI models were unavailable, so these questions were built directly from the textbook text.")
         except Exception:
-            logger.exception("Quiz %r: Gemini question generation failed", topic)
-            notes.append("Gemini could not produce a usable quiz, so these questions were built directly from the textbook text.")
-    elif not gemini_service.is_configured:
-        notes.append("Gemini is not configured; questions were built directly from the textbook text.")
+            logger.exception("Quiz %r: AI question generation failed", topic)
+            notes.append("The AI could not produce a usable quiz, so these questions were built directly from the textbook text.")
+    elif not is_task_configured("quiz_generate"):
+        notes.append("No AI API key is configured; questions were built directly from the textbook text.")
 
     # ---- 2. Rule-based top-up ------------------------------------------
     if len(questions) < count:

@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional
 import httpx
 
 from app.core.config import get_settings
+from app.llm.llm_router import AllProvidersFailedError, LLMRequestError, acall_llm, is_task_configured
 
 logger = logging.getLogger("textbook_assistant.gemini")
 
@@ -34,6 +35,10 @@ def describe_gemini_failure(exc: BaseException) -> str:
     """One readable phrase for the log: is Gemini unavailable, exhausted or in error?"""
     if isinstance(exc, asyncio.TimeoutError):
         return "UNAVAILABLE - no answer within the time limit"
+    if isinstance(exc, AllProvidersFailedError):
+        return "UNAVAILABLE - every AI provider failed (" + "; ".join(f"{n}: {w}" for n, w in exc.failures) + ")"
+    if isinstance(exc, LLMRequestError):
+        return f"ERROR - {exc}"
     if isinstance(exc, GeminiUnavailable):
         http = f" (HTTP {exc.http_status})" if exc.http_status else ""
         if exc.status == "exhausted":
@@ -129,101 +134,19 @@ class GeminiLLMService:
         system_instruction: Optional[str] = None,
         temperature: float = 0.2,
         max_output_tokens: Optional[int] = None,
+        task: str = "doubt_answer",
+        json_mode: bool = False,
     ) -> str:
-        """Call Gemini API to generate plain text or structured response."""
-        if not self.is_configured:
-            raise RuntimeError("GEMINI_API_KEY is not configured in .env")
+        """Kept for older callers: one AI answer through the multi-provider router.
 
-        endpoint = f"{self.base_url}/{self.model}:generateContent?key={self.api_key}"
-
-        payload: Dict[str, Any] = {
-            "contents": [
-                {
-                    "parts": [{"text": prompt}]
-                }
-            ],
-            "generationConfig": {
-                "temperature": temperature,
-                "maxOutputTokens": max_output_tokens or self.settings.llm_max_output_tokens,
-            },
-        }
-
-        if system_instruction:
-            payload["systemInstruction"] = {
-                "parts": [{"text": system_instruction}]
-            }
-
-        last_error = None
-        started = time.perf_counter()
-        async with httpx.AsyncClient(timeout=45.0) as client:
-            for attempt in range(1, _MAX_ATTEMPTS + 1):
-                try:
-                    response = await client.post(endpoint, json=payload)
-                except httpx.RequestError as exc:
-                    # DNS, connection reset, timeout: transient like a 503.
-                    last_error = GeminiUnavailable(
-                        f"Gemini request failed: {exc or type(exc).__name__}", status="network"
-                    )
-                    await self._backoff(attempt, None, str(exc) or type(exc).__name__)
-                    continue
-
-                if response.status_code == 200:
-                    logger.info(
-                        "Gemini is WORKING: %s answered in %.1fs (attempt %s/%s)",
-                        self.model, time.perf_counter() - started, attempt, _MAX_ATTEMPTS,
-                    )
-                    break
-
-                detail = response.text[:200]
-                status = "exhausted" if response.status_code == 429 else "unavailable"
-                if response.status_code in _RETRY_STATUS and attempt < _MAX_ATTEMPTS:
-                    last_error = GeminiUnavailable(
-                        f"Gemini API error {response.status_code}: {_short(detail)}",
-                        status=status, http_status=response.status_code,
-                    )
-                    await self._backoff(attempt, response.headers.get("Retry-After"), detail)
-                    continue
-
-                message = f"Gemini API error {response.status_code}: {_short(response.text)}"
-                logger.error(message)
-                if response.status_code in _RETRY_STATUS:
-                    raise GeminiUnavailable(message, status=status, http_status=response.status_code)
-                raise RuntimeError(message)
-            else:
-                raise last_error or GeminiUnavailable("Gemini did not respond")
-
-            data = response.json()
-            candidates = data.get("candidates", [])
-            if not candidates:
-                raise RuntimeError("Gemini returned empty candidates list")
-
-            candidate = candidates[0]
-            finish_reason = candidate.get("finishReason")
-            # Join every part: a reasoning model can return the answer split
-            # across parts, and reading parts[0] alone dropped the rest.
-            parts = candidate.get("content", {}).get("parts", [])
-            text = "".join(part.get("text", "") for part in parts).strip()
-
-            usage = data.get("usageMetadata", {})
-            if finish_reason == "MAX_TOKENS":
-                # Truncated output is not a transient failure and retrying the
-                # same prompt cannot fix it. Saying so beats letting the caller
-                # discover it as "Expecting value: line 1 column 1 (char 0)"
-                # when the half-written JSON fails to parse.
-                raise RuntimeError(
-                    "Gemini hit maxOutputTokens and the answer was truncated "
-                    f"({usage.get('thoughtsTokenCount', 0)} thinking + "
-                    f"{usage.get('candidatesTokenCount', 0)} output tokens against a "
-                    f"{max_output_tokens or self.settings.llm_max_output_tokens} cap). "
-                    "Raise LLM_MAX_OUTPUT_TOKENS."
-                )
-            if not text:
-                raise RuntimeError(
-                    f"Gemini returned no text (finishReason={finish_reason}, "
-                    f"thinking tokens={usage.get('thoughtsTokenCount', 0)})"
-                )
-
-            return text
+        The retry-and-backoff loop that used to live here is gone; the router
+        tries each provider once and moves on (see app/llm/llm_router.py).
+        """
+        text, _ = await acall_llm(
+            task, prompt, system=system_instruction, json_mode=json_mode,
+            max_tokens=max_output_tokens or self.settings.llm_max_output_tokens,
+        )
+        return text
 
     def _extract_json_block(self, raw_text: str) -> Any:
         """Extract and parse JSON array or object from markdown or raw text."""
@@ -252,13 +175,23 @@ class GeminiLLMService:
         class_level: Optional[str] = "11",
         retrieved_context: Optional[str] = "",
     ) -> List[Dict[str, Any]]:
+        """Generate grounded educational scenes for video assembly (any provider)."""
+        scenes, _ = await self.generate_educational_scenes_with_provider(topic, subject, class_level, retrieved_context)
+        return scenes
+
+    async def generate_educational_scenes_with_provider(
+        self,
+        topic: str,
+        subject: Optional[str] = "Physics",
+        class_level: Optional[str] = "11",
+        retrieved_context: Optional[str] = "",
+    ) -> tuple:
+        """``(scenes, provider)``: the 5-scene script and which AI provider wrote it.
+
+        Raises AllProvidersFailedError when no provider could answer.
         """
-        Generate grounded educational scenes for video assembly using Gemini LLM.
-        
-        Raises explicit RuntimeError if Gemini is unconfigured or fails.
-        """
-        if not self.is_configured:
-            error_msg = "GEMINI_API_KEY is not configured in .env. Cannot generate educational video scenes without API key."
+        if not is_task_configured("video_script"):
+            error_msg = "No AI API key is configured (GEMINI_API_KEY, GROQ_API_KEY or OPENROUTER_API_KEY). Cannot generate educational video scenes."
             logger.error(error_msg)
             raise RuntimeError(error_msg)
 
@@ -266,7 +199,7 @@ class GeminiLLMService:
             f"You are a master STEM educator and video script director for Class {class_level or '11'} {subject or 'Physics'}. "
             "You convert textbook context into structured JSON scenes for 60-90 second educational microlearning videos. "
             "CRITICAL RULES: Ground everything strictly in the provided textbook context. Do NOT invent unsupported facts. "
-            "Output ONLY a raw JSON array of exactly 5 scene objects."
+            'Output ONLY a JSON object of the form {"scenes": [ ...exactly 5 scene objects... ]}.'
         )
 
         prompt = f"""
@@ -286,7 +219,7 @@ SCENE STRUCTURE REQUIRED (exactly 5 scenes):
 4. MEMORY: Mnemonic or key memory rule.
 5. NEET ALERT: High-yield exam trap or important condition.
 
-SCHEMA REQUIRED (Return a JSON list of 5 objects):
+SCHEMA REQUIRED (Return {{"scenes": [ ...a list of 5 objects... ]}}):
 
 Each scene has a "visual_type" that decides what is drawn in the right-hand
 panel, and a "visual_data" that supplies its content. A panel with no content is
@@ -369,13 +302,18 @@ Rules that matter:
   }}
 ]
 
-Output ONLY the valid JSON array without any markdown wrappers or commentary.
+Output ONLY the JSON object {{"scenes": [...]}} without any markdown wrappers or commentary.
 """
 
         try:
-            logger.info(f"Generating educational scenes with Gemini ({self.model}) for '{topic}'...")
-            raw_response = await self.generate_text(prompt, system_instruction=system_instruction, temperature=0.2)
+            logger.info(f"Generating educational scenes for '{topic}' (route: video_script)...")
+            raw_response, provider = await acall_llm(
+                "video_script", prompt, system=system_instruction, json_mode=True,
+                max_tokens=self.settings.llm_max_output_tokens,
+            )
             scenes = self._extract_json_block(raw_response)
+            if isinstance(scenes, dict):
+                scenes = scenes.get("scenes") or next((v for v in scenes.values() if isinstance(v, list)), None)
 
             if isinstance(scenes, list) and len(scenes) >= 3:
                 # Sanitize and validate required keys
@@ -403,15 +341,15 @@ Output ONLY the valid JSON array without any markdown wrappers or commentary.
                         "animation_type": str(s.get("animation_type", "fade_in")),
                         "duration_hint_seconds": s.get("duration_hint_seconds"),
                     })
-                logger.info(f"Successfully generated {len(validated_scenes)} Gemini scenes for '{topic}'")
-                return validated_scenes
+                logger.info(f"Successfully generated {len(validated_scenes)} scenes for '{topic}' with {provider}")
+                return validated_scenes, provider
             else:
-                error_msg = f"Gemini returned invalid or empty scene structure: {scenes}"
+                error_msg = f"{provider} returned invalid or empty scene structure: {str(scenes)[:300]}"
                 logger.error(error_msg)
                 raise ValueError(error_msg)
 
         except Exception as exc:
-            logger.error(f"Gemini scene generation failed for '{topic}': {exc}")
+            logger.error(f"Scene generation failed for '{topic}': {exc}")
             raise
 
     async def answer_question(
@@ -422,8 +360,8 @@ Output ONLY the valid JSON array without any markdown wrappers or commentary.
         class_level: Optional[str] = None,
     ) -> str:
         """Answer a student's question grounded in the retrieved textbook chunks."""
-        if not self.is_configured:
-            error_msg = "GEMINI_API_KEY is not configured in .env. Cannot generate explanation without API key."
+        if not is_task_configured("doubt_answer"):
+            error_msg = "No AI API key is configured (GEMINI_API_KEY, OPENROUTER_API_KEY or GROQ_API_KEY). Cannot generate explanation."
             logger.error(error_msg)
             raise RuntimeError(error_msg)
 
@@ -441,7 +379,8 @@ GROUNDED TEXTBOOK CONTEXT:
 
 Please provide a clear, well-structured, curriculum-accurate explanation answering the student's question.
 """
-        return await self.generate_text(prompt, system_instruction=system_instruction, temperature=0.3)
+        text, _ = await acall_llm("doubt_answer", prompt, system=system_instruction, max_tokens=2048)
+        return text
 
 
 gemini_service = GeminiLLMService()

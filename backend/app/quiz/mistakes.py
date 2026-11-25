@@ -1,8 +1,8 @@
 """Label a wrong quiz answer as a conceptual, calculation or silly mistake.
 
-Gemini reads the question, the student's pick and the right answer and says
-which kind of slip it was, with one short sentence for the student. When Gemini
-is not configured, times out or replies with something unusable, a simple rule
+An AI model (via the LLM router) reads the question, the student's pick and the right answer and says
+which kind of slip it was, with one short sentence for the student. When no AI provider
+is configured, times out or replies with something unusable, a simple rule
 gives the label instead, so every wrong answer always has one.
 """
 
@@ -15,6 +15,7 @@ from typing import Optional
 
 from app.core.config import get_settings
 from app.llm.gemini_service import gemini_service
+from app.llm.llm_router import acall_llm, is_task_configured
 
 logger = logging.getLogger(__name__)
 
@@ -65,21 +66,23 @@ Return ONLY this JSON:
 async def classify_with_gemini(question: dict, selected: str, correct: str, difficulty: str) -> Optional[dict]:
     """``{"type", "reason"}`` from Gemini, or None if it could not give a usable answer."""
     settings = get_settings()
-    if not settings.quiz_llm_enabled or not gemini_service.is_configured:
+    if not settings.quiz_llm_enabled or not is_task_configured("mistake_analysis"):
         return None
     try:
-        raw = await asyncio.wait_for(
-            gemini_service.generate_text(
+        # Route "mistake_analysis": Groq (small) -> OpenRouter -> Gemini.
+        raw, provider = await asyncio.wait_for(
+            acall_llm(
+                "mistake_analysis",
                 _prompt(question, selected, correct, difficulty),
-                system_instruction=_SYSTEM,
-                temperature=0.1,
-                max_output_tokens=1024,  # room for the model's thinking tokens plus the short JSON
+                system=_SYSTEM,
+                json_mode=True,
+                max_tokens=1024,  # room for reasoning tokens plus the short JSON
             ),
             timeout=settings.quiz_llm_timeout_seconds,
         )
         parsed = gemini_service._extract_json_block(raw)
-    except Exception as exc:  # network, quota, timeout, bad JSON: fall back to the rule
-        logger.warning("Mistake classification: Gemini unavailable (%s)", exc)
+    except Exception as exc:  # quota, timeout, bad JSON on every provider: use the rule
+        logger.warning("Mistake classification: AI unavailable (%s)", exc)
         return None
     if isinstance(parsed, list) and parsed:
         parsed = parsed[0]
@@ -90,4 +93,5 @@ async def classify_with_gemini(question: dict, selected: str, correct: str, diff
         logger.warning("Mistake classification: Gemini returned unknown type %r", kind)
         return None
     reason = " ".join(str(parsed.get("reason", "")).split())[:240]
-    return {"type": kind, "reason": reason}
+    logger.info("Mistake classified as %s by %s", kind, provider)
+    return {"type": kind, "reason": reason, "provider": provider}

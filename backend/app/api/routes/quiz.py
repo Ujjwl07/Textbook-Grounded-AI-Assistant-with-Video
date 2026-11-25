@@ -255,7 +255,7 @@ async def submit_quiz_answer(
 
 
 async def _refine_mistake(attempt_id: str, question: dict, selected: str, correct: str, difficulty: str) -> None:
-    """Ask Gemini what kind of mistake this was and store its label and reason."""
+    """Ask an AI model (via the LLM router) what kind of mistake this was; store its label and reason."""
     result = await classify_with_gemini(question, selected, correct, difficulty)
     if not result:
         return
@@ -263,11 +263,11 @@ async def _refine_mistake(attempt_id: str, question: dict, selected: str, correc
         await database.update_quiz_attempt(attempt_id, {
             "mistake_type": result["type"],
             "mistake_reason": result["reason"],
-            "mistake_source": "gemini",
+            "mistake_source": result.get("provider", "ai"),
         })
-        logger.info("Mistake %s classified by Gemini as %s", attempt_id, result["type"])
+        logger.info("Mistake %s classified by %s as %s", attempt_id, result.get("provider"), result["type"])
     except Exception:
-        logger.exception("Could not save Gemini mistake label for %s", attempt_id)
+        logger.exception("Could not save AI mistake label for %s", attempt_id)
 
 
 @router.get("/history/{user_id}", response_model=QuizHistoryResponse)
