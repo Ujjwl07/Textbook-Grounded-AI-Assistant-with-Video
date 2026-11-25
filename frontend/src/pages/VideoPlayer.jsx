@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { API_BASE_URL, getVideo } from '../services/api'
+import { API_BASE_URL, getMediaToken, getVideo } from '../services/api'
 
 export default function VideoPlayer() {
   const { jobId } = useParams()
@@ -9,8 +9,11 @@ export default function VideoPlayer() {
 
   useEffect(() => {
     getVideo(jobId)
-      .then((r) => {
-        setVideo(r.data)
+      .then(async (r) => {
+        // Local files are streamed from the API and need a media token in the URL.
+        const needsToken = r.data?.video_url?.startsWith('/api/video-file/')
+        const mediaToken = needsToken ? await getMediaToken() : null
+        setVideo({ ...r.data, mediaToken })
         setError(null)
       })
       .catch((err) => {
@@ -45,7 +48,7 @@ export default function VideoPlayer() {
     )
   }
 
-  const videoUrl = buildPlayableUrl(video.video_url)
+  const videoUrl = buildPlayableUrl(video.video_url, video.mediaToken)
 
   return (
     <div className="player-page">
@@ -59,7 +62,7 @@ export default function VideoPlayer() {
             </span>
           )}
           {video.class_level && (
-            <span className="player-badge" style={{ background: 'rgba(255,255,255,0.1)' }}>
+            <span className="player-badge" style={{ background: 'var(--on-surface-faint)' }}>
               Class {video.class_level}
             </span>
           )}
@@ -91,22 +94,21 @@ export default function VideoPlayer() {
 
 function getSubjectColor(subject) {
   switch ((subject || '').toLowerCase()) {
-    case 'physics': return '#818cf8'
-    case 'biology': return '#34d399'
-    case 'chemistry': return '#fbbf24'
-    default: return '#94a3b8'
+    case 'physics': return '#0071E3'
+    case 'biology': return '#248A3D'
+    case 'chemistry': return '#B25E00'
+    default: return '#6E6E73'
   }
 }
 
-function buildPlayableUrl(rawUrl) {
+function buildPlayableUrl(rawUrl, mediaToken) {
   if (!rawUrl) return ''
   if (/^https?:\/\//i.test(rawUrl)) return rawUrl
 
   const apiOrigin = new URL(API_BASE_URL).origin
   const url = `${apiOrigin}${rawUrl}`
-  const token = localStorage.getItem('access_token')
-  if (!token || !rawUrl.startsWith('/api/video-file/')) return url
+  if (!mediaToken || !rawUrl.startsWith('/api/video-file/')) return url
 
   const separator = url.includes('?') ? '&' : '?'
-  return `${url}${separator}token=${encodeURIComponent(token)}`
+  return `${url}${separator}token=${encodeURIComponent(mediaToken)}`
 }

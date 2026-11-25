@@ -21,6 +21,10 @@ class Settings(BaseSettings):
     mongodb_uri: str = "mongodb://localhost:27017"
     mongodb_db_name: str = "textbook_assistant"
 
+    # Clerk (sign-in / sign-up). The secret key verifies session tokens server-side.
+    clerk_secret_key: str = ""
+
+    # Signs the app's own short "media" tokens used for <video> streaming.
     jwt_secret_key: str = ""
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 60 * 24

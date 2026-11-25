@@ -45,7 +45,7 @@ export default function AdminPanel() {
               padding: '2rem',
               textAlign: 'center',
               marginTop: '1rem',
-              background: 'rgba(0,0,0,0.2)'
+              background: 'var(--surface)'
             }}>
               <input type="file" id="pdf-upload" style={{ display: 'none' }} accept=".pdf" />
               <label htmlFor="pdf-upload" style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -69,34 +69,34 @@ export default function AdminPanel() {
           <h2 style={{ fontSize: '1.5rem', marginBottom: '1.5rem' }}>Vector Index Status</h2>
 
           <div className="flex-col gap-4">
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem', background: 'rgba(0,0,0,0.3)', borderRadius: '8px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem', background: 'var(--surface)', borderRadius: '8px' }}>
               <span style={{ color: 'var(--text-secondary)' }}>Total Chunks Indexed</span>
-              <span style={{ fontWeight: 600, color: 'white' }}>2,876</span>
+              <span style={{ fontWeight: 600, color: 'var(--on-surface)' }}>2,876</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem', background: 'rgba(0,0,0,0.3)', borderRadius: '8px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem', background: 'var(--surface)', borderRadius: '8px' }}>
               <span style={{ color: 'var(--text-secondary)' }}>Physics Chunks</span>
-              <span style={{ fontWeight: 600, color: '#3b82f6' }}>923</span>
+              <span style={{ fontWeight: 600, color: '#0071E3' }}>923</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem', background: 'rgba(0,0,0,0.3)', borderRadius: '8px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem', background: 'var(--surface)', borderRadius: '8px' }}>
               <span style={{ color: 'var(--text-secondary)' }}>Biology Chunks</span>
-              <span style={{ fontWeight: 600, color: '#10b981' }}>817</span>
+              <span style={{ fontWeight: 600, color: '#248A3D' }}>817</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem', background: 'rgba(0,0,0,0.3)', borderRadius: '8px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem', background: 'var(--surface)', borderRadius: '8px' }}>
               <span style={{ color: 'var(--text-secondary)' }}>Chemistry Chunks</span>
-              <span style={{ fontWeight: 600, color: '#f59e0b' }}>1,136</span>
+              <span style={{ fontWeight: 600, color: '#B25E00' }}>1,136</span>
             </div>
           </div>
 
           <div className="mt-8">
             <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Recent Ingestion Jobs</h3>
             <div className="flex-col gap-4">
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.8rem', borderLeft: '4px solid #10b981', background: 'rgba(16,185,129,0.1)', borderRadius: '4px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.8rem', borderLeft: '4px solid #248A3D', background: 'rgba(36,138,61,0.08)', borderRadius: '4px' }}>
                 <span>Physics_Class11_Ch3.pdf</span>
-                <span style={{ color: '#10b981', fontWeight: 600, fontSize: '0.9rem' }}>Completed</span>
+                <span style={{ color: '#248A3D', fontWeight: 600, fontSize: '0.9rem' }}>Completed</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.8rem', borderLeft: '4px solid #f59e0b', background: 'rgba(245,158,11,0.1)', borderRadius: '4px', marginTop: '0.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.8rem', borderLeft: '4px solid #B25E00', background: 'rgba(178,94,0,0.08)', borderRadius: '4px', marginTop: '0.5rem' }}>
                 <span>Biology_Class12_Ch5.pdf</span>
-                <span style={{ color: '#f59e0b', fontWeight: 600, fontSize: '0.9rem' }}>Processing (45%)</span>
+                <span style={{ color: '#B25E00', fontWeight: 600, fontSize: '0.9rem' }}>Processing (45%)</span>
               </div>
             </div>
           </div>

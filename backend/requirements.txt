@@ -14,7 +14,7 @@ pydantic-settings>=2.3.0
 motor>=3.5.0
 cloudinary>=1.40.0
 python-jose[cryptography]>=3.3.0
-passlib[bcrypt]>=1.7.4
+clerk-backend-api>=7.1.0   # Clerk session-token verification + user lookup
 
 # --- Video & media engineering (Purnika) ---
 moviepy==1.0.3            # pinned: 2.x renamed moviepy.editor and the clip API
