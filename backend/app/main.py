@@ -27,16 +27,19 @@ def _configure_app_logging() -> None:
     just the ``app`` namespace a handler; third-party libraries stay at their
     default (WARNING) so their chatter does not bury the job's progress.
     """
-    app_logger = logging.getLogger("app")
-    if app_logger.handlers:
-        return
     handler = logging.StreamHandler()
     handler.setFormatter(
         logging.Formatter("%(asctime)s | %(levelname)-8s | %(name)s - %(message)s")
     )
-    app_logger.addHandler(handler)
-    app_logger.setLevel(logging.INFO)
-    app_logger.propagate = False
+    # "textbook_assistant" is the Gemini client's logger: without it here, its
+    # retry warnings and "Gemini is WORKING" lines never reach the console.
+    for name in ("app", "textbook_assistant"):
+        named = logging.getLogger(name)
+        if named.handlers:
+            continue
+        named.addHandler(handler)
+        named.setLevel(logging.INFO)
+        named.propagate = False
 
 
 _configure_app_logging()

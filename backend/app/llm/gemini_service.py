@@ -3,6 +3,7 @@ import json
 import random
 import logging
 import re
+import time
 from typing import Any, Dict, List, Optional
 import httpx
 
@@ -17,7 +18,42 @@ class GeminiUnavailable(RuntimeError):
     Separate from a configuration or request error on purpose: an overloaded
     model is a temporary condition the caller can work around, while a missing
     key or a malformed prompt is not.
+
+    ``status`` says why, so the logs can tell the cases apart:
+    ``"unavailable"`` (overloaded or down, HTTP 5xx), ``"exhausted"`` (quota or
+    rate limit, HTTP 429) or ``"network"`` (could not reach Google at all).
     """
+
+    def __init__(self, message: str, status: str = "unavailable", http_status: Optional[int] = None) -> None:
+        super().__init__(message)
+        self.status = status
+        self.http_status = http_status
+
+
+def describe_gemini_failure(exc: BaseException) -> str:
+    """One readable phrase for the log: is Gemini unavailable, exhausted or in error?"""
+    if isinstance(exc, asyncio.TimeoutError):
+        return "UNAVAILABLE - no answer within the time limit"
+    if isinstance(exc, GeminiUnavailable):
+        http = f" (HTTP {exc.http_status})" if exc.http_status else ""
+        if exc.status == "exhausted":
+            return f"EXHAUSTED - quota or rate limit reached{http}"
+        if exc.status == "network":
+            return "UNREACHABLE - could not connect to Google"
+        return f"UNAVAILABLE - the model is overloaded or down{http}"
+    return f"ERROR - {_short(str(exc))}"
+
+
+def _short(detail: str, limit: int = 140) -> str:
+    """The message out of a Google JSON error body, or the first part of the text."""
+    try:
+        message = json.loads(detail).get("error", {}).get("message")
+        if message:
+            detail = message
+    except (ValueError, AttributeError):
+        pass
+    detail = " ".join(str(detail).split())
+    return detail if len(detail) <= limit else detail[:limit].rstrip() + "..."
 
 
 # Statuses worth trying again. 429 is the quota/rate limit, 503 is the
@@ -82,8 +118,8 @@ class GeminiLLMService:
         # Jitter, so several queued jobs do not all retry on the same tick.
         delay += random.uniform(0, 0.5)
         logger.warning(
-            "Gemini unavailable (attempt %s/%s), retrying in %.1fs: %s",
-            attempt, _MAX_ATTEMPTS, delay, detail,
+            "Gemini is not answering (attempt %s/%s), retrying in %.1fs: %s",
+            attempt, _MAX_ATTEMPTS, delay, _short(detail),
         )
         await asyncio.sleep(delay)
 
@@ -118,31 +154,40 @@ class GeminiLLMService:
             }
 
         last_error = None
+        started = time.perf_counter()
         async with httpx.AsyncClient(timeout=45.0) as client:
             for attempt in range(1, _MAX_ATTEMPTS + 1):
                 try:
                     response = await client.post(endpoint, json=payload)
                 except httpx.RequestError as exc:
                     # DNS, connection reset, timeout: transient like a 503.
-                    last_error = GeminiUnavailable(f"Gemini request failed: {exc}")
-                    await self._backoff(attempt, None, str(exc))
+                    last_error = GeminiUnavailable(
+                        f"Gemini request failed: {exc or type(exc).__name__}", status="network"
+                    )
+                    await self._backoff(attempt, None, str(exc) or type(exc).__name__)
                     continue
 
                 if response.status_code == 200:
+                    logger.info(
+                        "Gemini is WORKING: %s answered in %.1fs (attempt %s/%s)",
+                        self.model, time.perf_counter() - started, attempt, _MAX_ATTEMPTS,
+                    )
                     break
 
                 detail = response.text[:200]
+                status = "exhausted" if response.status_code == 429 else "unavailable"
                 if response.status_code in _RETRY_STATUS and attempt < _MAX_ATTEMPTS:
                     last_error = GeminiUnavailable(
-                        f"Gemini API error {response.status_code}: {detail}"
+                        f"Gemini API error {response.status_code}: {_short(detail)}",
+                        status=status, http_status=response.status_code,
                     )
                     await self._backoff(attempt, response.headers.get("Retry-After"), detail)
                     continue
 
-                logger.error(f"Gemini API error ({response.status_code}): {response.text}")
-                message = f"Gemini API error {response.status_code}: {detail}"
+                message = f"Gemini API error {response.status_code}: {_short(response.text)}"
+                logger.error(message)
                 if response.status_code in _RETRY_STATUS:
-                    raise GeminiUnavailable(message)
+                    raise GeminiUnavailable(message, status=status, http_status=response.status_code)
                 raise RuntimeError(message)
             else:
                 raise last_error or GeminiUnavailable("Gemini did not respond")

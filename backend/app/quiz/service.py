@@ -28,7 +28,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
 from app.core.config import get_settings
-from app.llm.gemini_service import GeminiUnavailable, gemini_service
+from app.llm.gemini_service import GeminiUnavailable, describe_gemini_failure, gemini_service
 from app.quiz import rule_based
 from app.quiz.rule_based import Question, citation_for
 from app.quiz.validation import _trigrams, _words, validate_item
@@ -206,13 +206,19 @@ async def generate_quiz(
                 if question:
                     question.citation = _citation_for_quote(question.source_quote, result.chunks)
                     valid.append(question)
-            logger.info("Quiz %r: Gemini returned %s item(s), %s passed validation", topic, len(items), len(valid))
+            logger.info(
+                "Quiz %r: Gemini status: WORKING - %s question(s) returned, %s passed validation",
+                topic, len(items), len(valid),
+            )
             dropped = len(items) - len(valid)
             if dropped:
                 notes.append(f"{dropped} Gemini question(s) failed the textbook-grounding check and were dropped.")
             questions = _pick(valid, mix, count)
         except (GeminiUnavailable, asyncio.TimeoutError) as exc:
-            logger.warning("Quiz %r: Gemini unavailable (%s); using the textbook text", topic, exc or "timeout")
+            logger.warning(
+                "Quiz %r: Gemini status: %s - using the textbook text instead",
+                topic, describe_gemini_failure(exc),
+            )
             notes.append("Gemini was unavailable, so these questions were built directly from the textbook text.")
         except Exception:
             logger.exception("Quiz %r: Gemini question generation failed", topic)
