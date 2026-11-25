@@ -25,6 +25,7 @@ class DatabaseManager:
             self.db = self.client[self.settings.mongodb_db_name]
             
             await self.db.users.create_index("email", unique=True)
+            await self.db.users.create_index("clerk_id", unique=True, sparse=True)
             await self.db.videos.create_index("job_id", unique=True)
             await self.db.videos.create_index([("user_id", 1), ("created_at", -1)])
             await self.db.quiz_questions.create_index("question_id", unique=True)
@@ -47,6 +48,13 @@ class DatabaseManager:
     async def get_user_by_email(self, email: str) -> Optional[dict]:
         self._require_db()
         user = await self.db.users.find_one({"email": email.lower().strip()}, {"_id": 0})
+        if user:
+            user["is_admin"] = await self.is_user_admin(user["email"])
+        return user
+
+    async def get_user_by_clerk_id(self, clerk_id: str) -> Optional[dict]:
+        self._require_db()
+        user = await self.db.users.find_one({"clerk_id": clerk_id}, {"_id": 0})
         if user:
             user["is_admin"] = await self.is_user_admin(user["email"])
         return user
@@ -144,7 +152,11 @@ class DatabaseManager:
         self._require_db()
         await self.db.quiz_attempts.insert_one({**attempt, "created_at": datetime.utcnow()})
 
-    async def get_quiz_attempts(self, user_id: str, limit: int = 20) -> list[dict]:
+    async def update_quiz_attempt(self, attempt_id: str, fields: dict) -> None:
+        self._require_db()
+        await self.db.quiz_attempts.update_one({"attempt_id": attempt_id}, {"$set": fields})
+
+    async def get_quiz_attempts(self, user_id: str, limit: int = 60) -> list[dict]:
         self._require_db()
         cursor = self.db.quiz_attempts.find({"user_id": user_id}, {"_id": 0}).sort("created_at", -1).limit(limit)
         return await cursor.to_list(length=limit)

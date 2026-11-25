@@ -4,16 +4,16 @@ import useWebSocket from '../hooks/useWebSocket'
 import { getStatus } from '../services/api'
 
 const STAGE_META = {
-  initializing: { icon: '⚙️', color: '#818cf8' },
-  retrieving: { icon: '📚', color: '#38bdf8' },
-  scripting: { icon: '✍️', color: '#a78bfa' },
-  segmenting: { icon: '🧩', color: '#c084fc' },
-  audio: { icon: '🔊', color: '#f472b6' },
-  rendering: { icon: '🎬', color: '#fb923c' },
-  uploading: { icon: '☁️', color: '#34d399' },
-  complete: { icon: '✅', color: '#34d399' },
-  failed: { icon: '❌', color: '#f87171' },
-  topic_not_found: { icon: '🔍', color: '#fbbf24' },
+  initializing: { icon: '⚙️', color: '#0071E3' },
+  retrieving: { icon: '📚', color: '#0066CC' },
+  scripting: { icon: '✍️', color: '#5E5CE6' },
+  segmenting: { icon: '🧩', color: '#8944AB' },
+  audio: { icon: '🔊', color: '#C2185B' },
+  rendering: { icon: '🎬', color: '#C93400' },
+  uploading: { icon: '☁️', color: '#248A3D' },
+  complete: { icon: '✅', color: '#248A3D' },
+  failed: { icon: '❌', color: '#D70015' },
+  topic_not_found: { icon: '🔍', color: '#B25E00' },
 }
 
 export default function VideoGeneration() {
@@ -72,7 +72,7 @@ export default function VideoGeneration() {
         {/* Progress ring */}
         <div className="gen-ring-wrap">
           <svg viewBox="0 0 120 120" width="160" height="160">
-            <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="8" />
+            <circle cx="60" cy="60" r="52" fill="none" style={{ stroke: 'var(--ink-12)' }} strokeWidth="8" />
             <circle
               cx="60" cy="60" r="52" fill="none"
               stroke={meta.color}

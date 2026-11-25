@@ -124,6 +124,15 @@ class QuizAttempt(BaseModel):
     updated_ability: float
     updated_mastery: float
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    quiz_id: Optional[str] = None
+    question: Optional[str] = None
+    subject: Optional[str] = None
+    selected_text: Optional[str] = None
+    correct_text: Optional[str] = None
+    explanation: Optional[str] = None
+    mistake_type: Optional[str] = None
+    mistake_reason: Optional[str] = None
+    mistake_source: Optional[str] = None
 
 
 class QuizHistoryResponse(BaseModel):
@@ -141,29 +150,13 @@ class UserDashboard(BaseModel):
     videos_watched: int = 0
 
 
-class UserRegisterRequest(BaseModel):
-    name: str = Field(..., min_length=2, max_length=120)
-    email: str = Field(..., min_length=5, max_length=254)
-    password: str = Field(..., min_length=8, max_length=128)
-
-
-class UserLoginRequest(BaseModel):
-    email: str = Field(..., min_length=5, max_length=254)
-    password: str = Field(..., min_length=8, max_length=128)
-
-
 class UserPublic(BaseModel):
     id: str
     name: str
     email: str
     is_admin: bool = False
     created_at: datetime
-
-
-class TokenResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
-    user: UserPublic
+    streak_days: int = 0
 
 
 class AdminCreateRequest(BaseModel):

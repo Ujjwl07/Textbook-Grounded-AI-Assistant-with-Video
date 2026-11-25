@@ -1,27 +1,28 @@
 import axios from 'axios'
+import { getToken } from '@clerk/react'
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'
 export const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL || 'ws://localhost:8000/api'
 
 const api = axios.create({ baseURL: API_BASE_URL })
 
-// Attach token from localStorage to every request if present
-api.interceptors.request.use((config) => {
+// Attach the Clerk session token to every request. getToken() refreshes it
+// as needed (Clerk tokens only live ~60s) and returns null when signed out.
+api.interceptors.request.use(async (config) => {
   try {
-    const token = localStorage.getItem('access_token')
-    if (token) config.headers = { ...config.headers, Authorization: `Bearer ${token}` }
+    const token = await getToken()
+    if (token) config.headers.Authorization = `Bearer ${token}`
   } catch (e) {
-    // ignore
+    // Clerk not loaded / offline: send the request without a token
   }
   return config
 })
 
-export async function register(name, email, password) {
-  return api.post('/auth/register', { name, email, password })
-}
-
-export async function login(email, password) {
-  return api.post('/auth/login', { email, password })
+// A longer-lived token for <video src=...>, which can't send headers and keeps
+// making range requests long after a Clerk token would have expired.
+export async function getMediaToken() {
+  const res = await api.post('/auth/media-token')
+  return res.data.token
 }
 
 export async function generateVideo(payload) {

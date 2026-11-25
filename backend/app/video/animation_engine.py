@@ -7,7 +7,14 @@ consecutive scenes do not all move identically.
 """
 
 import logging
+
+from PIL import Image
 from moviepy.editor import CompositeVideoClip
+
+# MoviePy 1.0.3 resizes frames with ``Image.ANTIALIAS``, which Pillow 10 removed
+# (it was an alias of LANCZOS). Restore the alias so clip.resize() keeps working.
+if not hasattr(Image, "ANTIALIAS"):
+    Image.ANTIALIAS = Image.LANCZOS
 
 logger = logging.getLogger(__name__)
 

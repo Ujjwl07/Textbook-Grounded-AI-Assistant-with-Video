@@ -1,0 +1,17 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" rx="116" fill="#111315"/>
+  <!-- open book pages -->
+  <g>
+    <path d="M256 188 C210 166 150 160 104 174 L104 322 C150 308 210 314 256 336 Z" fill="#FFFFFF"/>
+    <path d="M256 188 C302 166 362 160 408 174 L408 322 C362 308 302 314 256 336 Z" fill="#F1F2F4"/>
+    <!-- faint text lines -->
+    <path d="M134 208 C168 200 204 200 232 210" stroke="#C7CBD1" stroke-width="7" stroke-linecap="round" fill="none"/>
+    <path d="M134 240 C168 232 204 232 232 242" stroke="#C7CBD1" stroke-width="7" stroke-linecap="round" fill="none"/>
+    <path d="M280 210 C308 200 344 200 378 208" stroke="#C7CBD1" stroke-width="7" stroke-linecap="round" fill="none"/>
+    <path d="M280 242 C308 232 344 232 378 240" stroke="#C7CBD1" stroke-width="7" stroke-linecap="round" fill="none"/>
+  </g>
+  <!-- play badge -->
+  <circle cx="256" cy="268" r="70" fill="#E11D2E"/>
+  <circle cx="256" cy="268" r="70" fill="#E11D2E" stroke="#111315" stroke-width="10"/>
+  <path d="M238 238 L238 298 L290 268 Z" fill="#FFFFFF"/>
+</svg>

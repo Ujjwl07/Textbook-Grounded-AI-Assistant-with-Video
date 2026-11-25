@@ -1,9 +1,35 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Textbook Assistant</title>
+    <title>TextbookAI — Textbook-grounded AI video assistant</title>
+    <meta name="description" content="Search NCERT Class 11 & 12 topics and learn with AI-generated, textbook-grounded videos and quizzes." />
+
+    <!-- Favicons: dark mark on light browser chrome, crimson mark on dark chrome -->
+    <link rel="icon" type="image/svg+xml" href="/brand/icon-dark.svg" media="(prefers-color-scheme: light)" />
+    <link rel="icon" type="image/svg+xml" href="/brand/icon-crimson.svg" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/brand/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/brand/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0e0f12" media="(prefers-color-scheme: dark)" />
+    <script>
+      // Apply the saved (or system) theme before first paint to avoid a flash.
+      (function () {
+        var t = null;
+        try { t = localStorage.getItem('textbookai-theme'); } catch (e) {}
+        if (t !== 'light' && t !== 'dark') {
+          t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        document.documentElement.setAttribute('data-theme', t);
+      })();
+    </script>
+
+    <!-- Link previews -->
+    <meta property="og:title" content="TextbookAI" />
+    <meta property="og:description" content="Textbook-grounded AI video assistant for NCERT Class 11 & 12." />
+    <meta property="og:image" content="/brand/icon-512.png" />
   </head>
   <body>
     <div id="root"></div>

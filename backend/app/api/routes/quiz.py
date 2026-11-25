@@ -1,7 +1,7 @@
 import logging
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 
 from app.models.schemas import (
     QuizAttempt,
@@ -17,6 +17,7 @@ from app.models.schemas import (
 from app.quiz.rule_based import LETTERS
 from app.quiz.service import QuizUnavailable, generate_quiz
 from app.services.adaptive_engine import adaptive_engine
+from app.quiz.mistakes import classify_by_rule, classify_with_gemini
 from app.services.auth_service import get_current_user
 from app.services.database import database
 from app.services.job_queue import job_queue
@@ -176,6 +177,7 @@ async def next_quiz_question(
 @router.post("/submit", response_model=QuizSubmitResponse)
 async def submit_quiz_answer(
     request: QuizSubmitRequest,
+    background_tasks: BackgroundTasks,
     current_user: dict = Depends(get_current_user),
 ) -> QuizSubmitResponse:
     user_id = current_user["id"]
@@ -211,8 +213,20 @@ async def submit_quiz_answer(
         "response_history": profile_dict["response_history"],
     })
 
+    # Details the dashboard needs for "Recent questions" and "Mistake analysis".
+    options = question.get("options") or {}
+    selected = request.selected_option.upper()
+    quiz_doc = await database.get_quiz(question.get("quiz_id")) if question.get("quiz_id") else None
     await database.save_quiz_attempt(
         {
+            "question": question.get("question", ""),
+            "subject": (quiz_doc or {}).get("subject"),
+            "selected_text": options.get(selected, ""),
+            "correct_text": options.get(correct_option, ""),
+            "explanation": question.get("explanation", ""),
+            # A quick rule-based label now; Gemini refines it in the background.
+            "mistake_type": None if is_correct else classify_by_rule(question, difficulty, profile.ability),
+            "mistake_source": None if is_correct else "rule",
             "attempt_id": attempt_id,
             "user_id": user_id,
             "quiz_id": question.get("quiz_id"),
@@ -227,6 +241,9 @@ async def submit_quiz_answer(
         }
     )
 
+    if not is_correct:
+        background_tasks.add_task(_refine_mistake, attempt_id, question, selected, correct_option, difficulty)
+
     return QuizSubmitResponse(
         correct=is_correct,
         correct_option=correct_option,
@@ -235,6 +252,22 @@ async def submit_quiz_answer(
         next_topic=adaptive_engine.next_topic(profile),
         explanation=question.get("explanation", "Answer recorded and mastery updated."),
     )
+
+
+async def _refine_mistake(attempt_id: str, question: dict, selected: str, correct: str, difficulty: str) -> None:
+    """Ask Gemini what kind of mistake this was and store its label and reason."""
+    result = await classify_with_gemini(question, selected, correct, difficulty)
+    if not result:
+        return
+    try:
+        await database.update_quiz_attempt(attempt_id, {
+            "mistake_type": result["type"],
+            "mistake_reason": result["reason"],
+            "mistake_source": "gemini",
+        })
+        logger.info("Mistake %s classified by Gemini as %s", attempt_id, result["type"])
+    except Exception:
+        logger.exception("Could not save Gemini mistake label for %s", attempt_id)
 
 
 @router.get("/history/{user_id}", response_model=QuizHistoryResponse)
