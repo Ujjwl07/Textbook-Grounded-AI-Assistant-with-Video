@@ -194,8 +194,8 @@ class FakeRetriever:
 @pytest.fixture
 def fake_env(monkeypatch):
     monkeypatch.setattr(service, "retriever", FakeRetriever())
-    monkeypatch.setattr(service.gemini_service.settings, "gemini_api_key", "test-key", raising=False)
-    monkeypatch.setattr(type(service.gemini_service), "is_configured", property(lambda self: True))
+    # Pretend an AI provider is configured; each test fakes the call itself.
+    monkeypatch.setattr(service, "is_task_configured", lambda task: True)
     return monkeypatch
 
 
@@ -207,19 +207,19 @@ def test_gemini_down_still_returns_a_quiz_from_the_textbook(fake_env):
     async def down(*args, **kwargs):
         raise GeminiUnavailable("503")
 
-    fake_env.setattr(service.gemini_service, "generate_text", down)
+    fake_env.setattr(service, "_llm", down)
     quiz = run(service.generate_quiz("cell cycle", num_questions=4))
     assert quiz.questions
     assert quiz.generator == "rule_based"
     assert all(q.source == "rule_based" for q in quiz.questions)
-    assert any("Gemini was unavailable" in note for note in quiz.notes)
+    assert any("AI models were unavailable" in note for note in quiz.notes)
 
 
 def test_gemini_timeout_falls_back(fake_env):
     async def slow(*args, **kwargs):
         await asyncio.sleep(5)
 
-    fake_env.setattr(service.gemini_service, "generate_text", slow)
+    fake_env.setattr(service, "_llm", slow)
     fake_env.setattr(service.get_settings(), "quiz_llm_timeout_seconds", 0.05)
     quiz = run(service.generate_quiz("cell cycle", num_questions=3))
     assert quiz.generator == "rule_based"
@@ -229,7 +229,7 @@ def test_gemini_garbage_falls_back(fake_env):
     async def garbage(*args, **kwargs):
         return "I cannot help with that."
 
-    fake_env.setattr(service.gemini_service, "generate_text", garbage)
+    fake_env.setattr(service, "_llm", garbage)
     quiz = run(service.generate_quiz("cell cycle", num_questions=3))
     assert quiz.generator == "rule_based"
     assert quiz.notes
@@ -239,7 +239,7 @@ def test_good_gemini_questions_are_used_and_topped_up_from_the_textbook(fake_env
     async def one_good_one_bad(*args, **kwargs):
         return json.dumps([good_item(), good_item(source_quote="Paris is the capital of France and a big city")])
 
-    fake_env.setattr(service.gemini_service, "generate_text", one_good_one_bad)
+    fake_env.setattr(service, "_llm", one_good_one_bad)
     quiz = run(service.generate_quiz("cell cycle", num_questions=4))
     sources = [q.source for q in quiz.questions]
     assert sources.count("gemini") == 1
@@ -260,7 +260,7 @@ def test_all_gemini_questions_good_means_no_fallback_questions(fake_env):
     async def good(*args, **kwargs):
         return json.dumps(items)
 
-    fake_env.setattr(service.gemini_service, "generate_text", good)
+    fake_env.setattr(service, "_llm", good)
     quiz = run(service.generate_quiz("cell cycle", num_questions=5))
     assert quiz.generator == "gemini"
     assert [q.difficulty for q in quiz.questions] == ["EASY", "EASY", "MEDIUM", "MEDIUM", "HARD"]
@@ -279,7 +279,7 @@ def test_text_too_thin_for_any_question_is_a_clear_error(fake_env):
     async def down(*args, **kwargs):
         raise GeminiUnavailable("503")
 
-    fake_env.setattr(service.gemini_service, "generate_text", down)
+    fake_env.setattr(service, "_llm", down)
     with pytest.raises(service.QuizUnavailable) as caught:
         run(service.generate_quiz("cell cycle"))
     assert caught.value.status_code == 422
@@ -339,7 +339,7 @@ def api(fake_env):
     async def down(*args, **kwargs):
         raise GeminiUnavailable("503")
 
-    fake_env.setattr(service.gemini_service, "generate_text", down)
+    fake_env.setattr(service, "_llm", down)
     app.dependency_overrides[get_current_user] = lambda: user
     yield SimpleNamespace(client=TestClient(app), db=db, user=user, monkeypatch=fake_env)
     app.dependency_overrides.clear()

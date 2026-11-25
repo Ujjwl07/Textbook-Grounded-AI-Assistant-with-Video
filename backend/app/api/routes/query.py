@@ -7,6 +7,7 @@ from app.rag.retriever import RetrievalResult, retriever
 from app.utils.chunk_logger import chunk_logger
 from app.database.qdrant import qdrant_db
 from app.llm.gemini_service import gemini_service
+from app.llm.llm_router import is_task_configured
 
 router = APIRouter(prefix="/query", tags=["query"])
 logger = logging.getLogger(__name__)
@@ -42,8 +43,8 @@ async def ask_question(request: QueryRequest) -> RetrievalResult:
         )
 
         if request.generate_answer and result.context_text:
-            if not gemini_service.is_configured:
-                result.answer = "Error: GEMINI_API_KEY is not configured in .env. Cannot generate AI explanation."
+            if not is_task_configured("doubt_answer"):
+                result.answer = "Error: no AI API key is configured in .env. Cannot generate an explanation."
             else:
                 try:
                     answer = await gemini_service.answer_question(
@@ -54,8 +55,8 @@ async def ask_question(request: QueryRequest) -> RetrievalResult:
                     )
                     result.answer = answer
                 except Exception as e:
-                    logger.error(f"Gemini generation error: {e}")
-                    result.answer = f"Error: Gemini answer generation failed: {str(e)}"
+                    logger.error(f"Answer generation error: {e}")
+                    result.answer = f"Error: answer generation failed: {str(e)}"
 
         return result
     except Exception as exc:

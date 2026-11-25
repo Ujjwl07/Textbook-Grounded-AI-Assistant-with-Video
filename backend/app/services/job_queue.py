@@ -9,6 +9,7 @@ from app.models.schemas import GenerateRequest, JobState, JobStatus
 from app.rag.scene_builder import build_scenes
 from app.rag.retriever import retriever
 from app.llm.gemini_service import GeminiUnavailable, describe_gemini_failure, gemini_service
+from app.llm.llm_router import AllProvidersFailedError
 from app.services.database import database
 from app.services.storage import video_storage
 from app.services.websocket_manager import websocket_manager
@@ -125,31 +126,30 @@ class JobQueue:
         by the status endpoint, because a fallback nobody can see is exactly the
         silent fallback this pipeline removed.
         """
+        # One job-level attempt: the LLM router already falls back across
+        # Gemini -> Groq -> OpenRouter, so retrying here would only repeat that.
         try:
-            scenes = await gemini_service.generate_educational_scenes(
+            scenes, provider = await gemini_service.generate_educational_scenes_with_provider(
                 topic=job.topic,
                 subject=subject,
                 class_level=class_level,
                 retrieved_context=context,
             )
-            logger.info(
-                "Job %s: Gemini status: WORKING - the script was written by Gemini",
-                job.job_id[:8],
-            )
-            return scenes, "gemini"
-        except GeminiUnavailable as exc:
+            logger.info("Job %s: the script was written by %s", job.job_id[:8], provider)
+            return scenes, provider
+        except (GeminiUnavailable, AllProvidersFailedError) as exc:
             logger.warning(
-                "Job %s: Gemini status: %s - assembling scenes from the textbook passages instead",
+                "Job %s: AI status: %s - assembling scenes from the textbook passages instead",
                 job.job_id[:8], describe_gemini_failure(exc),
             )
         except Exception as exc:
             # A bad key or a malformed prompt is a real defect. Retrieval can
             # still carry this one video, but the traceback must be recorded.
             logger.error(
-                "Job %s: Gemini status: %s - assembling scenes from the textbook passages instead",
+                "Job %s: AI status: %s - assembling scenes from the textbook passages instead",
                 job.job_id[:8], describe_gemini_failure(exc),
             )
-            logger.exception("Job %s: Gemini scene generation failed", job.job_id)
+            logger.exception("Job %s: AI scene generation failed", job.job_id)
 
         try:
             scenes = build_scenes(job.topic, subject, class_level)

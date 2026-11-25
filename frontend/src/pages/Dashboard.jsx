@@ -375,7 +375,7 @@ export default function Dashboard() {
                       <div className="db-mwhy">
                         {a.selected_text ? <>You picked <b>“{a.selected_text}”</b>; the answer is <b>“{a.correct_text}”</b>. </> : null}
                         {a.mistake_reason || a.explanation || kind.tip}
-                        {a.mistake_source === 'gemini' && <span className="db-ai" title="Classified by Gemini">✦ AI</span>}
+                        {a.mistake_source && a.mistake_source !== 'rule' && <span className="db-ai" title={`Classified by ${a.mistake_source}`}>✦ AI</span>}
                       </div>
                       {video ? (
                         <Link to={`/watch/${video.job_id}`} className="db-rewatch">
@@ -392,7 +392,7 @@ export default function Dashboard() {
                   )
                 })}
               </div>
-              <p className="db-note">Gemini reads each wrong answer and decides whether it was a conceptual, calculation or silly mistake. If Gemini is unavailable, a simple rule labels it instead.</p>
+              <p className="db-note">An AI model (Groq, OpenRouter or Gemini, whichever is available) reads each wrong answer and decides whether it was a conceptual, calculation or silly mistake. If none is available, a simple rule labels it instead.</p>
             </>
           )}
         </section>

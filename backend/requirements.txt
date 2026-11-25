@@ -30,3 +30,5 @@ pydub>=0.25.1             # audio trimming / loudness normalisation
 gTTS>=2.5.0               # engine comparison baseline (multi_voice_test.py)
 # pyloudnorm>=0.1.1       # optional: enables true ITU-R BS.1770 LUFS metering
 # TTS>=0.22.0             # optional: offline Coqui engine for the comparison
+openai>=1.40,<3              # one OpenAI-compatible client for Gemini, Groq and OpenRouter (llm_router)
+pytest>=8                    # tests/
