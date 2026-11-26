@@ -1,3 +1,4 @@
+import asyncio
 import os
 import shutil
 import time
@@ -89,6 +90,9 @@ class VideoAssembler:
         clips = []
         temp_files = []
 
+        if scenes and not self.vmake.is_enabled() and os.environ.get("VIDEO_PARALLEL", "1") != "0":
+            return await self._assemble_parallel(scenes, subject, output_path, temp_dir, size, timer)
+
         try:
             # 1. Generate Intro Slide (if list is not empty)
             if scenes:
@@ -112,17 +116,19 @@ class VideoAssembler:
                     clips.append(intro_clip)
 
             # 2. Generate Scene Clips
+            # Synthesise all narration concurrently instead of one scene at a time.
+            audio_paths = [str(temp_dir / f"audio_{i}.mp3") for i in range(len(scenes))]
+            with timer.time("tts"):
+                audio_results = await asyncio.gather(*[
+                    self.tts.generate_scene_audio(sc["narration_text"], subject, audio_paths[i])
+                    for i, sc in enumerate(scenes)
+                ])
             for i, scene in enumerate(scenes):
                 logger.info("Processing scene %s/%s: %s", i + 1, len(scenes), scene.get("part"))
 
                 # A. Generate narration audio
-                audio_path = str(temp_dir / f"audio_{i}.mp3")
-                with timer.time("tts"):
-                    audio_result = await self.tts.generate_scene_audio(
-                        scene["narration_text"],
-                        subject,
-                        audio_path,
-                    )
+                audio_path = audio_paths[i]
+                audio_result = audio_results[i]
                 temp_files.append(audio_path)
 
                 audio_clip = AudioFileClip(audio_path)
@@ -212,7 +218,7 @@ class VideoAssembler:
 
             # 4. Concatenate and compile final video
             logger.info("Concatenating all video clips...")
-            final_video = concatenate_videoclips(clips, method="compose")
+            final_video = concatenate_videoclips(clips, method="chain")
             video_duration = final_video.duration
 
             threads = self.settings.video_threads or os.cpu_count() or 1
@@ -270,3 +276,87 @@ class VideoAssembler:
                     shutil.rmtree(temp_dir, ignore_errors=True)
             except Exception:
                 pass
+
+    async def _assemble_parallel(self, scenes, subject, output_path, temp_dir, size, timer) -> str:
+        """Render slides + audio here, then encode every segment in its own process
+        and join them with FFmpeg's concat demuxer (no re-encode)."""
+        from app.video.segment_encoder import concat_without_reencode, encode_segments_parallel
+
+        try:
+            audio_paths = [str(temp_dir / f"audio_{i}.mp3") for i in range(len(scenes))]
+            with timer.time("tts"):
+                audio_results = await asyncio.gather(*[
+                    self.tts.generate_scene_audio(sc["narration_text"], subject, audio_paths[i])
+                    for i, sc in enumerate(scenes)
+                ])
+
+            n_segments = len(scenes) + 2
+            workers = max(1, min(n_segments, (os.cpu_count() or 2) - 1))
+            threads = max(1, (os.cpu_count() or 1) // workers)
+            common = {"size": list(size), "fps": self.settings.video_fps,
+                      "preset": self.settings.video_preset, "threads": threads}
+
+            jobs = []
+            with timer.time("slide_render"):
+                bookends = {
+                    "intro": {"part": "HOOK", "slide_title": f"NEET Preparation: {subject.title()}",
+                              "slide_bullets": ["Targeted Microlearning Module",
+                                                "Concept-focused review grounded in NCERT"],
+                              "visual_type": "none"},
+                    "outro": {"part": "NEET_ALERT", "slide_title": "Ready for the Challenge?",
+                              "slide_bullets": ["Proceed to the Quiz section.",
+                                                "Test your mastery of this concept now!"],
+                              "visual_type": "none"},
+                }
+                for name in ("intro", "outro"):
+                    path = str(temp_dir / f"{name}_slide.png")
+                    self.slide_renderer.render_scene_slide(bookends[name], path)
+                    bookends[name] = path
+
+                jobs.append({**common, "kind": "bookend", "slide_path": bookends["intro"],
+                             "duration": BOOKEND_DURATION, "out_path": str(temp_dir / "seg_000.mp4")})
+                for i, scene in enumerate(scenes):
+                    a = AudioFileClip(audio_paths[i])
+                    duration = resolve_scene_duration(a.duration, scene.get("duration_hint_seconds"))
+                    a.close()
+                    slide_path = str(temp_dir / f"slide_{i}.png")
+                    self.slide_renderer.render_scene_slide(scene, slide_path)
+                    jobs.append({**common, "kind": "scene", "slide_path": slide_path,
+                                 "audio_path": audio_paths[i], "duration": duration,
+                                 "animation_type": scene.get("animation_type"),
+                                 "word_boundaries": audio_results[i].get("word_boundaries", []),
+                                 "out_path": str(temp_dir / f"seg_{i + 1:03d}.mp4")})
+                jobs.append({**common, "kind": "bookend", "slide_path": bookends["outro"],
+                             "duration": BOOKEND_DURATION,
+                             "out_path": str(temp_dir / f"seg_{len(scenes) + 1:03d}.mp4")})
+
+            logger.info("Encoding %s segments in %s processes (%s x264 threads each)",
+                        len(jobs), workers, threads)
+            loop = asyncio.get_running_loop()
+            with timer.time("encode"):
+                seg_paths = await loop.run_in_executor(None, encode_segments_parallel, jobs, workers)
+                concat_without_reencode(seg_paths, output_path)
+
+            final = AudioFileClip(output_path)
+            video_duration = final.duration
+            final.close()
+
+            stats = timer.summary()
+            stats.update({
+                "scenes": len(scenes),
+                "video_duration_seconds": round(video_duration or 0.0, 2),
+                "output_size_bytes": os.path.getsize(output_path),
+                "vmake_enabled": False,
+                "fps": self.settings.video_fps,
+                "resolution": f"{size[0]}x{size[1]}",
+                "x264_preset": self.settings.video_preset,
+                "threads": threads,
+                "parallel_workers": workers,
+            })
+            if video_duration:
+                stats["realtime_factor"] = round(stats["total_seconds"] / video_duration, 2)
+            self.last_render_stats = stats
+            logger.info("Parallel assembly completed in %ss: %s", stats["total_seconds"], stats["stages"])
+            return output_path
+        finally:
+            shutil.rmtree(temp_dir, ignore_errors=True)
