@@ -82,6 +82,33 @@ _PART_ALIASES = {
     "INTRO": "HOOK",
 }
 
+# Scene plan per video length. Narration is spoken at about 150 words a
+# minute (budgets tuned on test renders: models write ~10% short), so the word budget (narration only) sets the running time; the intro
+# and outro slides add a few seconds on top.
+LENGTH_PLANS = {
+    30: {"parts": ["HOOK", "CONCEPT", "NEET_ALERT"], "words": 50},
+    60: {"parts": ["HOOK", "CONCEPT", "EXAMPLE", "MEMORY", "NEET_ALERT"], "words": 135},
+    120: {"parts": ["HOOK", "CONCEPT", "EXAMPLE", "MEMORY", "NEET_ALERT"], "words": 300},
+    300: {"parts": ["HOOK", "CONCEPT", "CONCEPT", "EXAMPLE", "CONCEPT", "EXAMPLE", "MEMORY", "NEET_ALERT"],
+          "words": 720},
+}
+_PART_PURPOSE = {
+    "HOOK": "Everyday curiosity or intuition hook.",
+    "CONCEPT": "Core textbook definition, principle, and mathematical formula.",
+    "EXAMPLE": "Real-world example or numerical step.",
+    "MEMORY": "Mnemonic or key memory rule.",
+    "NEET_ALERT": "High-yield exam trap or important condition.",
+}
+
+
+def length_plan(target_seconds: Optional[int]) -> dict:
+    """The scene plan for the nearest supported length (default 1 minute)."""
+    if not target_seconds:
+        return LENGTH_PLANS[60]
+    nearest = min(LENGTH_PLANS, key=lambda k: abs(k - int(target_seconds)))
+    return LENGTH_PLANS[nearest]
+
+
 # Per-part fallback when the model omits visual_type. Deliberately not "alert"
 # for every part: that is what made five scenes render the same hazard triangle.
 _DEFAULT_VISUAL = {
@@ -174,9 +201,11 @@ class GeminiLLMService:
         subject: Optional[str] = "Physics",
         class_level: Optional[str] = "11",
         retrieved_context: Optional[str] = "",
+        target_seconds: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
         """Generate grounded educational scenes for video assembly (any provider)."""
-        scenes, _ = await self.generate_educational_scenes_with_provider(topic, subject, class_level, retrieved_context)
+        scenes, _ = await self.generate_educational_scenes_with_provider(
+            topic, subject, class_level, retrieved_context, target_seconds)
         return scenes
 
     async def generate_educational_scenes_with_provider(
@@ -185,8 +214,12 @@ class GeminiLLMService:
         subject: Optional[str] = "Physics",
         class_level: Optional[str] = "11",
         retrieved_context: Optional[str] = "",
+        target_seconds: Optional[int] = None,
     ) -> tuple:
-        """``(scenes, provider)``: the 5-scene script and which AI provider wrote it.
+        """``(scenes, provider)``: the scene script and which AI provider wrote it.
+
+        ``target_seconds`` (30, 60, 120 or 300) sets how many scenes there are and
+        how many words of narration they carry, which is what sets the length.
 
         Raises AllProvidersFailedError when no provider could answer.
         """
@@ -195,15 +228,23 @@ class GeminiLLMService:
             logger.error(error_msg)
             raise RuntimeError(error_msg)
 
+        plan = length_plan(target_seconds)
+        parts = plan["parts"]
+        n_scenes = len(parts)
+        total_words = plan["words"]
+        per_scene = max(15, round(total_words / n_scenes))
+        seconds = int(target_seconds or 60)
+        structure = "\n".join(f"{i}. {p.replace('_', ' ')}: {_PART_PURPOSE[p]}" for i, p in enumerate(parts, 1))
+
         system_instruction = (
             f"You are a master STEM educator and video script director for Class {class_level or '11'} {subject or 'Physics'}. "
-            "You convert textbook context into structured JSON scenes for 60-90 second educational microlearning videos. "
+            f"You convert textbook context into structured JSON scenes for a {seconds}-second educational microlearning video. "
             "CRITICAL RULES: Ground everything strictly in the provided textbook context. Do NOT invent unsupported facts. "
-            'Output ONLY a JSON object of the form {"scenes": [ ...exactly 5 scene objects... ]}.'
+            f'Output ONLY a JSON object of the form {{"scenes": [ ...exactly {n_scenes} scene objects... ]}}.'
         )
 
         prompt = f"""
-Convert the following textbook context and topic into a 5-scene educational video script.
+Convert the following textbook context and topic into a {n_scenes}-scene educational video script.
 
 TOPIC: {topic}
 SUBJECT: {subject or 'Physics'}
@@ -212,19 +253,22 @@ CLASS LEVEL: Class {class_level or '11'}
 GROUNDED TEXTBOOK CONTEXT:
 {retrieved_context if retrieved_context else "Use core curriculum principles for " + topic}
 
-SCENE STRUCTURE REQUIRED (exactly 5 scenes):
-1. HOOK: Everyday curiosity or intuition hook.
-2. CONCEPT: Core textbook definition, principle, and mathematical formula.
-3. EXAMPLE: Real-world example or numerical step.
-4. MEMORY: Mnemonic or key memory rule.
-5. NEET ALERT: High-yield exam trap or important condition.
+TARGET LENGTH: about {seconds} seconds. Narration is spoken at about 150 words
+per minute, so write {total_words} words of "narration_text" IN TOTAL (count them: models
+usually write too few), roughly {per_scene} words per scene. Set "duration_hint_seconds" to about the
+time its narration takes to read. Do not pad or rush: the length matters.
 
-SCHEMA REQUIRED (Return {{"scenes": [ ...a list of 5 objects... ]}}):
+SCENE STRUCTURE REQUIRED (exactly {n_scenes} scenes, in this order, using these "part" values):
+{structure}
+
+The example below shows one scene of each type; produce the {n_scenes} scenes listed above.
+
+SCHEMA REQUIRED (Return {{"scenes": [ ...a list of {n_scenes} objects... ]}}):
 
 Each scene has a "visual_type" that decides what is drawn in the right-hand
 panel, and a "visual_data" that supplies its content. A panel with no content is
 worse than no panel, so never emit a visual_type without the matching
-visual_data. Give the five scenes DIFFERENT visual types — repeating one type
+visual_data. Give the scenes DIFFERENT visual types — repeating one type
 across the video makes every slide look identical.
 
   topic_card   {{"kicker": "SOURCED FROM", "chapter": "...", "scope": "Class 11 - Physics"}}
@@ -251,7 +295,7 @@ Rules that matter:
     "part": "HOOK",
     "slide_title": "Short Slide Headline (max 6 words)",
     "slide_bullets": ["Key bullet point 1", "Key bullet point 2"],
-    "narration_text": "2 to 3 natural spoken sentences introducing the topic.",
+    "narration_text": "About {per_scene} words of natural spoken sentences introducing the topic.",
     "visual_type": "topic_card",
     "visual_data": {{"kicker": "SOURCED FROM", "chapter": "Chapter name", "scope": "Class {class_level or '11'} - {subject or 'Physics'}"}},
     "animation_type": "fade_in",

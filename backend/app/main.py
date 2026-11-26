@@ -1,12 +1,13 @@
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import auth, dashboard, generation, health, query, quiz, videos
 from app.core.config import get_settings
-from app.services.database import database
+from app.services.database import DatabaseUnavailable, database
 
 
 @asynccontextmanager
@@ -49,6 +50,21 @@ app = FastAPI(
     version=settings.app_version,
     lifespan=lifespan,
 )
+
+@app.exception_handler(DatabaseUnavailable)
+async def database_unavailable(request: Request, exc: DatabaseUnavailable) -> JSONResponse:
+    """MongoDB is down or restarting: a clear, retryable 503 instead of a 500 crash.
+
+    The backend reconnects by itself once MongoDB is back (see database._ensure_db),
+    and the frontend's account loader retries 5xx responses.
+    """
+    logging.getLogger(__name__).warning("Database unavailable for %s %s", request.method, request.url.path)
+    return JSONResponse(
+        status_code=503,
+        content={"detail": "The database is temporarily unavailable. Please try again in a moment."},
+        headers={"Retry-After": "5"},
+    )
+
 
 app.add_middleware(
     CORSMiddleware,

@@ -278,7 +278,7 @@ export default function QuizPage() {
           <div className="gl-panel qz-panel qz-state" role="status">
             <div className="qz-spinner" aria-hidden="true" />
             <h2>Building your quiz…</h2>
-            <p>Picking questions from your textbook. This can take up to half a minute.</p>
+            <p>Picking questions from your textbook. This usually takes under half a minute; when many students are starting quizzes at once, you may wait in a short queue.</p>
           </div>
         </div>
       </div>
@@ -310,35 +310,45 @@ export default function QuizPage() {
     return (
       <div className="gl-page qz-page">
         <Backdrop />
-        <div className="qz-center">
+        <div className="qz-center qz-center-wide">
           <div className="gl-panel qz-panel qz-state qz-result">
-            <div className="qz-big" aria-hidden="true">{good ? '🎉' : '📚'}</div>
-            <h2>Quiz complete!</h2>
-            <p className="qz-result-topic">{quiz.topic}</p>
-            <div className="qz-score">
-              <svg viewBox="0 0 120 120" aria-hidden="true">
-                <circle cx="60" cy="60" r="52" fill="none" stroke="var(--db-track, #eceef3)" strokeWidth="9" />
-                <circle
-                  cx="60" cy="60" r="52" fill="none" stroke={good ? '#16a34a' : 'var(--gl-red)'} strokeWidth="9" strokeLinecap="round"
-                  strokeDasharray={`${(pct / 100) * 326.7} 326.7`} transform="rotate(-90 60 60)" className="qz-score-ring"
-                />
-              </svg>
-              <span>{summary.correct}/{summary.total}</span>
-            </div>
-            <p className="qz-score-label">{pct}% · {pct >= 80 ? 'Excellent!' : good ? 'Good job!' : 'Keep practising!'}</p>
-
-            <div className="qz-rows">
-              <div className="qz-row"><span>Your ability estimate</span><b className="qz-badge ok">{summary.ability.toFixed(2)}</b></div>
-              {summary.mastery != null && (
-                <div className="qz-row"><span>Mastery of this topic</span><b className="qz-badge ok">{Math.round(summary.mastery * 100)}%</b></div>
-              )}
-              {summary.next_topic && (
-                <div className="qz-row"><span>Revise next: {summary.next_topic}</span><Link to={`/search?topic=${encodeURIComponent(summary.next_topic)}`} className="qz-badge warn">Make a video</Link></div>
-              )}
+            {/* Left: the score. Right: what it means and what to do next. Two
+                columns keep the whole result on one screen, no scrolling. */}
+            <div className="qz-res-left">
+              <div className="qz-big" aria-hidden="true">{good ? '🎉' : '📚'}</div>
+              <h2>Quiz complete!</h2>
+              <p className="qz-result-topic">{quiz.topic}</p>
+              <div className="qz-score">
+                <svg viewBox="0 0 120 120" aria-hidden="true">
+                  <circle cx="60" cy="60" r="52" fill="none" stroke="var(--db-track, #eceef3)" strokeWidth="9" />
+                  <circle
+                    cx="60" cy="60" r="52" fill="none" stroke={good ? '#16a34a' : 'var(--gl-red)'} strokeWidth="9" strokeLinecap="round"
+                    strokeDasharray={`${(pct / 100) * 326.7} 326.7`} transform="rotate(-90 60 60)" className="qz-score-ring"
+                  />
+                </svg>
+                <span>{summary.correct}/{summary.total}</span>
+              </div>
+              <p className="qz-score-label">{pct}% · {pct >= 80 ? 'Excellent!' : good ? 'Good job!' : 'Keep practising!'}</p>
             </div>
 
-            <button type="button" onClick={again} className="gl-gen"><span>New questions on this topic</span></button>
-            <Link to="/quiz" className="qz-secondary">Quiz on another topic</Link>
+            <div className="qz-res-right">
+              <div className="qz-rows">
+                <div className="qz-row">
+                  <span>Your ability score</span>
+                  {/* The adaptive engine scores ability from -3 to 3; shown out of 10 as on the Dashboard. */}
+                  <b className="qz-badge ok">{(Math.max(0, Math.min(10, ((summary.ability + 3) / 6) * 10))).toFixed(1)}/10</b>
+                </div>
+                {summary.mastery != null && (
+                  <div className="qz-row"><span>Mastery of this topic</span><b className="qz-badge ok">{Math.round(summary.mastery * 100)}%</b></div>
+                )}
+                {summary.next_topic && (
+                  <div className="qz-row"><span>Revise next: {summary.next_topic}</span><Link to={`/search?topic=${encodeURIComponent(summary.next_topic)}`} className="qz-badge warn">Make a video</Link></div>
+                )}
+              </div>
+
+              <button type="button" onClick={again} className="gl-gen"><span>New questions on this topic</span></button>
+              <Link to="/quiz" className="qz-secondary">Quiz on another topic</Link>
+            </div>
           </div>
         </div>
       </div>

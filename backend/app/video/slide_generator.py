@@ -75,6 +75,38 @@ VISUAL_X1 = SLIDE_W - SAFE_MARGIN_X   # 1200
 VISUAL_Y0 = 190
 VISUAL_Y1 = CONTENT_BOTTOM
 
+
+class SlideLayout:
+    """Where everything sits on one slide. Landscape and portrait differ only here."""
+
+    def __init__(self, **kw):
+        self.__dict__.update(kw)
+
+
+# 16:9 video: text column on the left, visual panel on the right.
+LANDSCAPE = SlideLayout(
+    w=SLIDE_W, h=SLIDE_H, margin_x=SAFE_MARGIN_X, margin_y=SAFE_MARGIN_Y,
+    text_x=TEXT_X, text_w=TEXT_W, title_y=SAFE_MARGIN_Y + 58, title_max_h=120,
+    text_bottom=CONTENT_BOTTOM,
+    visual=(VISUAL_X0, VISUAL_Y0, VISUAL_X1, VISUAL_Y1),
+    flow=(VISUAL_X0, SAFE_MARGIN_Y, VISUAL_X1, SAFE_MARGIN_Y + 40),
+    bg_panel=[(820, 0), (SLIDE_W, 0), (SLIDE_W, SLIDE_H), (1040, SLIDE_H)],
+)
+
+# 9:16 reel (720x1280): badge, flow strip, title and text stacked on top, the
+# visual panel below them, and the subtitle band at the bottom (kept clear of
+# the area Shorts/Reels apps cover with their own buttons and captions).
+PORTRAIT = SlideLayout(
+    w=720, h=1280, margin_x=60, margin_y=80,
+    text_x=60, text_w=600, title_y=200, title_max_h=150,
+    text_bottom=640,
+    visual=(60, 670, 660, 1040),
+    flow=(60, 140, 660, 180),
+    bg_panel=[(0, 690), (720, 630), (720, 1280), (0, 1280)],
+)
+
+LAYOUTS = {"landscape": LANDSCAPE, "portrait": PORTRAIT}
+
 SCENE_THEMES = {
     'HOOK': {
         'bg': (26, 35, 126),       # Deep Navy Blue
@@ -191,33 +223,31 @@ class SlideRenderer:
 
     # -- individual elements ----------------------------------------------
 
-    def _draw_background(self, img, draw, theme, transparent_bg: bool):
+    def _draw_background(self, img, draw, theme, transparent_bg: bool, L=LANDSCAPE):
         if transparent_bg:
             return
-        # Diagonal tint panel behind the visual column.
-        draw.polygon([(820, 0), (SLIDE_W, 0), (SLIDE_W, SLIDE_H), (1040, SLIDE_H)],
-                     fill=darken(theme['bg'], 0.10))
+        # Diagonal tint panel behind the visual area.
+        draw.polygon(L.bg_panel, fill=darken(theme['bg'], 0.10))
 
-    def _draw_badge(self, draw, theme, part_name: str) -> None:
+    def _draw_badge(self, draw, theme, part_name: str, L=LANDSCAPE) -> None:
         badge_text = part_name.replace('_', ' ')
         font = self.get_font("badge", 20)
         width, height = text_size(badge_text, font)
-        x1, y1 = SAFE_MARGIN_X, SAFE_MARGIN_Y
+        x1, y1 = L.margin_x, L.margin_y
         x2, y2 = x1 + width + 30, y1 + 40
         accent = tuple(theme['accent'][:3]) + (255,)
         draw.rounded_rectangle([x1, y1, x2, y2], radius=10, fill=accent)
         draw.text((x1 + 15, y1 + (40 - height) // 2 - 2), badge_text,
                   font=font, fill=readable_on(theme['accent']))
 
-    def _draw_title(self, draw, theme, title: str) -> int:
+    def _draw_title(self, draw, theme, title: str, L=LANDSCAPE) -> int:
         """Draw the title, auto-shrinking to fit two lines. Returns the y below it."""
         font, lines, line_height = fit_text(
-            title, self._bold_font, TEXT_W, 120, sizes=[44, 38, 34, 30]
+            title, self._bold_font, L.text_w, L.title_max_h, sizes=[44, 38, 34, 30]
         )
-        y = SAFE_MARGIN_Y + 58
-        return draw_lines(draw, (TEXT_X, y), lines, font, theme['text'], line_height)
+        return draw_lines(draw, (L.text_x, L.title_y), lines, font, theme['text'], line_height)
 
-    def _draw_definition(self, draw, theme, definition: str, source: str, y: int) -> int:
+    def _draw_definition(self, draw, theme, definition: str, source: str, y: int, L=LANDSCAPE) -> int:
         """Quoted definition card — the element the slides were missing.
 
         A NEET student needs the exact NCERT wording on screen, not a paraphrase
@@ -226,6 +256,7 @@ class SlideRenderer:
         """
         if not definition:
             return y
+        TEXT_X, TEXT_W = L.text_x, L.text_w
 
         font, lines, line_height = fit_text(
             definition, self._body_font, TEXT_W - 56, 190, sizes=[24, 22, 20, 18]
@@ -253,12 +284,13 @@ class SlideRenderer:
 
         return y + card_h + 20
 
-    def _draw_bullets(self, draw, theme, bullets, y: int) -> int:
+    def _draw_bullets(self, draw, theme, bullets, y: int, L=LANDSCAPE) -> int:
         if not bullets:
             return y
+        TEXT_X, TEXT_W = L.text_x, L.text_w
         font = self.get_font("body", 24)
         for bullet in list(bullets)[:3]:
-            if y > CONTENT_BOTTOM - 30:
+            if y > L.text_bottom - 30:
                 break
             lines = wrap_by_width(str(bullet), font, TEXT_W - 34)[:3]
             draw.ellipse([TEXT_X + 3, y + 9, TEXT_X + 11, y + 17], fill=theme['accent'])
@@ -322,39 +354,41 @@ class SlideRenderer:
 
     # -- main entry point --------------------------------------------------
 
-    def render_scene_slide(self, scene: dict, output_path: str, transparent_bg: bool = False) -> str:
-        """Render one scene to a PNG and return the path."""
+    def render_scene_slide(self, scene: dict, output_path: str, transparent_bg: bool = False,
+                           orientation: str = "landscape") -> str:
+        """Render one scene to a PNG and return the path.
+
+        ``orientation`` is "landscape" (1280x720, 16:9) or "portrait" (720x1280, 9:16 reel).
+        """
+        L = LAYOUTS.get(orientation, LANDSCAPE)
         part_name = scene.get('part', 'CONCEPT').upper()
         theme = self.resolve_theme(scene)
 
         bg_alpha = 0 if transparent_bg else 255
-        img = Image.new('RGBA', (SLIDE_W, SLIDE_H),
+        img = Image.new('RGBA', (L.w, L.h),
                         tuple(theme['bg'][:3]) + (bg_alpha,))
         draw = ImageDraw.Draw(img)
 
-        self._draw_background(img, draw, theme, transparent_bg)
+        self._draw_background(img, draw, theme, transparent_bg, L)
 
         # Accent bar, inside the safe area so zoom cannot crop it away.
-        draw.rectangle([SAFE_MARGIN_X - 36, 0, SAFE_MARGIN_X - 20, SLIDE_H],
+        draw.rectangle([L.margin_x - 36, 0, L.margin_x - 20, L.h],
                        fill=tuple(theme['accent'][:3]) + (255,))
 
-        self._draw_badge(draw, theme, part_name)
+        self._draw_badge(draw, theme, part_name, L)
 
         # Flow strip: where this scene sits in the five-part lesson.
         if scene.get('show_flow', True) and part_name in visuals.FLOW_PARTS:
-            visuals.draw_flow_strip(
-                draw, (VISUAL_X0, SAFE_MARGIN_Y, VISUAL_X1, SAFE_MARGIN_Y + 40),
-                theme, part_name, self._body_font,
-            )
+            visuals.draw_flow_strip(draw, L.flow, theme, part_name, self._body_font)
 
-        y = self._draw_title(draw, theme, scene.get('slide_title', 'NCERT Concepts'))
+        y = self._draw_title(draw, theme, scene.get('slide_title', 'NCERT Concepts'), L)
         y += 14
         y = self._draw_definition(draw, theme, str(scene.get('definition', '')).strip(),
-                                  str(scene.get('definition_source', '')).strip(), y)
-        self._draw_bullets(draw, theme, scene.get('slide_bullets', []), y)
+                                  str(scene.get('definition_source', '')).strip(), y, L)
+        self._draw_bullets(draw, theme, scene.get('slide_bullets', []), y, L)
 
-        # -- right-hand visual panel
-        visual_box = (VISUAL_X0, VISUAL_Y0, VISUAL_X1, VISUAL_Y1)
+        # -- visual panel (right in landscape, below the text in portrait)
+        visual_box = L.visual
         visual_type = str(scene.get('visual_type', 'none')).lower()
         visual_data = scene.get('visual_data') or {}
 
