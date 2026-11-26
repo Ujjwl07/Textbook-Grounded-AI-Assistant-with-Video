@@ -9,7 +9,8 @@ consecutive scenes do not all move identically.
 import logging
 
 from PIL import Image
-from moviepy.editor import CompositeVideoClip
+import numpy as np
+from moviepy.editor import VideoClip
 
 # MoviePy 1.0.3 resizes frames with ``Image.ANTIALIAS``, which Pillow 10 removed
 # (it was an alias of LANCZOS). Restore the alias so clip.resize() keeps working.
@@ -55,23 +56,41 @@ def apply_ken_burns(clip, duration: float, start_zoom: float = 1.0, end_zoom: fl
 def apply_slide_left(clip, duration: float, size: tuple = DEFAULT_SIZE, slide_seconds: float = 0.6):
     """Slide the clip in from the right edge, easing to rest at centre.
 
-    ``set_position`` only takes effect inside a CompositeVideoClip, so the moving
-    clip is wrapped in a canvas of the target ``size``.
+    Implemented as a direct frame function rather than a CompositeVideoClip:
+    the composite ran MoviePy's generic float64 blit on every frame of the
+    scene even though the slide only moves for the first ``slide_seconds``,
+    which made slide_left scenes several times slower to render.
     """
     if duration <= 0:
         return clip
 
-    width = size[0]
+    width, height = size
     slide_seconds = max(0.05, min(slide_seconds, duration))
 
-    def position(t):
-        if t >= slide_seconds:
-            return ("center", "center")
-        offset = width * (1.0 - _ease_out_cubic(t / slide_seconds))
-        return (offset, "center")
+    def fit(frame):
+        fh, fw = frame.shape[:2]
+        if (fh, fw) == (height, width):
+            return frame
+        canvas = np.zeros((height, width, 3), dtype=np.uint8)
+        ch, cw = min(fh, height), min(fw, width)
+        top, left = (height - ch) // 2, (width - cw) // 2
+        stop, sleft = (fh - ch) // 2, (fw - cw) // 2
+        canvas[top:top + ch, left:left + cw] = frame[stop:stop + ch, sleft:sleft + cw, :3]
+        return canvas
 
-    moving = clip.set_position(position)
-    return CompositeVideoClip([moving], size=size).set_duration(duration)
+    def make_frame(t):
+        frame = fit(clip.get_frame(t))
+        if t >= slide_seconds:
+            return frame
+        offset = int(round(width * (1.0 - _ease_out_cubic(t / slide_seconds))))
+        if offset <= 0:
+            return frame
+        out = np.zeros_like(frame)
+        if offset < width:
+            out[:, offset:] = frame[:, :width - offset]
+        return out
+
+    return VideoClip(make_frame, duration=duration)
 
 
 def apply_fade_in_out(clip, fade_in_duration: float = 0.5, fade_out_duration: float = 0.5):
