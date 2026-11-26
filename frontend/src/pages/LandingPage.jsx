@@ -651,7 +651,7 @@ export default function LandingPage() {
           </div>
 
           {wide && (
-            <div className={`hs-bar${active === PANELS.length - 1 ? ' on-faq' : ''}`}>
+            <div className="hs-bar">
               <Link to="/search" className="hs-bar-cta">Search topics <span aria-hidden="true">⟶</span></Link>
               <div className="hs-bar-dots" role="navigation" aria-label="Sections">
                 {PANELS.map((label, i) => (

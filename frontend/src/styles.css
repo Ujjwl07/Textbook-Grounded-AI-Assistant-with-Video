@@ -3849,16 +3849,6 @@ a.db-vtitle:hover { color: var(--gl-red); }
 @keyframes faq-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .faq-ring { animation: none; } }
 
-/* The bottom bar takes the FAQ panel's colours while it is on screen. */
-.hs-bar { transition: background 0.4s, border-color 0.4s; }
-.hs-bar.on-faq { background: #e03144; border-top: 4px solid #0d0d0d; --color-ink: #ffffff; --ink-50: rgba(255, 255, 255, 0.75); --ink-12: rgba(13, 13, 13, 0.28); }
-.hs-bar.on-faq .hs-bar-cta:hover { color: #0d0d0d; }
-.hs-bar.on-faq .hs-bar-dots button.on::before { background: #0d0d0d; }
-.hs-bar.on-faq .hs-bar-progress i { background: #0d0d0d; }
-:root[data-theme='dark'] .hs-bar.on-faq { background: #0f0f12; border-top-color: #f5f5f7; --color-ink: #f5f5f7; --ink-50: rgba(245, 245, 247, 0.6); --ink-12: rgba(245, 245, 247, 0.2); }
-:root[data-theme='dark'] .hs-bar.on-faq .hs-bar-dots button.on::before { background: #e03144; }
-:root[data-theme='dark'] .hs-bar.on-faq .hs-bar-progress i { background: #e03144; }
-
 @media (max-width: 900px) {
   .hp-faq .hp-split { grid-template-columns: 1fr; gap: 30px; }
   .faq-art { display: none; }
