@@ -84,8 +84,9 @@ class Settings(BaseSettings):
     # Quiz questions: Gemini gets this long to answer before the quiz is built
     # from the textbook text instead. Set QUIZ_LLM_ENABLED=false to skip Gemini.
     quiz_llm_enabled: bool = True
-    # Whole fallback chain, not one request: each provider gets ~30 s (llm_router).
-    quiz_llm_timeout_seconds: float = 75.0
+    # Whole fallback chain including time queued for a free provider (llm_router
+    # MAX_WAIT for quiz_generate is 180 s), not one request.
+    quiz_llm_timeout_seconds: float = 240.0
 
     model_config = SettingsConfigDict(
         env_file=str(BACKEND_DIR / ".env"),

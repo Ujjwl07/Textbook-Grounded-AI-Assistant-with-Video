@@ -1,4 +1,7 @@
 import asyncio
+from typing import Optional
+from proglog import ProgressBarLogger
+from pathlib import Path
 import os
 import shutil
 import time
@@ -62,11 +65,35 @@ class RenderTimer:
         }
 
 
+class _EncodeProgress(ProgressBarLogger):
+    """Turns MoviePy's frame counter into encode progress (whole percents only)."""
+
+    def __init__(self, report):
+        super().__init__()
+        self.report = report
+        self.last = -1
+
+    def bars_callback(self, bar, attr, value, old_value=None):
+        if bar != "t" or attr != "index":
+            return
+        total = self.bars[bar].get("total") or 0
+        if not total:
+            return
+        pct = int(100 * value / total)
+        if pct >= self.last + 3 or pct >= 100:
+            self.last = pct
+            self.report("encode", pct, 100, f"Encoding the MP4 ({pct}% of frames)")
+
+
 class VideoAssembler:
     def __init__(self, tts: TTSGenerator, slide_renderer: SlideRenderer):
         self.tts = tts
         self.slide_renderer = slide_renderer
         self.subtitle_engine = SubtitleEngine()
+        # Reels are narrow: shorter lines, a third line allowed, and the band
+        # raised clear of the buttons/caption overlay Shorts and Reels draw.
+        self.subtitle_engine_portrait = SubtitleEngine(font_size=30, max_width=600, band_height=150, max_lines=3)
+        self.subtitle_engine_portrait.band_margin_bottom = 70
         self.settings = get_settings()
 
         # Configure VMake.ai Integration. It stays inert unless both a key and
@@ -76,22 +103,47 @@ class VideoAssembler:
         # Populated after each assemble_full_video call; consumed by the benchmark script.
         self.last_render_stats = {}
 
-    async def assemble_full_video(self, scenes: list, subject: str, output_path: str) -> str:
+    async def assemble_full_video(self, scenes: list, subject: str, output_path: str,
+                                  orientation: str = "landscape", short: bool = False,
+                                  on_progress=None, timeline: Optional[list] = None) -> str:
         """
         Takes a list of scenes and subject, synthesizes TTS, generates slides,
         overlays subtitles, applies the per-scene animation declared in the scene
         JSON, and concatenates into a final MP4 video.
+
+        ``orientation``: "landscape" (16:9, settings.video_size) or "portrait"
+        (9:16 reel, 720x1280). ``short``: trim the intro/outro for 30-second videos.
+        ``on_progress(step, done, total, message)`` is called as work advances,
+        with step "narrate", "render" or "encode"; it must be thread-safe, because
+        encoding runs on a worker thread.
+        ``timeline``: if given, filled with one entry per scene (part, title,
+        start and duration in seconds of the final video, narration text and
+        word timings) so the watch page can show scenes, transcript and captions.
         """
-        temp_dir = self.settings.video_output_dir / "temp"
+        def report(step, done, total, message):
+            if on_progress:
+                try:
+                    on_progress(step, done, total, message)
+                except Exception:  # progress reporting must never break a render
+                    logger.debug("progress callback failed", exc_info=True)
+
+        # A folder per render: two videos built at the same time used to share
+        # outputs/videos/temp and delete each other's files on cleanup.
+        temp_dir = self.settings.video_output_dir / "temp" / Path(output_path).stem
         temp_dir.mkdir(parents=True, exist_ok=True)
 
-        size = self.settings.video_size
+        portrait = orientation == "portrait"
+        size = (720, 1280) if portrait else self.settings.video_size
+        subtitles = self.subtitle_engine_portrait if portrait else self.subtitle_engine
+        bookend = 1.2 if short else BOOKEND_DURATION
         timer = RenderTimer()
         clips = []
         temp_files = []
 
         if scenes and not self.vmake.is_enabled() and os.environ.get("VIDEO_PARALLEL", "1") != "0":
-            return await self._assemble_parallel(scenes, subject, output_path, temp_dir, size, timer)
+            return await self._assemble_parallel(scenes, subject, output_path, temp_dir, size, timer,
+                                                 orientation=orientation, bookend=bookend,
+                                                 report=report, timeline=timeline)
 
         try:
             # 1. Generate Intro Slide (if list is not empty)
@@ -107,36 +159,56 @@ class VideoAssembler:
                         "visual_type": "none",
                     }
                     intro_slide_path = str(temp_dir / "intro_slide.png")
-                    self.slide_renderer.render_scene_slide(intro_scene, intro_slide_path)
+                    self.slide_renderer.render_scene_slide(intro_scene, intro_slide_path, orientation=orientation)
                     temp_files.append(intro_slide_path)
 
-                    intro_clip = ImageClip(intro_slide_path, duration=BOOKEND_DURATION)
-                    intro_clip = apply_ken_burns(intro_clip, BOOKEND_DURATION)
+                    intro_clip = ImageClip(intro_slide_path, duration=bookend)
+                    intro_clip = apply_ken_burns(intro_clip, bookend)
                     intro_clip = apply_fade_in_out(intro_clip, fade_in_duration=0.5, fade_out_duration=0.5)
                     clips.append(intro_clip)
 
-            # 2. Generate Scene Clips
-            # Synthesise all narration concurrently instead of one scene at a time.
-            audio_paths = [str(temp_dir / f"audio_{i}.mp3") for i in range(len(scenes))]
-            with timer.time("tts"):
-                audio_results = await asyncio.gather(*[
-                    self.tts.generate_scene_audio(sc["narration_text"], subject, audio_paths[i])
-                    for i, sc in enumerate(scenes)
-                ])
+            # 2a. Narration pass: every scene's voice track first, so the
+            # progress page can show "Narrate" and "Render" as separate steps.
+            narrated = []
             for i, scene in enumerate(scenes):
-                logger.info("Processing scene %s/%s: %s", i + 1, len(scenes), scene.get("part"))
-
-                # A. Generate narration audio
-                audio_path = audio_paths[i]
-                audio_result = audio_results[i]
+                report("narrate", i, len(scenes), f"Narrating scene {i + 1} of {len(scenes)}: {scene.get('slide_title', '')}")
+                audio_path = str(temp_dir / f"audio_{i}.mp3")
+                with timer.time("tts"):
+                    audio_result = await self.tts.generate_scene_audio(
+                        scene["narration_text"],
+                        subject,
+                        audio_path,
+                    )
                 temp_files.append(audio_path)
-
                 audio_clip = AudioFileClip(audio_path)
-                audio_duration = audio_clip.duration
-
                 # The segmenter's duration_hint_seconds can hold the slide slightly
                 # longer than the narration, but never shorter than the voice track.
-                duration = resolve_scene_duration(audio_duration, scene.get("duration_hint_seconds"))
+                duration = resolve_scene_duration(audio_clip.duration, scene.get("duration_hint_seconds"))
+                narrated.append((audio_result, audio_clip, duration))
+            report("narrate", len(scenes), len(scenes), "Narration ready")
+
+            if timeline is not None:
+                timeline.clear()
+                start = bookend if scenes else 0.0
+                for scene, (audio_result, _clip, duration) in zip(scenes, narrated):
+                    timeline.append({
+                        "part": str(scene.get("part", "")),
+                        "title": str(scene.get("slide_title", "")),
+                        "start": round(start, 2),
+                        "duration": round(duration, 2),
+                        "text": str(scene.get("narration_text", "")),
+                        "words": [
+                            [str(w.get("word", "")), round(start + float(w.get("start", 0.0)), 2)]
+                            for w in audio_result.get("word_boundaries", []) or []
+                        ],
+                    })
+                    start += duration
+
+            # 2b. Visual pass: slides, animation and burned-in subtitles.
+            for i, scene in enumerate(scenes):
+                logger.info("Processing scene %s/%s: %s", i + 1, len(scenes), scene.get("part"))
+                report("render", i, len(scenes), f"Drawing scene {i + 1} of {len(scenes)}: {scene.get('slide_title', '')}")
+                audio_result, audio_clip, duration = narrated[i]
 
                 # B. Render slide
                 slide_path = str(temp_dir / f"slide_{i}.png")
@@ -150,7 +222,8 @@ class VideoAssembler:
                 # If background video is available, render transparent slide, otherwise solid
                 use_bg_video = bg_video_url is not None
                 with timer.time("slide_render"):
-                    self.slide_renderer.render_scene_slide(scene, slide_path, transparent_bg=use_bg_video)
+                    self.slide_renderer.render_scene_slide(scene, slide_path, transparent_bg=use_bg_video,
+                                                           orientation=orientation)
                 temp_files.append(slide_path)
 
                 # C. Build the scene visual (slide over VMake background, or animated slide)
@@ -183,7 +256,7 @@ class VideoAssembler:
                 word_boundaries = audio_result.get("word_boundaries", [])
                 if word_boundaries:
                     with timer.time("subtitles"):
-                        scene_video = self.subtitle_engine.burn_onto(
+                        scene_video = subtitles.burn_onto(
                             scene_video,
                             word_boundaries,
                             duration,
@@ -208,13 +281,15 @@ class VideoAssembler:
                         "visual_type": "none",
                     }
                     outro_slide_path = str(temp_dir / "outro_slide.png")
-                    self.slide_renderer.render_scene_slide(outro_scene, outro_slide_path)
+                    self.slide_renderer.render_scene_slide(outro_scene, outro_slide_path, orientation=orientation)
                     temp_files.append(outro_slide_path)
 
-                    outro_clip = ImageClip(outro_slide_path, duration=BOOKEND_DURATION)
-                    outro_clip = apply_ken_burns(outro_clip, BOOKEND_DURATION)
+                    outro_clip = ImageClip(outro_slide_path, duration=bookend)
+                    outro_clip = apply_ken_burns(outro_clip, bookend)
                     outro_clip = apply_fade_in_out(outro_clip, fade_in_duration=0.5, fade_out_duration=0.5)
                     clips.append(outro_clip)
+
+            report("render", len(scenes), len(scenes), "Slides and subtitles ready")
 
             # 4. Concatenate and compile final video
             logger.info("Concatenating all video clips...")
@@ -226,8 +301,13 @@ class VideoAssembler:
                 "Writing final video file to %s (preset=%s, threads=%s)...",
                 output_path, self.settings.video_preset, threads,
             )
+            report("encode", 0, 100, "Encoding the MP4")
             with timer.time("encode"):
-                final_video.write_videofile(
+                # Encoding is CPU-bound and takes about a minute. On a worker
+                # thread it no longer freezes the server: progress updates keep
+                # flowing and other students' requests are still answered.
+                await asyncio.to_thread(
+                    final_video.write_videofile,
                     output_path,
                     fps=self.settings.video_fps,
                     codec="libx264",
@@ -235,8 +315,9 @@ class VideoAssembler:
                     preset=self.settings.video_preset,
                     threads=threads,
                     verbose=False,
-                    logger=None,
+                    logger=_EncodeProgress(report) if on_progress else None,
                 )
+            report("encode", 100, 100, "Encoding finished")
 
             # Close all clip resources to release files
             final_video.close()
@@ -251,6 +332,7 @@ class VideoAssembler:
                 "vmake_enabled": self.vmake.is_enabled(),
                 "fps": self.settings.video_fps,
                 "resolution": f"{size[0]}x{size[1]}",
+                "orientation": orientation,
                 "x264_preset": self.settings.video_preset,
                 "threads": threads,
             })
@@ -277,24 +359,52 @@ class VideoAssembler:
             except Exception:
                 pass
 
-    async def _assemble_parallel(self, scenes, subject, output_path, temp_dir, size, timer) -> str:
+    async def _assemble_parallel(self, scenes, subject, output_path, temp_dir, size, timer,
+                                 orientation="landscape", bookend=BOOKEND_DURATION,
+                                 report=lambda *a: None, timeline=None) -> str:
         """Render slides + audio here, then encode every segment in its own process
         and join them with FFmpeg's concat demuxer (no re-encode)."""
         from app.video.segment_encoder import concat_without_reencode, encode_segments_parallel
 
         try:
             audio_paths = [str(temp_dir / f"audio_{i}.mp3") for i in range(len(scenes))]
+            report("narrate", 0, len(scenes), f"Narrating {len(scenes)} scenes")
             with timer.time("tts"):
                 audio_results = await asyncio.gather(*[
                     self.tts.generate_scene_audio(sc["narration_text"], subject, audio_paths[i])
                     for i, sc in enumerate(scenes)
                 ])
+            report("narrate", len(scenes), len(scenes), "Narration ready")
+
+            durations = []
+            for i, scene in enumerate(scenes):
+                a = AudioFileClip(audio_paths[i])
+                durations.append(resolve_scene_duration(a.duration, scene.get("duration_hint_seconds")))
+                a.close()
+
+            if timeline is not None:
+                timeline.clear()
+                start = bookend
+                for scene, audio_result, duration in zip(scenes, audio_results, durations):
+                    timeline.append({
+                        "part": str(scene.get("part", "")),
+                        "title": str(scene.get("slide_title", "")),
+                        "start": round(start, 2),
+                        "duration": round(duration, 2),
+                        "text": str(scene.get("narration_text", "")),
+                        "words": [
+                            [str(w.get("word", "")), round(start + float(w.get("start", 0.0)), 2)]
+                            for w in audio_result.get("word_boundaries", []) or []
+                        ],
+                    })
+                    start += duration
 
             n_segments = len(scenes) + 2
             workers = max(1, min(n_segments, (os.cpu_count() or 2) - 1))
             threads = max(1, (os.cpu_count() or 1) // workers)
             common = {"size": list(size), "fps": self.settings.video_fps,
-                      "preset": self.settings.video_preset, "threads": threads}
+                      "preset": self.settings.video_preset, "threads": threads,
+                      "portrait": orientation == "portrait"}
 
             jobs = []
             with timer.time("slide_render"):
@@ -310,32 +420,34 @@ class VideoAssembler:
                 }
                 for name in ("intro", "outro"):
                     path = str(temp_dir / f"{name}_slide.png")
-                    self.slide_renderer.render_scene_slide(bookends[name], path)
+                    self.slide_renderer.render_scene_slide(bookends[name], path, orientation=orientation)
                     bookends[name] = path
 
                 jobs.append({**common, "kind": "bookend", "slide_path": bookends["intro"],
-                             "duration": BOOKEND_DURATION, "out_path": str(temp_dir / "seg_000.mp4")})
+                             "duration": bookend, "out_path": str(temp_dir / "seg_000.mp4")})
                 for i, scene in enumerate(scenes):
-                    a = AudioFileClip(audio_paths[i])
-                    duration = resolve_scene_duration(a.duration, scene.get("duration_hint_seconds"))
-                    a.close()
+                    duration = durations[i]
+                    report("render", i, len(scenes), f"Drawing scene {i + 1} of {len(scenes)}: {scene.get('slide_title', '')}")
                     slide_path = str(temp_dir / f"slide_{i}.png")
-                    self.slide_renderer.render_scene_slide(scene, slide_path)
+                    self.slide_renderer.render_scene_slide(scene, slide_path, orientation=orientation)
                     jobs.append({**common, "kind": "scene", "slide_path": slide_path,
                                  "audio_path": audio_paths[i], "duration": duration,
                                  "animation_type": scene.get("animation_type"),
                                  "word_boundaries": audio_results[i].get("word_boundaries", []),
                                  "out_path": str(temp_dir / f"seg_{i + 1:03d}.mp4")})
                 jobs.append({**common, "kind": "bookend", "slide_path": bookends["outro"],
-                             "duration": BOOKEND_DURATION,
+                             "duration": bookend,
                              "out_path": str(temp_dir / f"seg_{len(scenes) + 1:03d}.mp4")})
 
             logger.info("Encoding %s segments in %s processes (%s x264 threads each)",
                         len(jobs), workers, threads)
+            report("render", len(scenes), len(scenes), "Slides ready")
+            report("encode", 0, 100, f"Encoding {len(jobs)} segments in parallel")
             loop = asyncio.get_running_loop()
             with timer.time("encode"):
                 seg_paths = await loop.run_in_executor(None, encode_segments_parallel, jobs, workers)
                 concat_without_reencode(seg_paths, output_path)
+            report("encode", 100, 100, "Encoding finished")
 
             final = AudioFileClip(output_path)
             video_duration = final.duration
@@ -349,6 +461,7 @@ class VideoAssembler:
                 "vmake_enabled": False,
                 "fps": self.settings.video_fps,
                 "resolution": f"{size[0]}x{size[1]}",
+                "orientation": orientation,
                 "x264_preset": self.settings.video_preset,
                 "threads": threads,
                 "parallel_workers": workers,

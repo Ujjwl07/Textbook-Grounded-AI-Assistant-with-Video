@@ -147,7 +147,7 @@ export default function App() {
 
         {searchOpen && <HeaderSearch onClose={closeSearch} />}
       </header>
-      <main className={location.pathname === '/' || /^\/(login|register)/.test(location.pathname) ? 'container-full' : 'container'}>
+      <main className={location.pathname === '/' || /^\/(login|register|generate)/.test(location.pathname) ? 'container-full' : 'container'}>
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/search" element={<ProtectedRoute><TopicSearch /></ProtectedRoute>} />

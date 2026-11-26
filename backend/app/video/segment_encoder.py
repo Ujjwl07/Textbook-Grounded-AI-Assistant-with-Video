@@ -52,7 +52,13 @@ def encode_segment(job: dict) -> str:
     else:
         clip = apply_scene_animation(clip, job.get("animation_type"), duration, size=size)
         if job.get("word_boundaries"):
-            clip = SubtitleEngine().burn_onto(clip, job["word_boundaries"], duration, size=size)
+            if job.get("portrait"):
+                # Same settings as VideoAssembler.subtitle_engine_portrait.
+                engine = SubtitleEngine(font_size=30, max_width=600, band_height=150, max_lines=3)
+                engine.band_margin_bottom = 70
+            else:
+                engine = SubtitleEngine()
+            clip = engine.burn_onto(clip, job["word_boundaries"], duration, size=size)
         from moviepy.editor import CompositeAudioClip
 
         audio = AudioFileClip(job["audio_path"])

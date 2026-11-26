@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import IntroLoader from '../components/IntroLoader'
+import StudyPlan from '../components/StudyPlan'
 import { Link, useNavigate } from 'react-router-dom'
 
 // Length of the sample clip in seconds (shown as 3:10 on the timeline).
@@ -230,32 +231,18 @@ const STEPS = [
   ['03', 'Prove', 'Test with a quiz', 'NEET-style MCQs with instant explanations, then it tracks your mastery.', 'lock it in'],
 ]
 
-const SUBJECT_TABS = [
-  { key: 'biology', label: 'Biology' },
-  { key: 'physics', label: 'Physics' },
-  { key: 'chemistry', label: 'Chemistry' },
-]
-
-const CHAPTERS = {
-  biology: [['Photosynthesis in Higher Plants', 8, '11'], ['Human Physiology', 14, '11'], ['Genetics & Evolution', 11, '12'], ['Cell: Structure & Function', 7, '11'], ['Biotechnology', 9, '12'], ['Ecology', 6, '12']],
-  physics: [['Laws of Motion', 9, '11'], ['Thermodynamics', 7, '11'], ['Current Electricity', 10, '12'], ['Ray Optics', 8, '12'], ['Semiconductors', 6, '12'], ['Oscillations', 5, '11']],
-  chemistry: [['Chemical Bonding', 10, '11'], ['Equilibrium', 8, '11'], ['Electrochemistry', 7, '12'], ['Organic: Hydrocarbons', 12, '11'], ['Coordination Compounds', 6, '12'], ['Thermodynamics', 5, '11']],
-}
-
 const QUIZ_OPTIONS = ['On the thylakoid membranes', 'In the stroma', 'In the mitochondrial matrix', 'On the outer chloroplast membrane']
 const QUIZ_CORRECT = 0
 
 const FAQ = [
-  ['Is the content really from NCERT?', 'Yes. Every video and answer is generated from, and cited to, the official NCERT textbooks for Class 11 and 12. You can open the exact source line any time.'],
-  ['Which subjects are covered?', 'Biology, Physics and Chemistry: the full NEET syllabus across Class 11 and 12, with new chapters added weekly.'],
-  ['How long are the videos?', 'Most explainers run 2 to 4 minutes and focus on a single concept, so you can revise a whole chapter in one sitting.'],
-  ['Can I use it for free?', 'Yes. Three chapters a month are free.'],
+  ['Is the content really from NCERT?', 'Yes. Every script and quiz question is retrieved from the NCERT chapter text, and each lesson shows the exact source passage.'],
+  ['Which subjects are covered?', 'Physics, Chemistry and Biology for Class 11 and 12: all NEET chapters, in official NCERT order.'],
+  ['How long are the videos?', 'You choose: 30 seconds, 1, 2 or 5 minutes, as a 16:9 video or a 9:16 reel.'],
+  ['Can I use it for free?', 'Yes. Sign in and start generating lessons and quizzes right away.'],
 ]
 
-const PANELS = ['Intro', 'Thesis', 'Grounded', 'How it works', 'Features', 'Subjects', 'Quiz', 'Progress', 'FAQ']
+const PANELS = ['Intro', 'Thesis', 'Grounded', 'How it works', 'Features', 'Study Plan', 'Quiz', 'Progress', 'FAQ']
 
-const searchLink = (topic, subject, cls) =>
-  `/search?${new URLSearchParams({ topic, subject, class: cls }).toString()}`
 
 /* ------------------------------------------------------------------ */
 /* Small pieces                                                        */
@@ -399,8 +386,8 @@ function useHorizontalScroll(outerRef, frameRef, trackRef, barRef, onIndex) {
 /* ------------------------------------------------------------------ */
 export default function LandingPage() {
   const nav = useNavigate()
-  const [subject, setSubject] = useState('biology')
   const [active, setActive] = useState(0)
+  const [faqOpen, setFaqOpen] = useState([0])
 
   const outerRef = useRef(null)
   const frameRef = useRef(null)
@@ -575,34 +562,9 @@ export default function LandingPage() {
               </div>
             </section>
 
-            {/* 06 · Subjects */}
-            <section className="hp hp-subjects" aria-label="Syllabus coverage">
-              <div className="hp-in">
-                <div className="hs-subjects-head rv">
-                  <div>
-                    <Eyebrow>Syllabus coverage</Eyebrow>
-                    <h2 className="hs-h2">Pick a subject, start revising</h2>
-                  </div>
-                  <div className="hs-tabs" role="tablist" aria-label="Subject">
-                    {SUBJECT_TABS.map((t) => (
-                      <button
-                        key={t.key} type="button" role="tab" aria-selected={subject === t.key}
-                        className={`hs-tab${subject === t.key ? ' on' : ''}`} onClick={() => setSubject(t.key)}
-                      >
-                        {t.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="hs-chapters rv" role="tabpanel">
-                  {CHAPTERS[subject].map(([title, videos, cls]) => (
-                    <Link key={title} to={searchLink(title, subject, cls)} className="hs-chapter">
-                      <div><strong>{title}</strong><span>Class {cls} · {videos} videos</span></div>
-                      <span className="hs-chapter-go" aria-hidden="true">▶</span>
-                    </Link>
-                  ))}
-                </div>
-              </div>
+            {/* 06 · Study plan: NCERT chapter trajectory */}
+            <section className="hp hp-plan" aria-label="Study plan">
+              <StudyPlan />
             </section>
 
             {/* 07 · Quiz */}
@@ -655,20 +617,36 @@ export default function LandingPage() {
             <section className="hp hp-faq" aria-label="Questions">
               <div className="hp-in hp-split">
                 <div className="rv">
-                  <h2 className="hs-h2">Questions, answered</h2>
+                  <h2 className="hs-h2 faq-h">Questions,<br />answered</h2>
                   <p className="hs-lede">Textbook-grounded explainer videos and quizzes for NEET. Made for NCERT Class 11 and 12.</p>
                   <p className="hs-hand hs-hand-lg">keep that streak alive 🔥</p>
                   <p className="hs-copy">© 2026 TextbookAI · Built for NEET 2026</p>
                 </div>
-                <div className="hs-faq rv">
-                  {FAQ.map(([q, a]) => (
-                    <details key={q}>
-                      <summary>{q}<span aria-hidden="true">+</span></summary>
-                      <p>{a}</p>
-                    </details>
-                  ))}
+                <div className="faq-list rv">
+                  {FAQ.map(([q, a], i) => {
+                    const open = faqOpen.includes(i)
+                    return (
+                      <div key={q} className={`faq-q${open ? ' open' : ''}`}>
+                        <button
+                          type="button" className="faq-h-row" aria-expanded={open} aria-controls={`faq-a-${i}`}
+                          onClick={() => setFaqOpen((o) => (o.includes(i) ? o.filter((x) => x !== i) : [...o, i]))}
+                        >
+                          {q}<span className="faq-plus" aria-hidden="true">+</span>
+                        </button>
+                        <div className="faq-a" id={`faq-a-${i}`} role="region" aria-hidden={!open}><p>{a}</p></div>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
+              <svg className="faq-art" viewBox="0 0 200 200" fill="none" stroke="currentColor" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="100" cy="100" r="10" fill="currentColor" />
+                <g className="faq-ring">
+                  <ellipse cx="100" cy="100" rx="84" ry="30" />
+                  <ellipse cx="100" cy="100" rx="84" ry="30" transform="rotate(60 100 100)" />
+                  <ellipse cx="100" cy="100" rx="84" ry="30" transform="rotate(120 100 100)" />
+                </g>
+              </svg>
             </section>
           </div>
 

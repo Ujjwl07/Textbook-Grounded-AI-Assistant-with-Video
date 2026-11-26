@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional, Literal
 
 from pydantic import BaseModel, Field
 
@@ -17,6 +17,9 @@ class GenerateRequest(BaseModel):
     subject: Optional[str] = Field(default=None, max_length=80)
     class_level: Optional[str] = Field(default=None, max_length=40)
     output_mode: str = Field(default="video", pattern="^(video|answer|quiz)$")
+    # Target length of the finished video, and its shape: 16:9 or a 9:16 reel.
+    duration_seconds: Literal[30, 60, 120, 300] = 60
+    orientation: Literal["landscape", "portrait"] = "landscape"
 
 
 class GenerateResponse(BaseModel):
@@ -42,6 +45,26 @@ class JobState(BaseModel):
     # fallback that nobody can see is a silent fallback, so it is recorded on
     # the job and returned by the status and video endpoints.
     scene_source: Optional[str] = None
+    duration_seconds: int = 60
+    orientation: str = "landscape"
+    # Live progress for the "Generating" page: the five steps (retrieve, script,
+    # narrate, render, encode), how long each finished one took, and what the
+    # step is working on.
+    step: Optional[str] = None
+    step_times: Dict[str, float] = Field(default_factory=dict)
+    step_started_at: Optional[datetime] = None
+    scene_parts: List[str] = Field(default_factory=list)
+    scene_titles: List[str] = Field(default_factory=list)
+    scenes_done: int = 0
+    sources: List[Dict[str, str]] = Field(default_factory=list)
+    source_label: Optional[str] = None
+    resolved_subject: Optional[str] = None
+    resolved_class_level: Optional[str] = None
+    # The NCERT chapter most passages came from, for the watch page.
+    chapter_number: Optional[str] = None
+    chapter_name: Optional[str] = None
+    # One entry per scene: part, title, start/duration (s), narration, word times.
+    timeline: List[Dict[str, Any]] = Field(default_factory=list)
     error: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)

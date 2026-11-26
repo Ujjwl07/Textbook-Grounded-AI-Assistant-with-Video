@@ -37,6 +37,18 @@ export async function getVideo(jobId) {
   return api.get(`/video/${jobId}`)
 }
 
+export async function updateLessonProgress(jobId, fields) {
+  return api.put(`/video/${jobId}/progress`, fields)
+}
+
+export async function getFlashcards(jobId, refresh = false) {
+  return api.post(`/video/${jobId}/flashcards`, null, { params: { refresh }, timeout: 120000 })
+}
+
+export async function askDoubt(payload) {
+  return api.post('/query/ask', { top_k: 5, generate_answer: true, ...payload }, { timeout: 90000 })
+}
+
 export async function listVideos() {
   return api.get('/videos')
 }
@@ -47,7 +59,7 @@ export async function submitQuiz(attempt) {
 
 export async function generateQuiz(payload) {
   // Quiz generation can take a while (Gemini, then a textbook-only fallback).
-  return api.post('/quiz/generate', payload, { timeout: 90000 })
+  return api.post('/quiz/generate', payload, { timeout: 300000 })
 }
 
 export async function getNextQuestion(quizId) {

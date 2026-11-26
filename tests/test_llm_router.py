@@ -56,7 +56,13 @@ def env(monkeypatch):
     router.reset_state()
     clock = {"now": 1000.0}
     monkeypatch.setattr(router, "_clock", lambda: clock["now"])
-    monkeypatch.setattr(router, "_sleep", lambda seconds: None)
+    clock["slept"] = 0.0
+
+    def fake_sleep(seconds):  # waiting moves the fake clock forward
+        clock["now"] += seconds
+        clock["slept"] += seconds
+
+    monkeypatch.setattr(router, "_sleep", fake_sleep)
     yield monkeypatch, clock
     router.reset_state()
 
@@ -199,7 +205,8 @@ def test_fenced_json_counts_as_valid(env):
 def test_all_providers_failing_raises_with_each_reason(env):
     monkeypatch, _ = env
     use(monkeypatch, {
-        "groq": [http_error(openai.RateLimitError, 429, "busy")],
+        # A daily quota is never waited out, so nothing here is queued for.
+        "groq": [http_error(openai.RateLimitError, 429, "Rate limit reached on requests per day (RPD)")],
         "gemini": [http_error(openai.InternalServerError, 500, "boom"), http_error(openai.InternalServerError, 500, "boom")],
         "openrouter": [http_error(openai.APIStatusError, 402, "no credits")],
     })
@@ -251,3 +258,130 @@ def test_max_tokens_is_capped(env):
     monkeypatch.setattr(router, "_create_completion", fake)
     call_llm("video_script", "p", max_tokens=10**6)
     assert seen["max_tokens"] == router.MAX_TOKENS_CAP
+
+
+def test_groq_json_validate_failed_400_is_retried_then_falls_back(env):
+    monkeypatch, _ = env
+    bad_json = http_error(openai.BadRequestError, 400,
+                          "Failed to generate JSON. Please adjust your prompt. code: json_validate_failed")
+    fake = use(monkeypatch, {"groq": [bad_json, bad_json], "gemini": ['{"ok": true}']})
+    assert call_llm("quiz_generate", "p", json_mode=True) == '{"ok": true}'
+    assert fake.called() == ["groq", "groq", "gemini"]
+
+
+def test_plain_400_still_does_not_fall_back(env):
+    monkeypatch, _ = env
+    fake = use(monkeypatch, {"groq": [http_error(openai.BadRequestError, 400, "invalid model parameter")],
+                             "gemini": ["unused"]})
+    with pytest.raises(LLMRequestError):
+        call_llm("quiz_generate", "p", json_mode=True)
+    assert fake.called() == ["groq"]
+
+
+
+# --- request queue: bursts wait instead of failing ------------------------------
+
+def test_short_rate_limit_everywhere_waits_then_succeeds(env):
+    monkeypatch, clock = env
+    fake = use(monkeypatch, {
+        "groq": [http_error(openai.RateLimitError, 429, "busy", {"retry-after": "5"}), "after waiting"],
+        "openrouter": [http_error(openai.RateLimitError, 429, "busy", {"retry-after": "10"})],
+        "gemini": [http_error(openai.RateLimitError, 429, "busy", {"retry-after": "20"})],
+    })
+    assert call_llm("mistake_analysis", "p") == "after waiting"
+    assert fake.called() == ["groq", "openrouter", "gemini", "groq"]
+    assert 5 <= clock["slept"] < 6  # waited for the soonest provider, not the longest
+
+
+def test_daily_quota_is_never_waited_out(env):
+    monkeypatch, clock = env
+    daily = lambda: http_error(openai.RateLimitError, 429, "Rate limit reached on requests per day (RPD)")
+    use(monkeypatch, {"groq": [daily()], "openrouter": [daily()], "gemini": [daily()]})
+    with pytest.raises(AllProvidersFailedError):
+        call_llm("mistake_analysis", "p")
+    assert clock["slept"] == 0
+
+
+def test_queue_gives_up_after_the_task_max_wait(env):
+    monkeypatch, clock = env
+    for name in ("GEMINI_API_KEY", "OPENROUTER_API_KEY"):
+        monkeypatch.delenv(name)
+    limited = lambda: http_error(openai.RateLimitError, 429, "busy", {"retry-after": "30"})
+    use(monkeypatch, {"groq": [limited(), limited()]})
+    with pytest.raises(AllProvidersFailedError) as info:
+        call_llm("quiz_generate", "p")  # MAX_WAIT 40 s: one 30 s wait, then a 30 s wait won't fit
+    assert clock["slept"] < router.MAX_WAIT["quiz_generate"]
+    assert any(name == "queue" for name, _ in info.value.failures)
+
+
+def test_tokens_per_minute_budget_spills_to_the_next_provider(env):
+    monkeypatch, _ = env
+    monkeypatch.setitem(router.LIMITS, "groq", {"concurrency": 4, "tpm": 1500})
+    fake = use(monkeypatch, {"groq": ["first"], "gemini": ["second"]})
+    assert call_llm("quiz_generate", "x" * 2000) == "first"        # ~1,800 tokens: allowed into an empty window
+    assert call_llm("quiz_generate", "y" * 2000) == "second"       # groq's minute is spent: next provider
+    assert fake.called() == ["groq", "gemini"]
+
+
+def test_only_provider_out_of_tokens_waits_for_the_window(env):
+    monkeypatch, clock = env
+    for name in ("GEMINI_API_KEY", "OPENROUTER_API_KEY"):
+        monkeypatch.delenv(name)
+    monkeypatch.setitem(router.LIMITS, "groq", {"concurrency": 4, "tpm": 1000})
+    fake = use(monkeypatch, {"groq": ["one", "two"]})
+    assert call_llm("mistake_analysis", "a" * 3000) == "one"
+    assert call_llm("mistake_analysis", "b" * 3000) == "two"       # queued until the first minute aged out
+    assert fake.called() == ["groq", "groq"]
+    assert 59 <= clock["slept"] <= 62
+
+
+def test_hard_failures_are_not_retried_while_queuing(env):
+    monkeypatch, clock = env
+    request = httpx.Request("POST", "https://example.test")
+    fake = use(monkeypatch, {
+        "groq": [http_error(openai.RateLimitError, 429, "busy", {"retry-after": "3"}), "groq ok"],
+        "gemini": [openai.APITimeoutError(request=request), openai.APITimeoutError(request=request)],
+        "openrouter": [http_error(openai.InternalServerError, 500, "x"), http_error(openai.InternalServerError, 500, "x")],
+    })
+    assert call_llm("quiz_generate", "p") == "groq ok"
+    # gemini and openrouter each got their one retry in round 1 and were not tried again.
+    assert fake.called() == ["groq", "gemini", "gemini", "openrouter", "openrouter", "groq"]
+
+
+def test_concurrency_limit_queues_simultaneous_calls(monkeypatch):
+    """Real threads and a real clock: with room for one request, a burst runs one at a time."""
+    import threading
+    import time as real_time
+
+    for name in ("GEMINI_API_KEY", "OPENROUTER_API_KEY"):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv("GROQ_API_KEY", "test-key-for-groq_api_key")
+    router.reset_state()
+    monkeypatch.setattr(router, "_clock", real_time.monotonic)
+    monkeypatch.setattr(router, "_sleep", real_time.sleep)
+    monkeypatch.setattr(router, "QUEUE_POLL_SECONDS", 0.02)
+    monkeypatch.setitem(router.LIMITS, "groq", {"concurrency": 1, "tpm": None})
+
+    in_flight = {"now": 0, "peak": 0}
+    lock = threading.Lock()
+
+    def slow_provider(provider, model, messages, *, json_mode, max_tokens, timeout):
+        with lock:
+            in_flight["now"] += 1
+            in_flight["peak"] = max(in_flight["peak"], in_flight["now"])
+        real_time.sleep(0.05)
+        with lock:
+            in_flight["now"] -= 1
+        return "ok"
+
+    monkeypatch.setattr(router, "_create_completion", slow_provider)
+    results = []
+    threads = [threading.Thread(target=lambda i=i: results.append(call_llm("quiz_generate", f"q{i}")))
+               for i in range(5)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join(timeout=10)
+    router.reset_state()
+    assert results == ["ok"] * 5   # nobody failed
+    assert in_flight["peak"] == 1  # but they went through one at a time
