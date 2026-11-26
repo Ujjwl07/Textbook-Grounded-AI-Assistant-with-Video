@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import Any, Dict, Optional, Union
 from fastapi import APIRouter, HTTPException, Query, status
@@ -32,7 +33,9 @@ async def ask_question(request: QueryRequest) -> RetrievalResult:
     'retrieved_chunks.log' file, and returns the grounded Gemini answer, context, and chunks.
     """
     try:
-        result = retriever.retrieve(
+        # On a worker thread: the embedding search would otherwise stall the server.
+        result = await asyncio.to_thread(
+            retriever.retrieve,
             query=request.query,
             top_k=request.top_k,
             subject=request.subject,

@@ -196,7 +196,11 @@ export default function Dashboard() {
   async function retry(v) {
     setRetrying(v.job_id)
     try {
-      const res = await generateVideo({ topic: v.topic, subject: v.subject, class_level: v.class_level || '11' })
+      const res = await generateVideo({
+        topic: v.topic, subject: v.subject, class_level: v.class_level || '11',
+        ...(v.duration_seconds ? { duration_seconds: v.duration_seconds } : {}),
+        ...(v.orientation ? { orientation: v.orientation } : {}),
+      })
       nav(`/generate/${res.data.job_id}`)
     } catch (err) {
       setError(err.response?.data?.detail || 'Could not restart that video')
@@ -417,6 +421,12 @@ export default function Dashboard() {
                     <div className="db-thumb" aria-hidden="true"><div className="db-tg" /><span className="db-pr" /></div>
                     <div className="db-vmeta">
                       <span className="db-pill">{subj.toUpperCase()}{v.class_level ? ` · CLASS ${v.class_level}` : ''}</span>
+                      {(v.orientation === 'portrait' || v.duration_seconds) && (
+                        <span className="db-pill db-pill-ghost">
+                          {v.orientation === 'portrait' ? 'REEL' : 'VIDEO'}
+                          {v.duration_seconds ? ` · ${v.duration_seconds < 60 ? `${v.duration_seconds} SEC` : `${v.duration_seconds / 60} MIN`}` : ''}
+                        </span>
+                      )}
                       <Title className="db-vtitle" {...(to ? { to } : {})}>{v.topic || 'Untitled'}</Title>
                       {v.status === 'failed' && v.message && <div className="db-verr" title={v.error || v.message}>{v.message}</div>}
                     </div>

@@ -15,6 +15,26 @@ const CLASS_LEVELS = [
   { value: '12', label: 'Class 12' },
 ]
 
+const LENGTHS = [
+  { sec: 30, big: '30', small: 'Sec' },
+  { sec: 60, big: '1', small: 'Min' },
+  { sec: 120, big: '2', small: 'Min' },
+  { sec: 300, big: '5', small: 'Min' },
+]
+
+const FORMATS = [
+  {
+    value: 'landscape', label: 'Video', hint: '16:9 · YouTube',
+    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2" /><path d="m10 9 5 3-5 3V9z" fill="currentColor" stroke="none" /></svg>,
+  },
+  {
+    value: 'portrait', label: 'Reel', hint: '9:16 · Shorts',
+    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><rect x="7" y="2" width="10" height="20" rx="2.5" /><path d="m10 9 5 3-5 3V9z" fill="currentColor" stroke="none" /></svg>,
+  },
+]
+
+const fmtTime = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`
+
 const SUGGESTIONS = {
   physics: ["Newton's Laws of Motion", 'Work, Energy & Power', 'Electrostatics', 'Thermodynamics'],
   biology: ['Cell: The Unit of Life', 'Human Digestive System', 'Photosynthesis', 'Genetics & Evolution'],
@@ -126,9 +146,10 @@ function FloatingScience() {
   )
 }
 
-function LessonPreview({ subject, classLevel, title }) {
+function LessonPreview({ subject, classLevel, title, lengthSec, orientation }) {
   const [scene, setScene] = useState(0)
   const [word, setWord] = useState(0)
+  const [now, setNow] = useState(0)
   const words = NARRATION[subject].split(' ')
   const sub = SUBJECTS.find((s) => s.value === subject)
 
@@ -136,7 +157,10 @@ function LessonPreview({ subject, classLevel, title }) {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined
     const a = setInterval(() => setScene((i) => (i + 1) % SCENES.length), 2600)
     const b = setInterval(() => setWord((i) => i + 1), 420)
-    return () => { clearInterval(a); clearInterval(b) }
+    // Running-time readout, in step with the 6-second scrub bar loop.
+    const t0 = performance.now()
+    const c = setInterval(() => setNow(((performance.now() - t0) % 6000) / 6000), 250)
+    return () => { clearInterval(a); clearInterval(b); clearInterval(c) }
   }, [])
 
   useEffect(() => setWord(0), [subject])
@@ -150,7 +174,10 @@ function LessonPreview({ subject, classLevel, title }) {
         <span className="gl-label gl-label-tight">Lesson preview</span>
         <span className="gl-live"><i /> live sample</span>
       </div>
-      <div className="gl-screen" aria-label={`Sample preview of a ${sub.label} lesson on ${title}`}>
+      <div
+        className={`gl-screen${orientation === 'portrait' ? ' reel' : ''}`}
+        aria-label={`Sample preview of a ${sub.label} ${orientation === 'portrait' ? 'reel' : 'video'} on ${title}`}
+      >
         <span className="gl-scene-tag">{CIRCLED[scene]} {SCENES[scene].toUpperCase()}</span>
         <PreviewDiagram subject={subject} />
         <div className="gl-pv-title">{title}</div>
@@ -160,6 +187,7 @@ function LessonPreview({ subject, classLevel, title }) {
         <span className="gl-pt" style={{ left: '63%', bottom: 62, animationDelay: '2.6s' }} />
         <span className="gl-pt" style={{ left: '80%', bottom: 54, animationDelay: '3.6s' }} />
         <div className="gl-subs" aria-hidden="true">
+          <div className="gl-dur"><span>{fmtTime(now * lengthSec)}</span><span>{fmtTime(lengthSec)}</span></div>
           <div className="gl-subbar">
             <div className="gl-k">
               {shown.map((w, i) => <b key={`${wi}-${i}`} className={i === shown.length - 1 ? 'lit' : ''}>{w}</b>)}
@@ -187,6 +215,8 @@ export default function TopicSearch() {
   const [topic, setTopic] = useState(params.get('topic') || '')
   const [subject, setSubject] = useState(SUBJECTS.some((s) => s.value === paramSubject) ? paramSubject : 'physics')
   const [classLevel, setClassLevel] = useState(CLASS_LEVELS.some((c) => c.value === paramClass) ? paramClass : '11')
+  const [lengthSec, setLengthSec] = useState(60)
+  const [orientation, setOrientation] = useState('landscape')
 
   // Pick up new values when the header search is used while already on this page.
   useEffect(() => {
@@ -203,7 +233,10 @@ export default function TopicSearch() {
     setLoading(true)
     setError(null)
     try {
-      const res = await generateVideo({ topic: topic.trim(), subject, class_level: classLevel })
+      const res = await generateVideo({
+        topic: topic.trim(), subject, class_level: classLevel,
+        duration_seconds: lengthSec, orientation,
+      })
       if (!res.data?.job_id) throw new Error('The server did not return a job.')
       nav(`/generate/${res.data.job_id}`)
     } catch (err) {
@@ -296,6 +329,31 @@ export default function TopicSearch() {
               ))}
             </div>
 
+            <span className="gl-label gl-mt" id="gl-len-label">Video length</span>
+            <div className="gl-lengths" role="radiogroup" aria-labelledby="gl-len-label">
+              {LENGTHS.map((l) => (
+                <button
+                  key={l.sec} type="button" role="radio" aria-checked={lengthSec === l.sec}
+                  className={`gl-len${lengthSec === l.sec ? ' on' : ''}`} onClick={() => setLengthSec(l.sec)}
+                >
+                  <span>{l.big}</span><small>{l.small}</small>
+                </button>
+              ))}
+            </div>
+
+            <span className="gl-label gl-mt" id="gl-fmt-label">Orientation</span>
+            <div className="gl-formats" role="radiogroup" aria-labelledby="gl-fmt-label">
+              {FORMATS.map((f) => (
+                <button
+                  key={f.value} type="button" role="radio" aria-checked={orientation === f.value}
+                  className={`gl-fmt${orientation === f.value ? ' on' : ''}`} onClick={() => setOrientation(f.value)}
+                >
+                  <span className="gl-fi">{f.icon}</span>
+                  <span className="gl-ft">{f.label}<small>{f.hint}</small></span>
+                </button>
+              ))}
+            </div>
+
             {error && (
               <div className="search-error" role="alert"><span>⚠️</span> {error}</div>
             )}
@@ -304,12 +362,16 @@ export default function TopicSearch() {
               <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" aria-hidden="true">
                 <path d="m22 8-6 4 6 4V8z" /><rect x="2" y="6" width="14" height="12" rx="2" />
               </svg>
-              <span>{loading ? `Building your ${activeSub.label} lesson…` : `Generate Video for ${activeSub.label}`}</span>
+              <span>
+                {loading
+                  ? `Building your ${activeSub.label} ${orientation === 'portrait' ? 'reel' : 'lesson'}…`
+                  : `Generate ${orientation === 'portrait' ? 'Reel' : 'Video'} for ${activeSub.label}`}
+              </span>
             </button>
             {!topic.trim() && <p className="gl-hint">Type a topic or pick one above to start.</p>}
           </form>
 
-          <LessonPreview subject={subject} classLevel={classLevel} title={previewTitle} />
+          <LessonPreview subject={subject} classLevel={classLevel} title={previewTitle} lengthSec={lengthSec} orientation={orientation} />
         </div>
       </div>
     </div>

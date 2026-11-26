@@ -13,6 +13,6 @@ async def health_check() -> dict:
         "status": "ok",
         "app": settings.app_name,
         "version": settings.app_version,
-        "database_connected": database.enabled,
+        "database_connected": await database.is_healthy(),
         "cloudinary_enabled": settings.cloudinary_enabled,
     }

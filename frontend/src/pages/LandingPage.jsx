@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import IntroLoader from '../components/IntroLoader'
+import StudyPlan from '../components/StudyPlan'
 import { Link, useNavigate } from 'react-router-dom'
 
 // Length of the sample clip in seconds (shown as 3:10 on the timeline).
@@ -230,18 +231,6 @@ const STEPS = [
   ['03', 'Prove', 'Test with a quiz', 'NEET-style MCQs with instant explanations, then it tracks your mastery.', 'lock it in'],
 ]
 
-const SUBJECT_TABS = [
-  { key: 'biology', label: 'Biology' },
-  { key: 'physics', label: 'Physics' },
-  { key: 'chemistry', label: 'Chemistry' },
-]
-
-const CHAPTERS = {
-  biology: [['Photosynthesis in Higher Plants', 8, '11'], ['Human Physiology', 14, '11'], ['Genetics & Evolution', 11, '12'], ['Cell: Structure & Function', 7, '11'], ['Biotechnology', 9, '12'], ['Ecology', 6, '12']],
-  physics: [['Laws of Motion', 9, '11'], ['Thermodynamics', 7, '11'], ['Current Electricity', 10, '12'], ['Ray Optics', 8, '12'], ['Semiconductors', 6, '12'], ['Oscillations', 5, '11']],
-  chemistry: [['Chemical Bonding', 10, '11'], ['Equilibrium', 8, '11'], ['Electrochemistry', 7, '12'], ['Organic: Hydrocarbons', 12, '11'], ['Coordination Compounds', 6, '12'], ['Thermodynamics', 5, '11']],
-}
-
 const QUIZ_OPTIONS = ['On the thylakoid membranes', 'In the stroma', 'In the mitochondrial matrix', 'On the outer chloroplast membrane']
 const QUIZ_CORRECT = 0
 
@@ -252,10 +241,8 @@ const FAQ = [
   ['Can I use it for free?', 'Yes. Three chapters a month are free.'],
 ]
 
-const PANELS = ['Intro', 'Thesis', 'Grounded', 'How it works', 'Features', 'Subjects', 'Quiz', 'Progress', 'FAQ']
+const PANELS = ['Intro', 'Thesis', 'Grounded', 'How it works', 'Features', 'Study Plan', 'Quiz', 'Progress', 'FAQ']
 
-const searchLink = (topic, subject, cls) =>
-  `/search?${new URLSearchParams({ topic, subject, class: cls }).toString()}`
 
 /* ------------------------------------------------------------------ */
 /* Small pieces                                                        */
@@ -399,7 +386,6 @@ function useHorizontalScroll(outerRef, frameRef, trackRef, barRef, onIndex) {
 /* ------------------------------------------------------------------ */
 export default function LandingPage() {
   const nav = useNavigate()
-  const [subject, setSubject] = useState('biology')
   const [active, setActive] = useState(0)
 
   const outerRef = useRef(null)
@@ -575,34 +561,9 @@ export default function LandingPage() {
               </div>
             </section>
 
-            {/* 06 · Subjects */}
-            <section className="hp hp-subjects" aria-label="Syllabus coverage">
-              <div className="hp-in">
-                <div className="hs-subjects-head rv">
-                  <div>
-                    <Eyebrow>Syllabus coverage</Eyebrow>
-                    <h2 className="hs-h2">Pick a subject, start revising</h2>
-                  </div>
-                  <div className="hs-tabs" role="tablist" aria-label="Subject">
-                    {SUBJECT_TABS.map((t) => (
-                      <button
-                        key={t.key} type="button" role="tab" aria-selected={subject === t.key}
-                        className={`hs-tab${subject === t.key ? ' on' : ''}`} onClick={() => setSubject(t.key)}
-                      >
-                        {t.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="hs-chapters rv" role="tabpanel">
-                  {CHAPTERS[subject].map(([title, videos, cls]) => (
-                    <Link key={title} to={searchLink(title, subject, cls)} className="hs-chapter">
-                      <div><strong>{title}</strong><span>Class {cls} · {videos} videos</span></div>
-                      <span className="hs-chapter-go" aria-hidden="true">▶</span>
-                    </Link>
-                  ))}
-                </div>
-              </div>
+            {/* 06 · Study plan: NCERT chapter trajectory */}
+            <section className="hp hp-plan" aria-label="Study plan">
+              <StudyPlan />
             </section>
 
             {/* 07 · Quiz */}
