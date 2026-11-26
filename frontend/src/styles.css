@@ -3815,3 +3815,55 @@ a.db-vtitle:hover { color: var(--gl-red); }
 .wl-rich blockquote { margin: 0 0 8px; padding: 6px 12px; border-left: 3px solid var(--acc); background: color-mix(in srgb, var(--acc) 7%, transparent); border-radius: 0 8px 8px 0; }
 .wl-rich code { font-size: 12.5px; background: var(--card); border: 1px solid var(--line); border-radius: 5px; padding: 1px 5px; }
 .wl-rich hr { border: 0; border-top: 1px dashed var(--line); margin: 8px 0; }
+
+/* =================== Home · FAQ panel (09) =================== */
+.hp-faq {
+  --faq-bg: #e03144; --faq-ink: #0d0d0d; --faq-muted: rgba(13, 13, 13, 0.62); --faq-line: rgba(13, 13, 13, 0.3); --faq-accent: #0d0d0d;
+  background: var(--faq-bg); color: var(--faq-ink);
+  --color-ink: var(--faq-ink); --ink-60: var(--faq-muted); --card-line: var(--faq-line);
+  transition: background 0.5s, color 0.5s;
+}
+:root[data-theme='dark'] .hp-faq {
+  --faq-bg: #0f0f12; --faq-ink: #f5f5f7; --faq-muted: rgba(245, 245, 247, 0.6); --faq-line: rgba(245, 245, 247, 0.18); --faq-accent: #e03144;
+}
+.hp-faq .hp-split { grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: clamp(32px, 5.5vw, 80px); }
+.hp-faq .faq-h { font-size: clamp(42px, min(6.2vw, 10vh), 92px); letter-spacing: -0.045em; line-height: 0.95; }
+.hp-faq .hs-lede { margin-top: clamp(16px, 3vh, 26px); max-width: 520px; font-size: clamp(16px, min(1.4vw, 2.5vh), 20px); color: var(--faq-muted); }
+.hp-faq .hs-hand-lg { color: var(--faq-accent); font-size: clamp(28px, 4.2vh, 38px); margin-top: clamp(18px, 3.6vh, 34px); }
+.hp-faq .hs-copy { color: var(--faq-muted); margin-top: clamp(18px, 3vh, 30px); }
+.faq-list { border-top: 2px solid var(--faq-line); position: relative; z-index: 1; }
+.faq-q { border-bottom: 2px solid var(--faq-line); }
+.faq-h-row {
+  all: unset; box-sizing: border-box; width: 100%; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 18px;
+  padding: clamp(16px, 3.2vh, 30px) 4px; font-weight: 800; font-size: clamp(17px, min(1.6vw, 2.8vh), 22px); letter-spacing: -0.01em; color: var(--faq-ink);
+}
+.faq-h-row:focus-visible { outline: 2px solid var(--faq-ink); outline-offset: 4px; border-radius: 4px; }
+.faq-plus { flex: none; font-size: 30px; line-height: 1; font-weight: 900; color: var(--faq-accent); transition: transform 0.35s; }
+.faq-q.open .faq-plus { transform: rotate(45deg); }
+.faq-a { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.4s ease; }
+.faq-q.open .faq-a { grid-template-rows: 1fr; }
+.faq-a p { overflow: hidden; margin: 0; padding: 0 4px; color: var(--faq-muted); font-size: clamp(15px, min(1.25vw, 2.3vh), 17px); line-height: 1.6; transition: padding 0.4s; }
+.faq-q.open .faq-a p { padding-bottom: clamp(14px, 2.8vh, 26px); }
+.faq-art { position: absolute; right: 56px; bottom: 20px; width: clamp(140px, 16vw, 230px); color: var(--faq-ink); opacity: 0.95; pointer-events: none; }
+.faq-ring { transform-origin: 100px 100px; animation: faq-spin 14s linear infinite; }
+@keyframes faq-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .faq-ring { animation: none; } }
+
+/* The bottom bar takes the FAQ panel's colours while it is on screen. */
+.hs-bar { transition: background 0.4s, border-color 0.4s; }
+.hs-bar.on-faq { background: #e03144; border-top: 4px solid #0d0d0d; --color-ink: #ffffff; --ink-50: rgba(255, 255, 255, 0.75); --ink-12: rgba(13, 13, 13, 0.28); }
+.hs-bar.on-faq .hs-bar-cta:hover { color: #0d0d0d; }
+.hs-bar.on-faq .hs-bar-dots button.on::before { background: #0d0d0d; }
+.hs-bar.on-faq .hs-bar-progress i { background: #0d0d0d; }
+:root[data-theme='dark'] .hs-bar.on-faq { background: #0f0f12; border-top-color: #f5f5f7; --color-ink: #f5f5f7; --ink-50: rgba(245, 245, 247, 0.6); --ink-12: rgba(245, 245, 247, 0.2); }
+:root[data-theme='dark'] .hs-bar.on-faq .hs-bar-dots button.on::before { background: #e03144; }
+:root[data-theme='dark'] .hs-bar.on-faq .hs-bar-progress i { background: #e03144; }
+
+@media (max-width: 900px) {
+  .hp-faq .hp-split { grid-template-columns: 1fr; gap: 30px; }
+  .faq-art { display: none; }
+}
+/* Keep the atom clear of the questions: content centres above it. */
+.hp-faq { --faq-art: clamp(100px, 17vh, 200px); }
+.hs-wide .hp-faq .hp-in { padding-bottom: calc(var(--faq-art) + 12px); }
+.faq-art { width: var(--faq-art); bottom: 14px; }

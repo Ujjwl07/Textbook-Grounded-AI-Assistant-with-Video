@@ -235,10 +235,10 @@ const QUIZ_OPTIONS = ['On the thylakoid membranes', 'In the stroma', 'In the mit
 const QUIZ_CORRECT = 0
 
 const FAQ = [
-  ['Is the content really from NCERT?', 'Yes. Every video and answer is generated from, and cited to, the official NCERT textbooks for Class 11 and 12. You can open the exact source line any time.'],
-  ['Which subjects are covered?', 'Biology, Physics and Chemistry: the full NEET syllabus across Class 11 and 12, with new chapters added weekly.'],
-  ['How long are the videos?', 'Most explainers run 2 to 4 minutes and focus on a single concept, so you can revise a whole chapter in one sitting.'],
-  ['Can I use it for free?', 'Yes. Three chapters a month are free.'],
+  ['Is the content really from NCERT?', 'Yes. Every script and quiz question is retrieved from the NCERT chapter text, and each lesson shows the exact source passage.'],
+  ['Which subjects are covered?', 'Physics, Chemistry and Biology for Class 11 and 12: all NEET chapters, in official NCERT order.'],
+  ['How long are the videos?', 'You choose: 30 seconds, 1, 2 or 5 minutes, as a 16:9 video or a 9:16 reel.'],
+  ['Can I use it for free?', 'Yes. Sign in and start generating lessons and quizzes right away.'],
 ]
 
 const PANELS = ['Intro', 'Thesis', 'Grounded', 'How it works', 'Features', 'Study Plan', 'Quiz', 'Progress', 'FAQ']
@@ -387,6 +387,7 @@ function useHorizontalScroll(outerRef, frameRef, trackRef, barRef, onIndex) {
 export default function LandingPage() {
   const nav = useNavigate()
   const [active, setActive] = useState(0)
+  const [faqOpen, setFaqOpen] = useState([0])
 
   const outerRef = useRef(null)
   const frameRef = useRef(null)
@@ -616,25 +617,41 @@ export default function LandingPage() {
             <section className="hp hp-faq" aria-label="Questions">
               <div className="hp-in hp-split">
                 <div className="rv">
-                  <h2 className="hs-h2">Questions, answered</h2>
+                  <h2 className="hs-h2 faq-h">Questions,<br />answered</h2>
                   <p className="hs-lede">Textbook-grounded explainer videos and quizzes for NEET. Made for NCERT Class 11 and 12.</p>
                   <p className="hs-hand hs-hand-lg">keep that streak alive 🔥</p>
                   <p className="hs-copy">© 2026 TextbookAI · Built for NEET 2026</p>
                 </div>
-                <div className="hs-faq rv">
-                  {FAQ.map(([q, a]) => (
-                    <details key={q}>
-                      <summary>{q}<span aria-hidden="true">+</span></summary>
-                      <p>{a}</p>
-                    </details>
-                  ))}
+                <div className="faq-list rv">
+                  {FAQ.map(([q, a], i) => {
+                    const open = faqOpen.includes(i)
+                    return (
+                      <div key={q} className={`faq-q${open ? ' open' : ''}`}>
+                        <button
+                          type="button" className="faq-h-row" aria-expanded={open} aria-controls={`faq-a-${i}`}
+                          onClick={() => setFaqOpen((o) => (o.includes(i) ? o.filter((x) => x !== i) : [...o, i]))}
+                        >
+                          {q}<span className="faq-plus" aria-hidden="true">+</span>
+                        </button>
+                        <div className="faq-a" id={`faq-a-${i}`} role="region" aria-hidden={!open}><p>{a}</p></div>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
+              <svg className="faq-art" viewBox="0 0 200 200" fill="none" stroke="currentColor" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="100" cy="100" r="10" fill="currentColor" />
+                <g className="faq-ring">
+                  <ellipse cx="100" cy="100" rx="84" ry="30" />
+                  <ellipse cx="100" cy="100" rx="84" ry="30" transform="rotate(60 100 100)" />
+                  <ellipse cx="100" cy="100" rx="84" ry="30" transform="rotate(120 100 100)" />
+                </g>
+              </svg>
             </section>
           </div>
 
           {wide && (
-            <div className="hs-bar">
+            <div className={`hs-bar${active === PANELS.length - 1 ? ' on-faq' : ''}`}>
               <Link to="/search" className="hs-bar-cta">Search topics <span aria-hidden="true">⟶</span></Link>
               <div className="hs-bar-dots" role="navigation" aria-label="Sections">
                 {PANELS.map((label, i) => (
