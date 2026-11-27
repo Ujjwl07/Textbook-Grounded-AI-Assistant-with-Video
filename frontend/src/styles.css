@@ -3232,14 +3232,10 @@ a.db-vtitle:hover { color: var(--gl-red); }
 .gl-diagram { top: 48px !important; width: 76px !important; height: 76px !important; opacity: 0.85 !important; }
 .gl-screen.reel .gl-diagram { width: 60px !important; height: 60px !important; }
 
-/* Light-mode polish from the updated mockup: soft tinted page, gradient panels and fields */
+/* Light mode: plain white page, the same as the dashboard; panels and fields keep their gradients */
 :root:not([data-theme='dark']) .gl-page::before {
   content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
-  background:
-    radial-gradient(1100px 520px at 88% -8%, rgba(225, 29, 51, 0.07), transparent 60%),
-    radial-gradient(980px 520px at -5% 112%, rgba(255, 150, 80, 0.08), transparent 60%),
-    radial-gradient(760px 480px at 50% 45%, rgba(120, 140, 255, 0.05), transparent 70%),
-    #f1f2f8;
+  background: #ffffff;
 }
 :root:not([data-theme='dark']) .gl-page .gl-panel { background: linear-gradient(180deg, #ffffff, #fcfbff); box-shadow: 0 32px 64px -30px rgba(120, 60, 90, 0.22), 0 10px 24px -14px rgba(30, 20, 45, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.9); }
 :root:not([data-theme='dark']) .gl-page .gl-topic,
