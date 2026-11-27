@@ -135,3 +135,67 @@ def load_font(size: int, bold: bool = False) -> ImageFont.ImageFont:
 def font_is_scalable() -> bool:
     """True when a real TrueType face was found (i.e. font sizes are honoured)."""
     return bool(resolve_font_path())
+
+
+# Caption faces for Indian-language lessons. A face is used only when it has
+# the script's letters; PIL shapes the conjuncts and vowel signs through raqm.
+_SCRIPT_FONTS = {
+    "hi-IN": ("\u0915\u093e\u0930\u094d", [  # क ा र ्
+        "/System/Library/Fonts/Supplemental/Devanagari Sangam MN.ttc",
+        "/System/Library/Fonts/Kohinoor.ttc",
+        "/System/Library/Fonts/Supplemental/DevanagariMT.ttc",
+        "/usr/share/fonts/truetype/noto/NotoSansDevanagari-Bold.ttf",
+        "/usr/share/fonts/truetype/noto/NotoSansDevanagari-Regular.ttf",
+        "/usr/share/fonts/opentype/noto/NotoSansDevanagari-Bold.ttf",
+        "/usr/share/fonts/truetype/lohit-devanagari/Lohit-Devanagari.ttf",
+        "C:/Windows/Fonts/NirmalaB.ttf",
+        "C:/Windows/Fonts/Nirmala.ttf",
+        "C:/Windows/Fonts/mangalb.ttf",
+    ]),
+    "pa-IN": ("\u0a15\u0a3e\u0a30", [  # ਕ ਾ ਰ
+        "/System/Library/Fonts/Supplemental/Gurmukhi Sangam MN.ttc",
+        "/System/Library/Fonts/Supplemental/Gurmukhi MN.ttc",
+        "/System/Library/Fonts/Supplemental/Gurmukhi.ttf",
+        "/usr/share/fonts/truetype/noto/NotoSansGurmukhi-Bold.ttf",
+        "/usr/share/fonts/truetype/noto/NotoSansGurmukhi-Regular.ttf",
+        "/usr/share/fonts/opentype/noto/NotoSansGurmukhi-Bold.ttf",
+        "/usr/share/fonts/truetype/lohit-punjabi/Lohit-Gurmukhi.ttf",
+        "C:/Windows/Fonts/NirmalaB.ttf",
+        "C:/Windows/Fonts/Nirmala.ttf",
+        "C:/Windows/Fonts/raavib.ttf",
+    ]),
+}
+
+
+@lru_cache(maxsize=8)
+def resolve_script_font_path(language: str) -> str:
+    """A face with the letters of ``language`` (hi-IN, pa-IN), or ''."""
+    entry = _SCRIPT_FONTS.get(language or "")
+    if not entry:
+        return ""
+    sample, candidates = entry
+    for path in candidates:
+        if os.path.exists(path):
+            covered = _covered_glyphs(path)
+            if not covered or all(ord(ch) in covered for ch in sample):
+                return path
+    return ""
+
+
+@lru_cache(maxsize=32)
+def load_caption_font(size: int, language: str = "en-IN") -> ImageFont.ImageFont:
+    """Bold caption font for ``language``; the English face for English or when
+    no face for the script is installed."""
+    path = resolve_script_font_path(language)
+    if path:
+        try:
+            # .ttc collections: index 1 is the bold face in the macOS Sangam fonts.
+            if path.endswith(".ttc"):
+                try:
+                    return ImageFont.truetype(path, size, index=1)
+                except Exception:
+                    pass
+            return ImageFont.truetype(path, size)
+        except Exception:
+            pass
+    return load_font(size, bold=True)

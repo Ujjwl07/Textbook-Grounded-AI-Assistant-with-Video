@@ -88,6 +88,12 @@ class Settings(BaseSettings):
     # MAX_WAIT for quiz_generate is 180 s), not one request.
     quiz_llm_timeout_seconds: float = 240.0
 
+    # --- Sarvam AI: Sarvam-Translate (NCERT text -> Hindi/Punjabi) and the
+    # Bulbul v3 voice for Indian-language narration. Without a key, lessons
+    # can only be narrated and captioned in English.
+    sarvam_api_key: str = ""
+    sarvam_base_url: str = "https://api.sarvam.ai"
+
     model_config = SettingsConfigDict(
         env_file=str(BACKEND_DIR / ".env"),
         env_file_encoding="utf-8",

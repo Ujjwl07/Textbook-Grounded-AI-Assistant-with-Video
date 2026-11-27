@@ -257,6 +257,9 @@ export default function VideoPlayer() {
       const r = await generateVideo({
         duration_seconds: lesson.duration_seconds || 60,
         orientation: lesson.orientation || 'landscape',
+        voice_language: lesson.voice_language || 'en-IN',
+        caption_language: lesson.caption_language || lesson.voice_language || 'en-IN',
+        pace: lesson.pace || 1,
         ...payload,
       })
       nav(`/generate/${r.data.job_id}`)

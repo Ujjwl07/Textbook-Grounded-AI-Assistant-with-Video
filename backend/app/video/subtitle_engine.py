@@ -25,7 +25,7 @@ import numpy as np
 from PIL import Image, ImageDraw
 from moviepy.editor import VideoClip
 
-from app.video.fonts import load_font, resolve_font_path
+from app.video.fonts import load_caption_font, load_font, resolve_font_path
 
 WHITE = (255, 255, 255)
 DEFAULT_HIGHLIGHT = (255, 235, 59)
@@ -192,7 +192,7 @@ class SubtitleEngine:
     DEFAULT_MAX_LINES = 2
 
     def __init__(self, font_size: int = 28, max_width: int = 900, band_height: int = None,
-                 max_lines: int = None):
+                 max_lines: int = None, language: str = "en-IN"):
         self.font_size = font_size
         self.max_width = max_width
         self.max_lines = max_lines or self.DEFAULT_MAX_LINES
@@ -201,6 +201,10 @@ class SubtitleEngine:
         self.band_padding = self.BAND_PADDING
         self.font_path = resolve_font_path(bold=True)
         self.font = load_font(self.font_size, bold=True)
+        self.language = language or "en-IN"
+        if self.language != "en-IN":
+            # Hindi / Punjabi captions need a Devanagari / Gurmukhi face.
+            self.font = load_caption_font(self.font_size, self.language)
 
     def build_layout(self, word_boundaries, size=(1280, 720), highlight_color=DEFAULT_HIGHLIGHT):
         return SubtitleLayout(self, word_boundaries, size, highlight_color)

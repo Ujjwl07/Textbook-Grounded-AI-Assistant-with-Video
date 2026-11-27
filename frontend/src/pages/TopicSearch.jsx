@@ -48,6 +48,32 @@ const NARRATION = {
   chemistry: 'Why do atoms bond at all? To reach a stable octet, they share or transfer electrons.',
 }
 
+// Narration and caption languages (Sarvam-Translate + Bulbul v3 voice).
+const LANGS = [
+  { code: 'en-IN', name: 'English', native: 'English' },
+  { code: 'hi-IN', name: 'Hindi', native: 'हिन्दी' },
+  { code: 'pa-IN', name: 'Punjabi', native: 'ਪੰਜਾਬੀ' },
+]
+const langOf = (code) => LANGS.find((l) => l.code === code) || LANGS[0]
+const PACES = [{ v: 0.8, label: 'Slow' }, { v: 1, label: 'Normal' }, { v: 1.25, label: 'Fast' }]
+
+// The sample narration in each language, for the preview's captions.
+const NARRATION_I18N = {
+  physics: {
+    'hi-IN': 'बस अचानक रुके तो हम आगे क्यों झुकते हैं? यही है जड़त्व, न्यूटन का पहला नियम।',
+    'pa-IN': 'ਬੱਸ ਅਚਾਨਕ ਰੁਕੇ ਤਾਂ ਅਸੀਂ ਅੱਗੇ ਕਿਉਂ ਝੁਕਦੇ ਹਾਂ? ਇਹੀ ਹੈ ਜੜ੍ਹਤਾ, ਨਿਊਟਨ ਦਾ ਪਹਿਲਾ ਨਿਯਮ।',
+  },
+  biology: {
+    'hi-IN': 'हर जीव कोशिकाओं से बना है, जो जीवन की मूल इकाई हैं। आइए एक कोशिका के अंदर देखें।',
+    'pa-IN': 'ਹਰ ਜੀਵ ਸੈੱਲਾਂ ਤੋਂ ਬਣਿਆ ਹੈ, ਜੋ ਜੀਵਨ ਦੀ ਮੁੱਢਲੀ ਇਕਾਈ ਹਨ। ਆਓ ਇੱਕ ਸੈੱਲ ਦੇ ਅੰਦਰ ਦੇਖੀਏ।',
+  },
+  chemistry: {
+    'hi-IN': 'परमाणु आपस में बंध क्यों बनाते हैं? स्थिर अष्टक पाने के लिए वे इलेक्ट्रॉन साझा या स्थानांतरित करते हैं।',
+    'pa-IN': 'ਪਰਮਾਣੂ ਆਪਸ ਵਿੱਚ ਬੰਧਨ ਕਿਉਂ ਬਣਾਉਂਦੇ ਹਨ? ਸਥਿਰ ਅਸ਼ਟਕ ਲਈ ਉਹ ਇਲੈਕਟ੍ਰੌਨ ਸਾਂਝੇ ਜਾਂ ਤਬਦੀਲ ਕਰਦੇ ਹਨ।',
+  },
+}
+const narrationFor = (subject, code) => (code === 'en-IN' ? NARRATION[subject] : NARRATION_I18N[subject][code])
+
 // The five parts every generated lesson is built from.
 const SCENES = ['Hook', 'Concept', 'Example', 'Memory', 'NEET Alert']
 const CIRCLED = ['①', '②', '③', '④', '⑤']
@@ -146,11 +172,37 @@ function FloatingScience() {
   )
 }
 
-function LessonPreview({ subject, classLevel, title, lengthSec, orientation }) {
+function LanguagePipeline({ voiceLang, capLang, bilingual, pace }) {
+  const voice = langOf(voiceLang)
+  const cap = langOf(capLang)
+  const needsTranslate = voiceLang !== 'en-IN' || (bilingual && capLang !== 'en-IN')
+  const targets = [...new Set([voiceLang, bilingual ? capLang : voiceLang])].filter((c) => c !== 'en-IN').map((c) => langOf(c).name)
+  const steps = [
+    { t: 'Sarvam-Translate', s: needsTranslate ? `NCERT → ${targets.join(' + ')}` : 'not needed · English', skip: !needsTranslate },
+    // English keeps the neural voice with exact word timings; Indian languages use Bulbul v3.
+    { t: voiceLang === 'en-IN' ? 'Neural voice' : 'Bulbul v3', s: `${voice.name} · ${pace}× speed` },
+    { t: bilingual ? 'Dual captions' : 'Synced captions', s: bilingual ? `${voice.name} + ${cap.name}` : voice.name },
+  ]
+  return (
+    <div className="gl-sarv">
+      <div className="gl-sv-h">Language pipeline</div>
+      <div className="gl-sv-steps">
+        {steps.map((x, i) => (
+          <React.Fragment key={`${x.t}-${x.s}`}>
+            {i > 0 && <span className="gl-sv-ar" aria-hidden="true">→</span>}
+            <div className={`gl-sv-st${x.skip ? ' skip' : ''}`}>{x.t}<small>{x.s}</small></div>
+          </React.Fragment>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function LessonPreview({ subject, classLevel, title, lengthSec, orientation, voiceLang, capLang, bilingual, pace }) {
   const [scene, setScene] = useState(0)
   const [word, setWord] = useState(0)
   const [now, setNow] = useState(0)
-  const words = NARRATION[subject].split(' ')
+  const words = narrationFor(subject, voiceLang).split(' ')
   const sub = SUBJECTS.find((s) => s.value === subject)
 
   useEffect(() => {
@@ -163,7 +215,7 @@ function LessonPreview({ subject, classLevel, title, lengthSec, orientation }) {
     return () => { clearInterval(a); clearInterval(b); clearInterval(c) }
   }, [])
 
-  useEffect(() => setWord(0), [subject])
+  useEffect(() => setWord(0), [subject, voiceLang])
 
   const wi = word % words.length
   const shown = words.slice(Math.max(0, wi - 5), wi + 1)
@@ -175,10 +227,13 @@ function LessonPreview({ subject, classLevel, title, lengthSec, orientation }) {
         <span className="gl-live"><i /> live sample</span>
       </div>
       <div
-        className={`gl-screen${orientation === 'portrait' ? ' reel' : ''}`}
+        className={`gl-screen${orientation === 'portrait' ? ' reel' : ''}${bilingual ? ' bi' : ''}`}
         aria-label={`Sample preview of a ${sub.label} ${orientation === 'portrait' ? 'reel' : 'video'} on ${title}`}
       >
         <span className="gl-scene-tag">{CIRCLED[scene]} {SCENES[scene].toUpperCase()}</span>
+        <span className="gl-langtag">
+          🔊 {langOf(voiceLang).native}{bilingual && <><em>+</em>📝 {langOf(capLang).native}</>}
+        </span>
         <PreviewDiagram subject={subject} />
         <div className="gl-pv-title">{title}</div>
         <div className="gl-play" aria-hidden="true" />
@@ -192,6 +247,7 @@ function LessonPreview({ subject, classLevel, title, lengthSec, orientation }) {
             <div className="gl-k">
               {shown.map((w, i) => <b key={`${wi}-${i}`} className={i === shown.length - 1 ? 'lit' : ''}>{w}</b>)}
             </div>
+            {bilingual && <div className="gl-k2">{narrationFor(subject, capLang)}</div>}
           </div>
           <div className="gl-scrub"><i /></div>
         </div>
@@ -203,6 +259,7 @@ function LessonPreview({ subject, classLevel, title, lengthSec, orientation }) {
         <span className="gl-bk" aria-hidden="true">📖</span>
         <span>Grounded in <b>NCERT Class {classLevel} {sub.label}</b> · every claim carries its chapter citation.</span>
       </div>
+      <LanguagePipeline voiceLang={voiceLang} capLang={capLang} bilingual={bilingual} pace={pace} />
     </div>
   )
 }
@@ -217,6 +274,18 @@ export default function TopicSearch() {
   const [classLevel, setClassLevel] = useState(CLASS_LEVELS.some((c) => c.value === paramClass) ? paramClass : '11')
   const [lengthSec, setLengthSec] = useState(60)
   const [orientation, setOrientation] = useState('landscape')
+  const [bilingual, setBilingual] = useState(false)
+  const [voiceLang, setVoiceLang] = useState('en-IN')
+  const [capLang, setCapLang] = useState('en-IN')
+  const [pace, setPace] = useState(1)
+  // Captions follow the voice unless bilingual mode picks a second language.
+  const captionLang = bilingual ? capLang : voiceLang
+  const toggleBilingual = () => {
+    const on = !bilingual
+    setBilingual(on)
+    // Bilingual means two languages: start with Hindi voice, English captions.
+    if (on && voiceLang === 'en-IN' && capLang === 'en-IN') setVoiceLang('hi-IN')
+  }
 
   // Pick up new values when the header search is used while already on this page.
   useEffect(() => {
@@ -236,6 +305,7 @@ export default function TopicSearch() {
       const res = await generateVideo({
         topic: topic.trim(), subject, class_level: classLevel,
         duration_seconds: lengthSec, orientation,
+        voice_language: voiceLang, caption_language: captionLang, pace,
       })
       if (!res.data?.job_id) throw new Error('The server did not return a job.')
       nav(`/generate/${res.data.job_id}`)
@@ -341,6 +411,61 @@ export default function TopicSearch() {
               ))}
             </div>
 
+            <div className="gl-langcard">
+              <span className="gl-label" id="gl-lang-label">Language</span>
+              <div className={`gl-bilin${bilingual ? ' on' : ''}`}>
+                <div className="gl-bt">
+                  <span className="gl-bi" aria-hidden="true">अ&thinsp;A</span>
+                  <div><b>Bilingual mode</b><small>Hear one language, read captions in another</small></div>
+                </div>
+                <button
+                  type="button" role="switch" aria-checked={bilingual} aria-label="Bilingual mode"
+                  className={`gl-sw${bilingual ? ' on' : ''}`} onClick={toggleBilingual}
+                ><i /></button>
+              </div>
+              <div className="gl-lrow">
+                <span className="gl-lr-t" id="gl-voice-label">
+                  {bilingual ? 'Voice language' : 'Narration language'}<em>{bilingual ? 'WHAT YOU HEAR' : 'VOICE'}</em>
+                </span>
+                <div className="gl-langs" role="radiogroup" aria-labelledby="gl-voice-label">
+                  {LANGS.map((l) => (
+                    <button
+                      key={l.code} type="button" role="radio" aria-checked={voiceLang === l.code}
+                      className={`gl-lang${voiceLang === l.code ? ' on' : ''}`} onClick={() => setVoiceLang(l.code)}
+                    >
+                      <span lang={l.code}>{l.native}</span><small>{l.name}</small>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {bilingual && (
+                <div className="gl-lrow">
+                  <span className="gl-lr-t" id="gl-cap-label">Caption language<em>ON-SCREEN TEXT</em></span>
+                  <div className="gl-langs cap" role="radiogroup" aria-labelledby="gl-cap-label">
+                    {LANGS.map((l) => (
+                      <button
+                        key={l.code} type="button" role="radio" aria-checked={capLang === l.code}
+                        className={`gl-lang${capLang === l.code ? ' on' : ''}`} onClick={() => setCapLang(l.code)}
+                      >
+                        <span lang={l.code}>{l.native}</span><small>{l.name}</small>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div className="gl-lopt">
+                <span>Speaking pace<small>{voiceLang === 'en-IN' ? 'Narrator voice speed' : 'Bulbul v3 voice speed'}</small></span>
+                <div className="gl-seg" role="radiogroup" aria-label="Speaking pace">
+                  {PACES.map((p) => (
+                    <button
+                      key={p.v} type="button" role="radio" aria-checked={pace === p.v}
+                      className={pace === p.v ? 'on' : ''} onClick={() => setPace(p.v)}
+                    >{p.label}</button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
             <span className="gl-label gl-mt" id="gl-fmt-label">Orientation</span>
             <div className="gl-formats" role="radiogroup" aria-labelledby="gl-fmt-label">
               {FORMATS.map((f) => (
@@ -365,13 +490,18 @@ export default function TopicSearch() {
               <span>
                 {loading
                   ? `Building your ${activeSub.label} ${orientation === 'portrait' ? 'reel' : 'lesson'}…`
-                  : `Generate ${orientation === 'portrait' ? 'Reel' : 'Video'} for ${activeSub.label}`}
+                  : `Generate ${orientation === 'portrait' ? 'Reel' : 'Video'} for ${activeSub.label}${
+                    bilingual ? ` · ${langOf(voiceLang).native} + ${langOf(captionLang).native}`
+                      : voiceLang !== 'en-IN' ? ` · ${langOf(voiceLang).native}` : ''}`}
               </span>
             </button>
             {!topic.trim() && <p className="gl-hint">Type a topic or pick one above to start.</p>}
           </form>
 
-          <LessonPreview subject={subject} classLevel={classLevel} title={previewTitle} lengthSec={lengthSec} orientation={orientation} />
+          <LessonPreview
+            subject={subject} classLevel={classLevel} title={previewTitle} lengthSec={lengthSec} orientation={orientation}
+            voiceLang={voiceLang} capLang={captionLang} bilingual={bilingual} pace={pace}
+          />
         </div>
       </div>
     </div>

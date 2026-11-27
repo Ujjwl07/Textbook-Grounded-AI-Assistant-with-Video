@@ -74,6 +74,9 @@ class JobQueue:
             user_id=user_id,
             duration_seconds=request.duration_seconds,
             orientation=request.orientation,
+            voice_language=request.voice_language,
+            caption_language=request.caption_language or request.voice_language,
+            pace=float(request.pace),
         )
         self.jobs[job_id] = job
         await database.save_video_record(self._record_from_job(job))
@@ -95,6 +98,9 @@ class JobQueue:
             "scene_source": job.scene_source,
             "duration_seconds": job.duration_seconds,
             "orientation": job.orientation,
+            "voice_language": job.voice_language,
+            "caption_language": job.caption_language,
+            "pace": job.pace,
             "step": job.step,
             "step_times": job.step_times,
             "scene_parts": job.scene_parts,
@@ -332,6 +338,9 @@ class JobQueue:
                 orientation=job.orientation, short=job.duration_seconds <= 30,
                 on_progress=self._progress_reporter(job),
                 timeline=job.timeline,
+                voice_language=job.voice_language,
+                caption_language=job.caption_language,
+                pace=job.pace,
             )
             await asyncio.sleep(0)  # let queued progress updates land first
             async with self._locks.setdefault(job.job_id, asyncio.Lock()):

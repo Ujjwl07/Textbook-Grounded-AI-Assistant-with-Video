@@ -18,6 +18,14 @@ async def generate_video(
     background_tasks: BackgroundTasks,
     current_user: dict = Depends(get_current_user),
 ) -> GenerateResponse:
+    if request.voice_language != "en-IN" or (request.caption_language or request.voice_language) != "en-IN":
+        from app.tts import sarvam
+
+        if not sarvam.is_configured():
+            raise HTTPException(
+                status_code=400,
+                detail="Hindi and Punjabi lessons need a Sarvam AI key (SARVAM_API_KEY) on the server.",
+            )
     job = await job_queue.create_job(request, user_id=current_user["id"])
     background_tasks.add_task(job_queue.run_generation, job.job_id)
     logger.info(

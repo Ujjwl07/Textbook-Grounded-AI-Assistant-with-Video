@@ -71,12 +71,23 @@ class TTSGenerator:
                     })
         return word_boundaries
 
-    async def generate_scene_audio(self, text: str, subject: str, output_path: str) -> dict:
+    async def generate_scene_audio(self, text: str, subject: str, output_path: str,
+                                   language: str = "en-IN", pace: float = 1.0) -> dict:
+        """Voice one scene. English uses Edge-TTS with exact word timings; Hindi
+        and Punjabi (``text`` already translated) use Sarvam's Bulbul v3 voice,
+        with word times estimated from word length. ``pace`` is 0.8, 1 or 1.25."""
         subject_key = (subject or "physics").lower()
         if subject_key not in VOICE_MAP:
             subject_key = "physics"
 
+        if language and language != "en-IN":
+            return await self._generate_sarvam(text, subject_key, output_path, language, pace)
+
         config = get_voice_config(subject_key)
+        if pace and abs(pace - 1.0) > 1e-6:
+            # Edge rates are relative percentages: "-5%" at 1.25x becomes "+20%".
+            base = int(str(config["rate"]).rstrip("%") or 0)
+            config["rate"] = f"{base + round((pace - 1.0) * 100):+d}%"
         text_processed = self._preprocess_for_tts(text, subject_key)
 
         word_boundaries = []
@@ -116,4 +127,30 @@ class TTSGenerator:
             "subject": subject_key,
             "processed_text": text_processed,
             "audio_metrics": audio_metrics,
+        }
+
+    async def _generate_sarvam(self, text, subject_key, output_path, language, pace) -> dict:
+        from app.tts import sarvam
+
+        duration = await sarvam.synthesize(text, language, subject_key, pace, output_path)
+        audio_metrics = {"applied": False, "leading_trim_seconds": 0.0}
+        if self.postprocess:
+            audio_metrics = process_audio_file(
+                output_path,
+                target_lufs=self.settings.audio_target_lufs,
+                silence_threshold_db=self.settings.audio_silence_threshold_db,
+            )
+            try:  # measure the processed file: trimming changes its length
+                from pydub import AudioSegment
+                duration = len(AudioSegment.from_file(output_path)) / 1000.0
+            except Exception:
+                duration = max(0.1, duration - float(audio_metrics.get("leading_trim_seconds", 0.0) or 0.0))
+        return {
+            "audio_path": output_path,
+            "word_boundaries": sarvam.estimate_word_times(text, 0.0, duration),
+            "voice": f"bulbul:v3/{sarvam.SPEAKERS.get(subject_key, sarvam.DEFAULT_SPEAKER)}",
+            "subject": subject_key,
+            "processed_text": text,
+            "audio_metrics": audio_metrics,
+            "duration": duration,
         }

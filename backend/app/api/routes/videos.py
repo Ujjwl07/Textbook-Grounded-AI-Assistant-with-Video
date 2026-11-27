@@ -22,6 +22,7 @@ LESSON_FIELDS = (
     "job_id", "video_url", "topic", "subject", "class_level", "duration_seconds", "orientation",
     "scene_parts", "scene_titles", "sources", "source_label", "resolved_subject",
     "resolved_class_level", "chapter_number", "chapter_name", "timeline", "scene_source", "created_at",
+    "voice_language", "caption_language", "pace",
 )
 
 
@@ -45,6 +46,9 @@ async def get_video(job_id: str, current_user: dict = Depends(get_current_user))
     lesson = {key: data.get(key) for key in LESSON_FIELDS}
     lesson["duration_seconds"] = lesson["duration_seconds"] or 60
     lesson["orientation"] = lesson["orientation"] or "landscape"
+    lesson["voice_language"] = lesson["voice_language"] or "en-IN"
+    lesson["caption_language"] = lesson["caption_language"] or lesson["voice_language"]
+    lesson["pace"] = lesson["pace"] or 1.0
     for key in ("scene_parts", "scene_titles", "sources", "timeline"):
         lesson[key] = lesson[key] or []
     # Flashcards are generated on request and cached on the video record.
@@ -103,7 +107,9 @@ async def lesson_flashcards(
     subject = data.get("resolved_subject") or data.get("subject")
     class_level = data.get("resolved_class_level") or data.get("class_level")
     material = "\n\n".join(
-        f"{scene.get('title', '')}: {scene.get('text', '')}" for scene in data.get("timeline") or []
+        # The English script when the lesson was narrated in another language.
+        f"{scene.get('title', '')}: {scene.get('source_text') or scene.get('text', '')}"
+        for scene in data.get("timeline") or []
     ).strip()
     if not material:
         # Older videos kept no narration: use the textbook passages instead.

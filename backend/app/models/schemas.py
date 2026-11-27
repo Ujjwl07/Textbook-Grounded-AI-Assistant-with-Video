@@ -20,6 +20,12 @@ class GenerateRequest(BaseModel):
     # Target length of the finished video, and its shape: 16:9 or a 9:16 reel.
     duration_seconds: Literal[30, 60, 120, 300] = 60
     orientation: Literal["landscape", "portrait"] = "landscape"
+    # Narration (voice) and on-screen caption languages. Captions default to
+    # the voice language; a different one makes a bilingual lesson. Hindi and
+    # Punjabi go through Sarvam-Translate and the Bulbul v3 voice.
+    voice_language: Literal["en-IN", "hi-IN", "pa-IN"] = "en-IN"
+    caption_language: Optional[Literal["en-IN", "hi-IN", "pa-IN"]] = None
+    pace: Literal[0.8, 1.0, 1.25] = 1.0
 
 
 class GenerateResponse(BaseModel):
@@ -47,6 +53,9 @@ class JobState(BaseModel):
     scene_source: Optional[str] = None
     duration_seconds: int = 60
     orientation: str = "landscape"
+    voice_language: str = "en-IN"
+    caption_language: str = "en-IN"
+    pace: float = 1.0
     # Live progress for the "Generating" page: the five steps (retrieve, script,
     # narrate, render, encode), how long each finished one took, and what the
     # step is working on.

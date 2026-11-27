@@ -103,9 +103,68 @@ class VideoAssembler:
         # Populated after each assemble_full_video call; consumed by the benchmark script.
         self.last_render_stats = {}
 
+    def _subtitle_engine(self, portrait: bool, language: str) -> SubtitleEngine:
+        if not language or language == "en-IN":
+            return self.subtitle_engine_portrait if portrait else self.subtitle_engine
+        if portrait:
+            engine = SubtitleEngine(font_size=30, max_width=600, band_height=150, max_lines=3, language=language)
+            engine.band_margin_bottom = 70
+            return engine
+        return SubtitleEngine(language=language)
+
+    async def _translate_scenes(self, scenes, voice_language, caption_language, report):
+        """Narration text per scene in the voice and caption languages."""
+        from app.tts import sarvam
+
+        source = [str(sc.get("narration_text", "")) for sc in scenes]
+        wanted = [lang for lang in dict.fromkeys([voice_language, caption_language]) if lang != "en-IN"]
+        texts = {"en-IN": source}
+        for lang in wanted:
+            name = sarvam.LANGUAGES.get(lang, lang)
+            report("narrate", 0, len(scenes), f"Translating the script into {name} (Sarvam-Translate)")
+            texts[lang] = await asyncio.gather(*[sarvam.translate(t, lang) for t in source])
+        return texts[voice_language], texts[caption_language]
+
+    @staticmethod
+    def _caption_words(audio_result: dict, caption_text: str, audio_seconds: float, same: bool) -> list:
+        """Word timings for the burned-in captions. Same language as the voice:
+        the voice's own timings. Bilingual: the caption sentence spread over the
+        stretch where the voice speaks."""
+        voice_words = audio_result.get("word_boundaries", []) or []
+        if same:
+            return voice_words
+        from app.tts.sarvam import estimate_word_times
+
+        if voice_words:
+            start = float(voice_words[0].get("start", 0.0))
+            end = float(voice_words[-1].get("end", audio_seconds) or audio_seconds)
+        else:
+            start, end = 0.0, float(audio_seconds or 0.0)
+        return estimate_word_times(caption_text, start, max(end, start + 0.5))
+
+    @staticmethod
+    def _timeline_entry(scene, start, duration, audio_result, voice_text, caption_text) -> dict:
+        return {
+            "part": str(scene.get("part", "")),
+            "title": str(scene.get("slide_title", "")),
+            "start": round(start, 2),
+            "duration": round(duration, 2),
+            # What the watch page shows: the caption-language text and timings.
+            "text": str(caption_text or ""),
+            "words": [
+                [str(w.get("word", "")), round(start + float(w.get("start", 0.0)), 2)]
+                for w in audio_result.get("caption_words", audio_result.get("word_boundaries", [])) or []
+            ],
+            "voice_text": str(voice_text or ""),
+            # The English script, for flashcards and doubts grounded in NCERT.
+            "source_text": str(scene.get("narration_text", "")),
+        }
+
     async def assemble_full_video(self, scenes: list, subject: str, output_path: str,
                                   orientation: str = "landscape", short: bool = False,
-                                  on_progress=None, timeline: Optional[list] = None) -> str:
+                                  on_progress=None, timeline: Optional[list] = None,
+                                  voice_language: str = "en-IN", caption_language: Optional[str] = None,
+                                  pace: float = 1.0) -> str:
         """
         Takes a list of scenes and subject, synthesizes TTS, generates slides,
         overlays subtitles, applies the per-scene animation declared in the scene
@@ -119,6 +178,11 @@ class VideoAssembler:
         ``timeline``: if given, filled with one entry per scene (part, title,
         start and duration in seconds of the final video, narration text and
         word timings) so the watch page can show scenes, transcript and captions.
+        ``voice_language`` / ``caption_language``: en-IN, hi-IN or pa-IN. The
+        script is written in English; other languages are translated with
+        Sarvam-Translate and voiced with Bulbul v3. Captions default to the
+        voice language; a different one gives a bilingual lesson. ``pace``
+        is the speaking speed (0.8, 1 or 1.25).
         """
         def report(step, done, total, message):
             if on_progress:
@@ -134,7 +198,10 @@ class VideoAssembler:
 
         portrait = orientation == "portrait"
         size = (720, 1280) if portrait else self.settings.video_size
-        subtitles = self.subtitle_engine_portrait if portrait else self.subtitle_engine
+        voice_language = voice_language or "en-IN"
+        caption_language = caption_language or voice_language
+        subtitles = self._subtitle_engine(portrait, caption_language)
+        voice_texts, caption_texts = await self._translate_scenes(scenes, voice_language, caption_language, report)
         bookend = 1.2 if short else BOOKEND_DURATION
         timer = RenderTimer()
         clips = []
@@ -143,7 +210,10 @@ class VideoAssembler:
         if scenes and not self.vmake.is_enabled() and os.environ.get("VIDEO_PARALLEL", "1") != "0":
             return await self._assemble_parallel(scenes, subject, output_path, temp_dir, size, timer,
                                                  orientation=orientation, bookend=bookend,
-                                                 report=report, timeline=timeline)
+                                                 report=report, timeline=timeline,
+                                                 voice_texts=voice_texts, caption_texts=caption_texts,
+                                                 voice_language=voice_language,
+                                                 caption_language=caption_language, pace=pace)
 
         try:
             # 1. Generate Intro Slide (if list is not empty)
@@ -175,33 +245,29 @@ class VideoAssembler:
                 audio_path = str(temp_dir / f"audio_{i}.mp3")
                 with timer.time("tts"):
                     audio_result = await self.tts.generate_scene_audio(
-                        scene["narration_text"],
+                        voice_texts[i],
                         subject,
                         audio_path,
+                        language=voice_language,
+                        pace=pace,
                     )
                 temp_files.append(audio_path)
                 audio_clip = AudioFileClip(audio_path)
                 # The segmenter's duration_hint_seconds can hold the slide slightly
                 # longer than the narration, but never shorter than the voice track.
                 duration = resolve_scene_duration(audio_clip.duration, scene.get("duration_hint_seconds"))
+                audio_result["caption_words"] = self._caption_words(
+                    audio_result, caption_texts[i], audio_clip.duration,
+                    same=caption_language == voice_language)
                 narrated.append((audio_result, audio_clip, duration))
             report("narrate", len(scenes), len(scenes), "Narration ready")
 
             if timeline is not None:
                 timeline.clear()
                 start = bookend if scenes else 0.0
-                for scene, (audio_result, _clip, duration) in zip(scenes, narrated):
-                    timeline.append({
-                        "part": str(scene.get("part", "")),
-                        "title": str(scene.get("slide_title", "")),
-                        "start": round(start, 2),
-                        "duration": round(duration, 2),
-                        "text": str(scene.get("narration_text", "")),
-                        "words": [
-                            [str(w.get("word", "")), round(start + float(w.get("start", 0.0)), 2)]
-                            for w in audio_result.get("word_boundaries", []) or []
-                        ],
-                    })
+                for i, (scene, (audio_result, _clip, duration)) in enumerate(zip(scenes, narrated)):
+                    timeline.append(self._timeline_entry(scene, start, duration, audio_result,
+                                                         voice_texts[i], caption_texts[i]))
                     start += duration
 
             # 2b. Visual pass: slides, animation and burned-in subtitles.
@@ -253,7 +319,7 @@ class VideoAssembler:
                 # directly instead of going through CompositeVideoClip, whose
                 # generic float64 blit dominated render time (see
                 # scripts/profile_frame_pipeline.py).
-                word_boundaries = audio_result.get("word_boundaries", [])
+                word_boundaries = audio_result.get("caption_words", [])
                 if word_boundaries:
                     with timer.time("subtitles"):
                         scene_video = subtitles.burn_onto(
@@ -361,7 +427,9 @@ class VideoAssembler:
 
     async def _assemble_parallel(self, scenes, subject, output_path, temp_dir, size, timer,
                                  orientation="landscape", bookend=BOOKEND_DURATION,
-                                 report=lambda *a: None, timeline=None) -> str:
+                                 report=lambda *a: None, timeline=None, voice_texts=None,
+                                 caption_texts=None, voice_language="en-IN",
+                                 caption_language="en-IN", pace=1.0) -> str:
         """Render slides + audio here, then encode every segment in its own process
         and join them with FFmpeg's concat demuxer (no re-encode)."""
         from app.video.segment_encoder import concat_without_reencode, encode_segments_parallel
@@ -371,7 +439,8 @@ class VideoAssembler:
             report("narrate", 0, len(scenes), f"Narrating {len(scenes)} scenes")
             with timer.time("tts"):
                 audio_results = await asyncio.gather(*[
-                    self.tts.generate_scene_audio(sc["narration_text"], subject, audio_paths[i])
+                    self.tts.generate_scene_audio(voice_texts[i], subject, audio_paths[i],
+                                                  language=voice_language, pace=pace)
                     for i, sc in enumerate(scenes)
                 ])
             report("narrate", len(scenes), len(scenes), "Narration ready")
@@ -380,23 +449,17 @@ class VideoAssembler:
             for i, scene in enumerate(scenes):
                 a = AudioFileClip(audio_paths[i])
                 durations.append(resolve_scene_duration(a.duration, scene.get("duration_hint_seconds")))
+                audio_results[i]["caption_words"] = self._caption_words(
+                    audio_results[i], caption_texts[i], a.duration,
+                    same=caption_language == voice_language)
                 a.close()
 
             if timeline is not None:
                 timeline.clear()
                 start = bookend
-                for scene, audio_result, duration in zip(scenes, audio_results, durations):
-                    timeline.append({
-                        "part": str(scene.get("part", "")),
-                        "title": str(scene.get("slide_title", "")),
-                        "start": round(start, 2),
-                        "duration": round(duration, 2),
-                        "text": str(scene.get("narration_text", "")),
-                        "words": [
-                            [str(w.get("word", "")), round(start + float(w.get("start", 0.0)), 2)]
-                            for w in audio_result.get("word_boundaries", []) or []
-                        ],
-                    })
+                for i, (scene, audio_result, duration) in enumerate(zip(scenes, audio_results, durations)):
+                    timeline.append(self._timeline_entry(scene, start, duration, audio_result,
+                                                         voice_texts[i], caption_texts[i]))
                     start += duration
 
             n_segments = len(scenes) + 2
@@ -404,7 +467,7 @@ class VideoAssembler:
             threads = max(1, (os.cpu_count() or 1) // workers)
             common = {"size": list(size), "fps": self.settings.video_fps,
                       "preset": self.settings.video_preset, "threads": threads,
-                      "portrait": orientation == "portrait"}
+                      "portrait": orientation == "portrait", "caption_language": caption_language}
 
             jobs = []
             with timer.time("slide_render"):
@@ -433,7 +496,7 @@ class VideoAssembler:
                     jobs.append({**common, "kind": "scene", "slide_path": slide_path,
                                  "audio_path": audio_paths[i], "duration": duration,
                                  "animation_type": scene.get("animation_type"),
-                                 "word_boundaries": audio_results[i].get("word_boundaries", []),
+                                 "word_boundaries": audio_results[i].get("caption_words", []),
                                  "out_path": str(temp_dir / f"seg_{i + 1:03d}.mp4")})
                 jobs.append({**common, "kind": "bookend", "slide_path": bookends["outro"],
                              "duration": bookend,
