@@ -73,6 +73,8 @@ class Settings(BaseSettings):
 
     # --- LLM Integration (Google Gemini) ---
     gemini_api_key: str = ""
+    gemini_pyq_api_keys: str = ""
+    gemini_pyq_model: str = ""
     llm_provider: str = "gemini"
     llm_model: str = "gemini-3.6-flash"
     # gemini-3.6-flash reasons before answering and those thinking tokens come
@@ -114,6 +116,14 @@ class Settings(BaseSettings):
     @property
     def video_size(self) -> tuple:
         return (self.video_width, self.video_height)
+
+    @property
+    def pyq_gemini_keys(self) -> List[str]:
+        """Comma-separated Gemini keys for PYQ extraction, falling back to GEMINI_API_KEY."""
+        keys = [k.strip() for k in self.gemini_pyq_api_keys.split(",") if k.strip()]
+        if keys:
+            return keys
+        return [self.gemini_api_key.strip()] if self.gemini_api_key.strip() else []
 
     @model_validator(mode="after")
     def validate_security_settings(self):

@@ -51,3 +51,8 @@ Thumbs.db
 Dataset/
 backend/data/textbooks/*
 !backend/data/textbooks/.gitkeep
+
+# Raw NEET PYQ source PDFs and their extracted JSON (kept locally; the
+# extracted data is pushed to the shared MongoDB by ingest_pyqs.py instead)
+PYQ_Dataset/
+backend/data/pyqs/

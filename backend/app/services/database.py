@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import re
 import time
 from datetime import datetime
 from typing import Optional
@@ -49,7 +50,9 @@ class DatabaseManager:
             await self.db.quizzes.create_index("quiz_id", unique=True)
             await self.db.quiz_attempts.create_index([("user_id", 1), ("created_at", -1)])
             await self.db.admins.create_index("email", unique=True)
-            
+            await self.db.pyqs.create_index("pyq_id", unique=True)
+            await self.db.pyqs.create_index([("subject", 1), ("class_level", 1), ("chapter_name", 1), ("year", -1)])
+
             await self.setup_admin_seed()
             self.enabled = True
             logger.info("MongoDB connected successfully.")
@@ -216,6 +219,88 @@ class DatabaseManager:
             if time.monotonic() - self._last_attempt >= RECONNECT_INTERVAL_SECONDS:
                 logger.info("MongoDB not connected; trying to reconnect")
                 await self.connect()
+
+    async def upsert_pyqs(self, pyqs: list[dict]) -> int:
+        """Upsert a batch of PYQ documents keyed by ``pyq_id``."""
+        await self._ensure_db()
+        if not pyqs:
+            return 0
+        now = datetime.utcnow()
+        count = 0
+        for doc in pyqs:
+            payload = {**doc, "updated_at": now}
+            await self.db.pyqs.update_one(
+                {"pyq_id": doc["pyq_id"]},
+                {"$set": payload, "$setOnInsert": {"created_at": now}},
+                upsert=True,
+            )
+            count += 1
+        return count
+
+    async def get_pyqs(
+        self,
+        subject: Optional[str] = None,
+        class_level: Optional[str] = None,
+        chapter_name: Optional[str] = None,
+        subtopic: Optional[str] = None,
+        year: Optional[int] = None,
+        limit: int = 50,
+    ) -> list[dict]:
+        """Query PYQs by curriculum metadata, sorted newest-year first."""
+        await self._ensure_db()
+        query: dict = {}
+        if subject:
+            query["subject"] = {"$regex": f"^{re.escape(subject.strip())}$", "$options": "i"}
+        if class_level:
+            query["class_level"] = str(class_level).strip()
+        if chapter_name:
+            query["chapter_name"] = {"$regex": f"^{re.escape(chapter_name.strip())}$", "$options": "i"}
+        if subtopic:
+            query["subtopic"] = {"$regex": re.escape(subtopic.strip()), "$options": "i"}
+        if year is not None:
+            query["year"] = int(year)
+
+        cursor = (
+            self.db.pyqs.find(query, {"_id": 0})
+            .sort([("year", -1), ("question_number", 1)])
+            .limit(limit)
+        )
+        return await cursor.to_list(length=limit)
+
+    async def get_pyq_stats(self) -> list[dict]:
+        """Count stored PYQs grouped by class_level, subject, and chapter_name."""
+        await self._ensure_db()
+        pipeline = [
+            {
+                "$group": {
+                    "_id": {
+                        "class_level": "$class_level",
+                        "subject": "$subject",
+                        "chapter_number": "$chapter_number",
+                        "chapter_name": "$chapter_name",
+                    },
+                    "count": {"$sum": 1},
+                    "min_year": {"$min": "$year"},
+                    "max_year": {"$max": "$year"},
+                }
+            },
+            {"$sort": {"_id.class_level": 1, "_id.subject": 1, "_id.chapter_number": 1}},
+        ]
+        docs = await self.db.pyqs.aggregate(pipeline).to_list(length=500)
+        return [
+            {
+                "class_level": d["_id"].get("class_level"),
+                "subject": d["_id"].get("subject"),
+                "chapter_number": d["_id"].get("chapter_number"),
+                "chapter_name": d["_id"].get("chapter_name"),
+                "count": d["count"],
+                "min_year": d.get("min_year"),
+                "max_year": d.get("max_year"),
+            }
+            for d in docs
+        ]
+
+    def _require_db(self) -> None:
         if not self.enabled or self.db is None:
             raise DatabaseUnavailable("MongoDB is not connected")
 
